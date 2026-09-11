@@ -49,21 +49,6 @@
     />
 
     <AppSystemBarBadge
-      v-if="!noUser"
-      v-shared-tooltip.bottom="() => t('commandPalette.openHint', { shortcut: paletteShortcut })"
-      icon="search"
-      :text="t('commandPalette.open')"
-      :aria-label="t('commandPalette.openHint', { shortcut: paletteShortcut })"
-      can-hide-text
-      @click="openPalette"
-    >
-      <template #append>
-        <kbd class="palette-hotkey">{{ paletteShortcut }}</kbd>
-      </template>
-    </AppSystemBarBadge>
-
-
-    <AppSystemBarBadge
       v-if="!noTask"
       v-shared-tooltip.bottom="() => taskTooltip"
       icon="assignment"
@@ -71,21 +56,30 @@
       :text="taskInlineText"
       @click="showTaskDialog()"
     />
+    <!--
+      "Ayuda": the MineLatino AI assistant in its own window. `injectCss`
+      strips the site navbar/footer so only the chat is left (see
+      ASSISTANT_CHAT_ONLY_CSS below).
+    -->
     <AppSystemBarBadge
-      v-if="tutor"
-      id="tutor-button"
-      icon="quiz"
+      v-shared-tooltip.bottom="() => assistantTooltip"
+      icon="smart_toy"
       :text="t('help')"
+      :aria-label="assistantTooltip"
       can-hide-text
-      @click="tutor.start()"
+      @click="openAssistant"
     />
+    <!--
+      "Discord": the invite link, handed to the system browser so the
+      installed Discord app can take over the `discord://` redirect.
+    -->
     <AppSystemBarBadge
-      v-if="!noDebug"
-      id="feedback-button"
-      icon="bug_report"
-      :text="t('feedback.name')"
+      v-shared-tooltip.bottom="() => discordTooltip"
+      icon="xmcl:discord"
+      :text="t('MineLatinoHome.discord')"
+      :aria-label="discordTooltip"
       can-hide-text
-      @click="showFeedbackDialog"
+      @click="openDiscord"
     />
 
     <span
@@ -134,7 +128,6 @@ import { useGamepad } from '@/composables/gamepad'
 
 import { injection } from '@/util/inject'
 import { useWindowStyle } from '@/composables/windowStyle'
-import { kTutorial } from '@/composables/tutorial'
 import AppSystemBarBadge from '@/components/AppSystemBarBadge.vue'
 import AppAudioPlayer from '@/components/AppAudioPlayer.vue'
 import { kTheme } from '@/composables/theme'
@@ -144,8 +137,8 @@ import { vRovingTabindex } from '@/directives/rovingTabindex'
 import { vSharedTooltip } from '@/directives/sharedTooltip'
 import { getExpectedSize } from '@/util/size'
 
-import { kSettingsState } from '@/composables/setting'
-import { formatShortcutDisplay } from '@/util/shortcut'
+import { MineLatinoServiceKey } from '@xmcl/runtime-api'
+import { useService } from '@/composables/service'
 
 const props = defineProps<{
   noUser?: boolean
@@ -155,16 +148,14 @@ const props = defineProps<{
 }>()
 
 const { blurAppBar } = injection(kTheme)
-const { state: settingsState } = injection(kSettingsState)
 const { maximize, minimize, close, hide } = windowController
 const { shouldShiftBackControl, hideWindowControl } = useWindowStyle()
-const { show: showFeedbackDialog } = useDialog('feedback')
 const { show: showTaskDialog } = useDialog('task')
 const { t } = useI18n()
 const { count } = useTaskCount()
 // Optional: the standalone multiplayer/app windows don't provide network status.
 const networkStatus = inject(kNetworkStatus, undefined)?.status ?? ref(null)
-const tutor = inject(kTutorial, undefined)
+const mineLatinoService = useService(MineLatinoServiceKey)
 
 const taskSpeedText = computed(() => networkStatus.value?.downloadSpeed
   ? `${getExpectedSize(networkStatus.value.downloadSpeed)}/s`
@@ -183,17 +174,76 @@ const taskTooltip = computed(() => {
 })
 
 const paletteShown = useCommandPaletteVisible()
-const { isActive: gamepadActive, connected: gamepadConnected, name: gamepadName, labels: gamepadLabels } = useGamepad()
-const paletteShortcut = computed(() => {
-  if (gamepadActive.value) {
-    // Start / Menu button opens the palette in gamepad mode.
-    return gamepadLabels.value.menu
-  }
-  const custom = settingsState.value?.quickActionShortcut
-  return formatShortcutDisplay(custom || '')
-})
+const { connected: gamepadConnected, name: gamepadName } = useGamepad()
 const gamepadLabel = computed(() => gamepadName.value || t('gamepad.connected'))
 const openPalette = () => { paletteShown.value = true }
+
+/** MineLatino Discord invite. */
+const DISCORD_URL = 'https://ds.minelatino.com'
+const ASSISTANT_URL = 'https://staff.minelatino.net/asistente'
+const ASSISTANT_WINDOW_ID = 'minelatino-asistente'
+
+/**
+ * `/asistente` ships the whole staff site with the chat in the middle, so every
+ * sibling of the chat section is hidden and that section is stretched to fill
+ * the window.
+ *
+ * Only *direct* `<body>` children are targeted: the chat's own title bar is a
+ * `<header class="assistant-header">`, its input row a `<footer class="composer">`,
+ * and the site footer nests `<section>`/`<nav>` of its own — bare tag selectors
+ * would delete the chat along with the chrome. The hidden `<meta>`, `<link>`,
+ * `<style>` and `<script>` siblings are not rendered anyway and keep working,
+ * which matters because the chat reads `meta[name=csrf-token]` before POSTing.
+ */
+const ASSISTANT_CHAT_ONLY_CSS = `
+html, body {
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+body > *:not(section.assistant-section) {
+  display: none !important;
+}
+body > section.assistant-section {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+body > section.assistant-section > .assistant-shell {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+}
+`
+
+const assistantTooltip = computed(() => t('MineLatinoAssistant.tooltip'))
+const discordTooltip = computed(() => t('MineLatinoHome.joinDiscord'))
+
+function openAssistant() {
+  // Reuses the store/vote window: an already-open assistant is just focused.
+  mineLatinoService.openWebWindow({
+    id: ASSISTANT_WINDOW_ID,
+    title: t('MineLatinoAssistant.title'),
+    url: ASSISTANT_URL,
+    injectCss: ASSISTANT_CHAT_ONLY_CSS,
+  }).catch(() => {})
+}
+
+function openDiscord() {
+  // ElectronController's windowOpenHandler sends any non-`app` host to
+  // `shell.openExternal`, so this lands in the system browser and from there
+  // in the installed Discord app.
+  window.open(DISCORD_URL, 'browser')
+}
 
 const router = useRouter()
 const onBack = () => {
@@ -253,24 +303,5 @@ const windowControlsAriaLabel = 'Window controls'
   color: inherit;
   appearance: none;
   justify-content: center;
-}
-
-.palette-hotkey {
-  margin-left: 8px;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 10px;
-  line-height: 1;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: rgba(125, 125, 125, 0.18);
-  border: 1px solid rgba(125, 125, 125, 0.28);
-  color: inherit;
-  opacity: 0.75;
-}
-
-@media (max-width: 880px) {
-  .palette-hotkey {
-    margin-left: 4px;
-  }
 }
 </style>

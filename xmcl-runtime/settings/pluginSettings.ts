@@ -37,6 +37,12 @@ export const pluginSettings: LauncherAppPlugin = async (app) => {
     locale = locale || app.host.getLocale()
     if (locale.startsWith('en')) {
       locale = 'en'
+    } else if (locale.startsWith('es')) {
+      // MineLatino's audience is Spanish-speaking, and `es-ES` is the only
+      // Spanish bundle shipped. Without this collapse every Latin American
+      // tag (`es-MX`, `es-AR`, `es-CO`, ...) misses the exact filename match
+      // in the renderer and falls back to English.
+      locale = 'es-ES'
     }
     return locale
   }

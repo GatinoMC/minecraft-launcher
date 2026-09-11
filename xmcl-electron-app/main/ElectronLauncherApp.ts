@@ -1,7 +1,7 @@
 import { NetworkErrorCode, NetworkException } from '@xmcl/runtime-api'
 import { LauncherApp, Shell } from '@xmcl/runtime/app'
-import { LAUNCHER_NAME } from '@xmcl/runtime/constant'
-import { kFlights, runWithExternalHttpTrace } from '@xmcl/runtime/infra'
+import { LAUNCHER_NAME, LAUNCHER_PROTOCOL } from '@xmcl/runtime/constant'
+import { runWithExternalHttpTrace } from '@xmcl/runtime/infra'
 import { AnyError } from '@xmcl/utils'
 import { Menu, app, net, shell } from 'electron'
 import { stat } from 'fs-extra'
@@ -176,17 +176,6 @@ export default class ElectronLauncherApp extends LauncherApp {
       definedPlugins,
     )
     this.session = new ElectronSession(this)
-    // Let the `safeStorageEncryption` flight force plaintext secret storage on
-    // machines where the OS keyring is broken (e.g. a faulty KWallet on KDE).
-    // The flight store is populated asynchronously, so we hand the secret
-    // storage a live predicate rather than a one-shot value. Default (flight
-    // absent/true) keeps the auto health-probe behavior.
-    if (this.secretStorage instanceof ElectronSecretStorage) {
-      const secretStorage = this.secretStorage
-      this.registry.get(kFlights).then((flights) => {
-        secretStorage.setEncryptionDisabledProvider(() => flights.safeStorageEncryption === false)
-      }).catch(() => { })
-    }
     // Wayland/Ozone selection breaks Playwright's CDP page-target tracking
     // under xvfb on CI (e2e-smoke job sees zero Page targets even though the
     // BrowserWindow exists and reaches `ready-to-show`). Skip the Ozone
@@ -328,7 +317,7 @@ export default class ElectronLauncherApp extends LauncherApp {
       this.protocol.handle({ url })
     }).on('second-instance', (e, argv) => {
       const last = argv[argv.length - 1]
-      if (last.startsWith('xmcl://')) {
+      if (last.startsWith(`${LAUNCHER_PROTOCOL}://`)) {
         this.protocol.handle({ url: last })
       } else {
         this.emit('second-instance', argv)

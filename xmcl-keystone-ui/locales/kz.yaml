@@ -283,24 +283,11 @@ commandPalette:
 feedback:
   channel: Арналар
   description: Мен қате таптым немесе ұсыныс жасағым келеді
-  discord: Discord
-  discordDescription: Discord арнасына қосылыңыз
-  discordJoin: Қосылу
   generateReport: Есеп жасау
   generateSaveAs: Есепті мына жерге сақтау
-  github: Github мәселесі
-  githubDescription: Ойыңызды айту үшін Github мәселесін ашыңыз
-  githubOpenIssue: Github
   hint: >-
     Есеп жасау және әзірлеушілер тобымен байланысу үшін батырманы басыңыз. Есеп операциялық жүйе түрі, нұсқасы, пайдаланушы аты (сіздің ОЖ-ңызда) сияқты құрылғы ақпаратын қамтиды.
-  kook: Kook
-  kookDescription: >-
-    Kook - Қытай материгіндегі пайдаланушылар үшін Discord-тың баламалы қосымшасы
   name: Кері байланыс
-  qq: QQ тобы
-  qqDescription: >-
-    Кері байланыс QQ тобына кіріп, авторлармен тікелей сөйлесіңіз. Топ нөмірі: {number}
-  qqEnterGroup: Қосылу
 fileDetail:
   fileSize: Файл өлшемі
   filesize: Файл өлшемі
@@ -1221,7 +1208,6 @@ serverStatus:
   timeout: §4Серверге қосылу уақыты аяқталды!
 agent:
   accessRequiredHint: Кірістірілген агентті пайдалану үшін XMCL қызметіне жазылыңыз немесе баптауларда өз ЖИ провайдеріңізді реттеңіз.
-  subscribeXmcl: XMCL қызметіне жазылу
   notConfiguredHint: Баптаулар → Жалпы → ЖИ агенті бөлімінде API кілтін, модельді және OpenAI-мен үйлесімді соңғы нүктені орнатыңыз. Мысалы, OpenAI немесе Claude-пен үйлесімді шлюзді қолданыңыз.
 setting:
   aiAgentApiKeyDescription: OpenAI-мен үйлесімді провайдерді баптаңыз, мысалы OpenAI немесе Claude үшін шлюз. Кілт осы құрылғыда жергілікті сақталады.
@@ -1241,14 +1227,7 @@ setting:
     loadConfirmMessage: Сақталған тақырыпты жүктеу ағымдағы тақырыпты алмастырады. Қажет болса, сақтық көшірме жасаңыз.
     loadTheme: Тақырыпты жүктеу
   about: Туралы
-  aboutBmclDescription: BMCL API қытай материктік пайдаланушылар үшін ыңғайлы жүктемелерді ұсынады
-  aboutContributors: 🧑‍💻 Ымдастырушылар 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL серверсіз JavaScript қосымшалары үшін Deno Deploy-ның қиындықсыз платформасын пайдаланады
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Windows-та SignPath.io ұсынған тегін коды имзалау, SignPath Foundation сертификаты
-  aboutSponsors: 😇 Демеушілер 😇
   advancedJavaOptions: Кеңейтілген Java опциялары
   advancedSettings: Кеңейтілген баптаулар
   advancedSettingsHint: Қауіпті аймақ - launcher деректерін қалпына келтіру немесе басқару

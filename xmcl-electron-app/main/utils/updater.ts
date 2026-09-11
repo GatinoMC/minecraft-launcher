@@ -14,7 +14,7 @@ import {
 import { DownloadUpdateOptions, LauncherAppUpdater } from '@xmcl/runtime/app'
 import { AnyError, isSystemError } from '@xmcl/utils'
 import { spawn } from 'child_process'
-import { app, shell } from 'electron'
+import { shell } from 'electron'
 import * as updater from 'electron-updater'
 import { AppUpdater, CancellationToken, UpdaterSignal } from 'electron-updater'
 import { createReadStream, createWriteStream } from 'fs'
@@ -23,34 +23,20 @@ import { closeSync, existsSync, open, rename, unlink } from 'original-fs'
 import { platform } from 'os'
 import { basename, dirname, join } from 'path'
 import { pipeline } from 'stream/promises'
-import { setTimeout } from 'timers/promises'
-import { extract as extractTar } from 'tar-stream'
 import { promisify } from 'util'
 import { createGunzip } from 'zlib'
-import { Logger, kGFW } from '~/infra'
+import { Logger } from '~/infra'
+import { resolveBackendUrl } from '@/minelatino/config'
 import { kSettings } from '~/settings'
 import { checksum } from '~/util/fs'
 import ElectronLauncherApp from '../ElectronLauncherApp'
-import { ensureElevateExe } from './elevate'
-
-const kPatched = Symbol('Patched')
 
 /**
- * Only download asar file update.
- *
- * If the this update is not a full update but an incremental update,
- * you can call this to download asar update
+ * The `app-<version>-<platform>[-<arch>].asar` name `build.ts` writes in its
+ * `afterPack` hook. The manifest check and the download both derive the name
+ * from here so they cannot disagree about which asset this install needs.
  */
-async function downloadAsarUpdate(
-  app: ElectronLauncherApp,
-  destination: string,
-  version: string,
-  options?: {
-    abortSignal?: AbortSignal
-    tracker?: Tracker<DownloadUpdateTrackerEvents>
-  } & DownloadBaseOptions,
-): Promise<void> {
-  version = version.startsWith('v') ? version.substring(1) : version
+function asarAssetName(version: string): string {
   const pl = platform()
   let platformFlag = pl === 'win32' ? 'win' : pl === 'darwin' ? 'mac' : 'linux'
   if (process.arch === 'arm64') {
@@ -58,110 +44,96 @@ async function downloadAsarUpdate(
   } else if (process.arch === 'ia32') {
     platformFlag += '-ia32'
   }
-  const file = `app-${version}-${platformFlag}.asar`
-  const github = `https://github.com/Voxelum/x-minecraft-launcher/releases/download/v${version}/${file}`
-
-  // Skip the download entirely if the pending file already matches the
-  // published checksum.
-  try {
-    const sha256Response = await app.fetch(github + '.sha256', { signal: options?.abortSignal })
-    const sha256 = sha256Response.ok ? (await sha256Response.text()).trim() : ''
-    const actual = await checksum(destination, 'sha256').catch(() => '')
-    if (sha256 && sha256 === actual) {
-      return
-    }
-  } catch {
-    // Ignore — fall through to download.
-  }
-
-  const gfw = await app.registry.get(kGFW)
-  const errors: Error[] = []
-
-  const isAbort = (e: unknown) => e instanceof Error && e.name === 'AbortError'
-
-  // Inside the GFW, pull the asar from the npmmirror tarball of the
-  // per-platform `@xmcl/app-<platform>` package. npmmirror's per-file
-  // (`/files/`) endpoint is whitelist-only, but package tarballs are
-  // unrestricted, so we download the (small) tarball and extract `app.asar`.
-  if (gfw.inside) {
-    const tarball = `https://registry.npmmirror.com/@xmcl/app-${platformFlag}/-/app-${platformFlag}-${version}.tgz`
-    try {
-      await downloadAsarFromTarball(app, tarball, destination, options)
-      return
-    } catch (e) {
-      if (isAbort(e)) return
-      errors.push(Object.assign(e as Error, { name: 'UpdateAsarError', url: tarball }))
-    }
-  }
-
-  // Fall back to the GitHub release asset (gzipped when available).
-  try {
-    await downloadGzAsar(app, github, destination, options)
-    return
-  } catch (e) {
-    if (isAbort(e)) return
-    errors.push(Object.assign(e as Error, { name: 'UpdateAsarError', url: github }))
-  }
-
-  throw new AggregateError(
-    errors.flatMap((e) => (e instanceof AggregateError ? e.errors : e)),
-    'Fail to download asar update',
-  )
+  return `app-${version}-${platformFlag}.asar`
 }
 
 /**
- * Download an npm package tarball and extract its `package/app.asar` entry to
- * `destination`. Used for the npmmirror mirror path (see `downloadAsarUpdate`).
+ * Only download asar file update.
+ *
+ * If the this update is not a full update but an incremental update,
+ * you can call this to download asar update
+ *
+ * The asset URL is the one the release manifest published. Upstream rebuilt it
+ * from a hardcoded `github.com/Voxelum/x-minecraft-launcher` release path,
+ * which in this fork would copy a stock XMCL `app.asar` over MineLatino's and
+ * silently un-brand the launcher on the next self-update. The npmmirror
+ * fallback it also had (`@xmcl/app-<platform>` tarballs) is gone for the same
+ * reason: it only ever serves upstream builds.
  */
-async function downloadAsarFromTarball(
+async function downloadAsarUpdate(
   app: ElectronLauncherApp,
-  url: string,
   destination: string,
+  updateInfo: ReleaseInfo,
   options?: {
     abortSignal?: AbortSignal
     tracker?: Tracker<DownloadUpdateTrackerEvents>
   } & DownloadBaseOptions,
 ): Promise<void> {
-  const tempTgz = destination + '.tgz'
-  await download({
-    url,
-    destination: tempTgz,
-    tracker: onDownloadSingle(options?.tracker, 'download-update.asar', { url }),
-    signal: options?.abortSignal,
-    ...getDownloadBaseOptions(options),
-  })
+  const version = updateInfo.name.startsWith('v') ? updateInfo.name.substring(1) : updateInfo.name
+  const file = asarAssetName(version)
+  const publishedUrl = updateInfo.files.find(f => f.name === file)?.url
+  if (!publishedUrl) {
+    throw new AnyError(
+      'UpdateAsarError',
+      `The release ${updateInfo.name} does not publish ${file}`,
+      {},
+      { published: updateInfo.files.map(f => f.name).join(', ') },
+    )
+  }
+  const url = trustedUpdateUrl(publishedUrl)
+
+  const sha256Url = url + '.sha256'
+  const sha256Response = await app.fetch(sha256Url, { signal: options?.abortSignal })
+  if (!sha256Response.ok) {
+    throw new AnyError(
+      'UpdateAsarError',
+      `The release ${updateInfo.name} does not publish a readable SHA-256 checksum`,
+      {},
+      { url: sha256Url, status: sha256Response.status },
+    )
+  }
+  const expectedSha256 = (await sha256Response.text()).trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(expectedSha256)) {
+    throw new AnyError(
+      'UpdateAsarError',
+      `The release ${updateInfo.name} publishes an invalid SHA-256 checksum`,
+      {},
+      { url: sha256Url },
+    )
+  }
+
+  // Skip the download entirely if the pending file already matches the
+  // published checksum.
+  // @xmcl/core returns undefined (rather than rejecting) when the destination
+  // does not exist. A first update therefore used to call toLowerCase() on
+  // undefined before downloading a single byte.
+  const pendingSha256 = (await checksum(destination, 'sha256').catch(() => undefined)) ?? ''
+  if (pendingSha256.toLowerCase() === expectedSha256) {
+    return
+  }
+
+  // Prefers the gzipped sibling when the release publishes one.
   try {
-    await new Promise<void>((resolve, reject) => {
-      const tar = extractTar()
-      let found = false
-      tar.on('entry', (header, stream, next) => {
-        if (!found && (header.name === 'package/app.asar' || header.name.endsWith('/app.asar'))) {
-          found = true
-          const out = createWriteStream(destination)
-          out.on('error', reject)
-          out.on('finish', next)
-          stream.pipe(out)
-        } else {
-          stream.on('end', next)
-          stream.on('error', reject)
-          stream.resume()
-        }
-      })
-      tar.on('error', reject)
-      tar.on('finish', () => {
-        if (found) resolve()
-        else reject(new AnyError('UpdateAsarError', `No app.asar found in tarball ${url}`))
-      })
-      createReadStream(tempTgz).pipe(createGunzip()).pipe(tar)
-    })
-  } finally {
-    await unlinkAsync(tempTgz).catch(() => {})
+    await downloadGzAsar(app, url, destination, options)
+    const downloadedSha256 = (await checksum(destination, 'sha256').catch(() => undefined)) ?? ''
+    if (downloadedSha256.toLowerCase() !== expectedSha256) {
+      await unlinkAsync(destination).catch(() => {})
+      throw new AnyError(
+        'UpdateAsarError',
+        `The downloaded ASAR for ${updateInfo.name} failed SHA-256 verification`,
+        {},
+        { expected: expectedSha256, actual: downloadedSha256 || 'unreadable' },
+      )
+    }
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') return
+    throw Object.assign(e as Error, { name: 'UpdateAsarError', url })
   }
 }
 
 /**
  * Download a raw asar (or its `.gz` sibling when present) and write it to
- * `destination`. Used for the GitHub release-asset path.
+ * `destination`. Used for the release-asset path.
  */
 async function downloadGzAsar(
   app: ElectronLauncherApp,
@@ -195,54 +167,124 @@ async function downloadGzAsar(
   }
 }
 
-async function hintUserDownload(): Promise<void> {
-  shell.openExternal('https://xmcl.app')
+/**
+ * Nothing can be installed in place for this release, so hand the player the
+ * download instead. Upstream opened `xmcl.app`; the fork opens the installer the
+ * manifest published, and falls back to the MineLatino backend.
+ */
+async function hintUserDownload(updateInfo: ReleaseInfo): Promise<void> {
+  const installer = updateInfo.files.find(f => /\.(exe|msi|dmg|zip|AppImage|deb|rpm|tar\.xz)$/i.test(f.name))
+  const url = trustedUpdateUrl(installer?.url || resolveBackendUrl())
+  if (!url) return
+  await shell.openExternal(url)
 }
 
-async function downloadAppInstaller(
-  launcherApp: ElectronLauncherApp,
-  options?: {
-    abortSignal?: AbortSignal
-    tracker?: Tracker<DownloadUpdateTrackerEvents>
-  } & DownloadBaseOptions,
-): Promise<void> {
-  const destination = join(app.getPath('downloads'), 'XMCL.appinstaller')
-  const url = 'https://xmcl.blob.core.windows.net/releases/xmcl.appinstaller'
+function trustedUpdateUrl(raw: string): string {
+  const url = new URL(raw)
+  if (url.protocol !== 'https:') throw new Error('Update URL must use HTTPS')
+  const backend = new URL(resolveBackendUrl())
+  const ownGithubRelease = url.hostname === 'github.com'
+    && url.pathname.startsWith('/FredyGraces20/MineLatino-Launcher/releases/download/')
+  if (!ownGithubRelease && url.origin !== backend.origin) {
+    throw new Error(`Untrusted update origin: ${url.origin}`)
+  }
+  return url.toString()
+}
 
-  await download({
-    url,
-    destination,
-    tracker: onDownloadSingle(options?.tracker, 'download-update.appx', { url }),
-    signal: options?.abortSignal,
-    ...getDownloadBaseOptions(options),
+const WINDOWS_UPDATE_HELPER = String.raw`
+'use strict'
+const { existsSync } = require('fs')
+const { readFile, rename, unlink } = require('fs/promises')
+const { spawn } = require('child_process')
+
+const sleep = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+async function waitForParent(pid) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
+    try {
+      process.kill(pid, 0)
+      await sleep(250)
+    } catch {
+      return
+    }
+  }
+}
+
+async function restoreBackup(appAsarPath, backupAsarPath) {
+  if (!existsSync(appAsarPath) && existsSync(backupAsarPath)) {
+    await rename(backupAsarPath, appAsarPath).catch(() => {})
+  }
+}
+
+async function replaceAsar(config) {
+  const backupAsarPath = config.appAsarPath + '.bk'
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    await restoreBackup(config.appAsarPath, backupAsarPath)
+    await unlink(backupAsarPath).catch(() => {})
+    try {
+      await rename(config.appAsarPath, backupAsarPath)
+      await rename(config.updateAsarPath, config.appAsarPath)
+      await unlink(backupAsarPath).catch(() => {})
+      return true
+    } catch {
+      await restoreBackup(config.appAsarPath, backupAsarPath)
+      await sleep(250)
+    }
+  }
+  return false
+}
+
+async function main() {
+  const configPath = process.argv[2]
+  const config = JSON.parse(await readFile(configPath, 'utf8'))
+  await waitForParent(config.parentPid)
+  await replaceAsar(config)
+
+  const environment = { ...process.env }
+  delete environment.ELECTRON_RUN_AS_NODE
+  const child = spawn(config.executable, config.arguments, {
+    cwd: config.cwd,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: environment,
   })
+  child.unref()
 
-  shell.showItemInFolder(destination)
-  await setTimeout(1000)
-  await shell.openPath(destination)
-  launcherApp.exit()
+  await unlink(configPath).catch(() => {})
+  await unlink(__filename).catch(() => {})
 }
 
-async function getUpdateAsarViaBatArgs(
+main().catch(() => process.exitCode = 1)
+`
+
+/**
+ * Creates a tiny Node helper that runs through Electron's own executable.
+ * This avoids cmd.exe, PowerShell, batch files, visible consoles and UAC.
+ * The pending ASAR has already been downloaded and SHA-256 verified before
+ * this helper is started; it only performs the atomic swap after we exit.
+ */
+async function prepareWindowsUpdateHelper(
   appAsarPath: string,
   updateAsarPath: string,
   appDataPath: string,
-  elevatePath?: string,
 ): Promise<string[]> {
-  const psPath = join(appDataPath, 'AutoUpdate.bat')
-  await writeFile(
-    psPath,
-    [
-      '@echo off',
-      'chcp 65001',
-      '%WinDir%\\System32\\timeout.exe 2',
-      `taskkill /f /im "${basename(process.argv[0])}"`,
-      `copy /Y "${updateAsarPath}" "${appAsarPath}"`,
-      `start /b "" /d "${process.cwd()}" ${process.argv.map((s) => `"${s}"`).join(' ')}`,
-    ].join('\r\n'),
-  )
+  const helperPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.cjs`)
+  const configPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.json`)
+  await writeFile(helperPath, WINDOWS_UPDATE_HELPER, 'utf8')
+  await writeFile(configPath, JSON.stringify({
+    parentPid: process.pid,
+    appAsarPath,
+    updateAsarPath,
+    executable: process.execPath,
+    arguments: process.argv.slice(1),
+    cwd: process.cwd(),
+  }), 'utf8')
+  // Clean up the legacy helper so older upgrades do not leave
+  // an alarming AutoUpdate.bat behind in the application-data directory.
+  await unlinkAsync(join(appDataPath, 'AutoUpdate.bat')).catch(() => {})
 
-  return elevatePath ? [elevatePath, psPath] : ['cmd.exe', '/c', psPath]
+  return [process.execPath, helperPath, configPath]
 }
 /**
  * Download the full update. This size can be larger as it carry the whole electron thing...
@@ -255,27 +297,6 @@ async function downloadFullUpdate(
     abortSignal?: AbortSignal
   },
 ): Promise<void> {
-  const gfw = await app.registry.get(kGFW)
-
-  if (gfw.inside) {
-    // @ts-ignore
-    const executor = appUpdater.httpExecutor as any
-    if (!(kPatched in executor)) {
-      const createRequest = executor.createRequest.bind(executor)
-      Object.assign(executor, {
-        [kPatched]: true,
-        createRequest: (options: any, callback: any) => {
-          if (gfw.inside) {
-            options.hostname = 'files.0xc.cn'
-            options.pathname = `/Soft_Mirrors/github-release/Voxelum/x-minecraft-launcher/LatestRelease/${basename(options.pathname)}`
-            app.emit('download-cdn', 'electron', basename(options.pathname))
-          }
-          return createRequest(options, callback)
-        },
-      })
-    }
-  }
-
   const tracker: ProgressTracker = {
     progress: 0,
     total: 0,
@@ -317,71 +338,80 @@ export class ElectronUpdater implements LauncherAppUpdater {
     this.logger = app.getLogger('ElectronUpdater')
   }
 
+  /**
+   * Reads the MineLatino update manifest: `GET /api/release` on the backend,
+   * which answers in the GitHub-release shape this method already parsed
+   * (`tag_name`, `body`, `published_at`, `assets[].browser_download_url`) while
+   * the binaries stay on the project's own GitHub releases.
+   *
+   * Upstream queried `api.xmcl.app` here with an azurewebsites fallback. Both
+   * serve stock XMCL builds, so a fork that kept them would offer — and then
+   * install — an `app.asar` that is not MineLatino. When no backend is
+   * configured the check reports "up to date" instead of reaching for any
+   * upstream host, which also keeps a mis-packaged build from erroring on every
+   * launch.
+   */
   async #getUpdateFromSelfHost(): Promise<ReleaseInfo> {
     const app = this.app
-    this.logger.log('Try get update from selfhost')
+    const backend = resolveBackendUrl()
+    if (!backend) {
+      this.logger.warn('MineLatino backend is not configured, skip the launcher update check')
+      return {
+        name: `v${app.version}`,
+        body: '',
+        date: new Date().toISOString(),
+        files: [],
+        newUpdate: false,
+        operation: ElectronUpdateOperation.Manual,
+      }
+    }
+
     const { allowPrerelease, locale } = await app.registry.get(kSettings)
     const queryString = `version=v${app.version}&prerelease=${allowPrerelease || false}`
-    const primary = await this.app
-      .fetch(`https://api.xmcl.app/latest?${queryString}`, {
-        headers: {
-          'Accept-Language': locale,
-        },
-      })
-      .catch(() => undefined)
-    // The Deno edge may return a regional 404. Fall back for any non-success
-    // response as well as a transport failure.
-    const response = primary?.ok
-      ? primary
-      : await this.app.fetch(`https://xmcl-core-api.azurewebsites.net/api/latest?${queryString}`, {
-        headers: {
-          'Accept-Language': locale,
-        },
-      })
+    this.logger.log(`Try get update from ${backend}/api/release`)
+    const response = await app.fetch(`${backend}/api/release?${queryString}`, {
+      headers: {
+        'Accept-Language': locale,
+      },
+    })
     if (!response.ok) {
       throw new AnyError(
         'UpdateError',
-        `Fail to get update from selfhost: ${await response.text()}`,
+        `Fail to get the update manifest from ${backend}/api/release: ${await response.text()}`,
         {},
         { status: response.status },
       )
     }
     const result = (await response.json()) as any
-    const files = result.assets.map((a: any) => ({
+    const files = ((result.assets ?? []) as any[]).map((a) => ({
       url: a.browser_download_url,
       name: a.name,
     })) as Array<{ url: string; name: string }>
-    const platformString =
-      app.platform.os === 'windows' ? 'win' : app.platform.os === 'osx' ? 'mac' : 'linux'
-    const version = result.tag_name.substring(1)
+    const version = String(result.tag_name ?? '').replace(/^v/, '')
     const updateInfo: ReleaseInfo = {
       name: result.tag_name,
-      body: result.body,
-      date: result.published_at,
+      body: result.body ?? '',
+      date: result.published_at ?? '',
       files,
       newUpdate: !isSameVersion(app.version, result.tag_name),
       operation: ElectronUpdateOperation.Manual,
     }
 
-    const hasAsar = files.some((f) => f.name === `app-${version}-${platformString}.asar`)
-    if (this.app.platform.os === 'windows') {
-      if (this.app.env === 'appx') {
-        updateInfo.operation = ElectronUpdateOperation.Appx
-      } else {
-        updateInfo.operation = hasAsar
-          ? ElectronUpdateOperation.Asar
-          : ElectronUpdateOperation.Manual
-      }
-    } else if (this.app.platform.os === 'osx') {
-      updateInfo.operation = hasAsar ? ElectronUpdateOperation.Asar : ElectronUpdateOperation.Manual
+    // Asks for the exact asset `downloadAsarUpdate` would fetch, so an install
+    // is only offered an in-place update when its own platform and architecture
+    // were published.
+    const hasAsar = files.some((f) => f.name === asarAssetName(version))
+    if (this.app.platform.os === 'linux' && this.app.env === 'appimage') {
+      // An AppImage is one self-contained file; replacing the app.asar inside a
+      // running copy is not how it is updated.
+      updateInfo.operation = ElectronUpdateOperation.Manual
     } else {
-      updateInfo.operation =
-        hasAsar && this.app.env !== 'appimage'
-          ? ElectronUpdateOperation.Asar
-          : ElectronUpdateOperation.Manual
+      updateInfo.operation = hasAsar
+        ? ElectronUpdateOperation.Asar
+        : ElectronUpdateOperation.Manual
     }
 
-    this.logger.log(`Got operation=${updateInfo.operation} update from selfhost`)
+    this.logger.log(`Got operation=${updateInfo.operation} update from ${backend}/api/release`)
 
     return updateInfo
   }
@@ -412,8 +442,6 @@ export class ElectronUpdater implements LauncherAppUpdater {
 
     this.logger.log(`Install asar on ${this.app.platform.os} ${appAsarPath}`)
     if (this.app.platform.os === 'windows') {
-      const elevatePath = await ensureElevateExe(this.app.appDataPath)
-
       const appAsarPath = join(dirname(__dirname), 'app.asar')
       const updateAsarPath = join(this.app.appDataPath, 'pending_update')
 
@@ -421,7 +449,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
         throw new Error(`No update found: ${updateAsarPath}`)
       }
 
-      let hasWriteAccess = await new Promise((resolve) => {
+      const hasWriteAccess = await new Promise<boolean>((resolve) => {
         open(appAsarPath, 'a', (e, fd) => {
           if (e) {
             resolve(false)
@@ -432,25 +460,28 @@ export class ElectronUpdater implements LauncherAppUpdater {
         })
       })
 
-      // force elevation for now
-      hasWriteAccess = false
-      this.logger.log(
-        hasWriteAccess
-          ? `Process has write access to ${appAsarPath}`
-          : `Process does not have write access to ${appAsarPath}`,
-      )
+      if (!hasWriteAccess) {
+        throw new AnyError(
+          'UpdateError',
+          'MineLatino no puede actualizarse porque la carpeta de instalación no permite escritura. Reinstala el launcher para tu usuario o elige una carpeta donde tengas permisos.',
+          {},
+          { appAsarPath },
+        )
+      }
+      this.logger.log(`Process has write access to ${appAsarPath}; install without elevation`)
 
-      const args = await getUpdateAsarViaBatArgs(
+      const args = await prepareWindowsUpdateHelper(
         appAsarPath,
         updateAsarPath,
         this.app.appDataPath,
-        !hasWriteAccess ? elevatePath : undefined,
       )
       this.logger.log(`Install from windows: ${args.join(' ')}`)
       const x = spawn(args[0], args.slice(1), {
         cwd: this.app.appDataPath,
         detached: true,
         stdio: 'ignore',
+        windowsHide: true,
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
       })
       x.unref()
       this.app.quit()
@@ -462,6 +493,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
         } catch (e) {
           if (isSystemError(e) && e.code === 'EXDEV') {
             await writeFile(appAsarPath, await readFile(updateAsarPath))
+            await unlinkAsync(updateAsarPath).catch(() => {})
           } else {
             throw e
           }
@@ -505,18 +537,18 @@ export class ElectronUpdater implements LauncherAppUpdater {
       })
     } else if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       const updatePath = join(this.app.appDataPath, 'pending_update')
-      await downloadAsarUpdate(this.app, updatePath, updateInfo.name, {
+      await downloadAsarUpdate(this.app, updatePath, updateInfo, {
         tracker,
         abortSignal,
       })
-    } else if (updateInfo.operation === ElectronUpdateOperation.Appx) {
-      await downloadAppInstaller(this.app, { tracker, abortSignal })
     } else {
+      // Includes `Appx`: the fork builds no appx target, so if one ever arrives
+      // from a manifest the player is pointed at the download instead.
       tracker?.({
         phase: 'download-update.manual',
         payload: {},
       })
-      await hintUserDownload()
+      await hintUserDownload(updateInfo)
     }
   }
 

@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: রুট ডিরেক্টরি নির্বাচন করুন
 agent:
   accessRequiredHint: বিল্ট-ইন এজেন্ট ব্যবহার করতে XMCL-এ সাবস্ক্রাইব করুন, অথবা সেটিংসে নিজের AI প্রদানকারী কনফিগার করুন।
-  subscribeXmcl: XMCL-এ সাবস্ক্রাইব করুন
   callingTool: '{name}-কে কল করা হচ্ছে…'
   disabledPlaceholder: এজেন্ট নিষ্ক্রিয়
   emptyHint: এজেন্টকে আপনার ইনস্ট্যান্স পরীক্ষা করতে, মড চালু/বন্ধ করতে, লগ পড়তে অথবা ক্র্যাশ নির্ণয় করতে বলুন।
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: চ্যানেলসমূহ
   description: আমি একটি বাগ পেয়েছি বা আমি একটি পরামর্শ দিতে চাই
-  discord: Discord
-  discordDescription: ডিসকর্ড চ্যানেলে যোগ দিন
-  discordJoin: যোগ দিন
   generateReport: রিপোর্ট তৈরি করুন
   generateSaveAs: রিপোর্টটি এখানে সংরক্ষণ করুন
-  github: Github ইস্যু
-  githubDescription: আপনার মতামত জানাতে একটি Github ইস্যু খুলুন
-  githubOpenIssue: Github
   hint: রিপোর্ট তৈরি করতে এবং ডেভেলপার টিমের সাথে যোগাযোগ করতে বোতামটিতে ক্লিক করুন। রিপোর্টে আপনার অপারেটিং সিস্টেমের ধরন, সংস্করণ, ব্যবহারকারীর নাম (আপনার ওএস-এ) ইত্যাদি সহ আপনার ডিভাইসের তথ্য থাকবে।
-  kook: Kook
-  kookDescription: চীনা মেইনল্যান্ড ব্যবহারকারীদের জন্য Kook হলো ডিসকর্ডের একটি বিকল্প অ্যাপ
   name: প্রতিক্রিয়া
-  qq: QQ গ্রুপ
-  qqDescription: 'মতামত জানাতে QQ গ্রুপে প্রবেশ করুন এবং লেখকদের সাথে সরাসরি কথা বলুন। গ্রুপ নম্বর: {number}'
-  qqEnterGroup: যোগ দিন
 fileDetail:
   fileSize: ফাইলের আকার
   filesize: ফাইলের আকার
@@ -1384,12 +1372,7 @@ serverStatus:
   timeout: §4সার্ভারে সংযোগের সময়সীমা পার হয়ে গেছে!
 setting:
   about: সম্পর্কে
-  aboutBmclDescription: BMCL API চীনের মূল ভূখণ্ডের ব্যবহারকারীদের জন্য সুবিধাজনক ডাউনলোডের সুবিধা প্রদান করে
-  aboutContributors: 🧑‍💻 অবদানকারীগণ 🧑‍💻
-  aboutDenoDescription: সার্ভারহীন জাভাস্ক্রিপ্ট অ্যাপ্লিকেশনের জন্য XMCL ডেনো ডিপ্লয় (Deno Deploy)-এর ঝামেলামুক্ত প্ল্যাটফর্ম ব্যবহার করে
   aboutLicense: MIT লাইসেন্স
-  aboutLicenseInfo: SignPath.io দ্বারা উইন্ডোজে বিনামূল্যে কোড সাইনিং এবং SignPath ফাউন্ডেশন দ্বারা সার্টিফিকেট প্রদান করা হয়েছে
-  aboutSponsors: 😇 পৃষ্ঠপোষকগণ 😇
   advancedJavaOptions: উন্নত জাভা অপশনসমূহ
   advancedSettings: উন্নত সেটিংস
   advancedSettingsHint: বিপদ অঞ্চল - লঞ্চারের ডেটা রিসেট বা পরিচালনা করুন

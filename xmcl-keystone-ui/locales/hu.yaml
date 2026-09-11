@@ -289,23 +289,11 @@ commandPalette:
 feedback:
   channel: Csatornák
   description: Találtam egy hibát, vagy szeretnék javasolni valamit
-  discord: Discord
-  discordDescription: Csatlakozz Discordra
-  discordJoin: Csatlakozás
   generateReport: Jelentés generálása
   generateSaveAs: Jelentés mentése ide
-  github: Github problémák
-  githubDescription: Nyiss egy Github problémát, hogy elmondd a gondolatodat
-  githubOpenIssue: Github
   hint: >-
     Kattints a gombra a jelentés létrehozásához és a fejlesztői csapat eléréséhez. A jelentés tartalmazza az eszközadatokat, beleértve az operációs rendszer típusát, verzióját, felhasználónevedet stb.
-  kook: Kook
-  kookDescription: Kook egy alternatív app a Discordra Kínai felhasználóknak
   name: Visszajelzés
-  qq: QQ Csoport
-  qqDescription: >-
-    Lépj be a visszajelző QQ-csoportba, és beszélgess közvetlenül a készítőkkel. Csoport száma: {number}
-  qqEnterGroup: Csatlakozás
 fileDetail:
   fileSize: Fájl méret
   filesize: Fájl mérete
@@ -1267,7 +1255,6 @@ serverStatus:
   timeout: §4Szerver csatlakozási időtúllépés!
 agent:
   accessRequiredHint: Fizess elő az XMCL-re a beépített ügynök használatához, vagy állítsd be a saját AI-szolgáltatódat a beállításokban.
-  subscribeXmcl: Előfizetés az XMCL-re
   notConfiguredHint: Állítson be egy API-kulcsot, modellt és OpenAI-kompatibilis végpontot a Beállítások → Általános → AI ügynök alatt. Használhat például OpenAI-t vagy Claude-kompatibilis átjárót.
 setting:
   aiAgentApiKeyDescription: Állítson be OpenAI-kompatibilis szolgáltatót, például OpenAI-t vagy Claude-hoz használható átjárót. A kulcs helyileg, ezen az eszközön lesz tárolva.
@@ -1287,15 +1274,7 @@ setting:
     loadConfirmMessage: A mentett téma betöltése lecseréli az aktuális témát. Készíts biztonsági mentést.
     loadTheme: Téma betöltése
   about: Körülbelül
-  aboutBmclDescription: >-
-    A BMCL API kényelmes letöltéseket biztosít a Kínai Kontinensen lévő felhasználók számára
-  aboutContributors: 🧑‍💻 Közreműködők 🧑‍💻
-  aboutDenoDescription: >-
-    Az XMCL a Deno Deploy egyszerű platformját használja kiszolgáló nélküli JavaScript alkalmazásokhoz
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Ingyenes kódaláírás Windows alatt a SignPath.io által biztosított, SignPath Foundation által tanúsított
-  aboutSponsors: 😇 Szponzorok 😇
   advancedJavaOptions: Haladó Java beállítások
   advancedSettings: Speciális beállítások
   advancedSettingsHint: Veszélyes zóna - indító adatok visszaállítása vagy kezelése

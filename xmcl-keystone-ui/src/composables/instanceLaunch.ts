@@ -4,15 +4,18 @@ import { Instance, isBedrockInstance } from '@xmcl/instance'
 import {
   AuthlibInjectorServiceKey,
   BedrockServiceKey,
+  InstanceServerInfoServiceKey,
   JavaRecord,
   LaunchOptions,
   LaunchServiceKey,
+  MineLatinoServiceKey,
   UserProfile,
   UserServiceKey,
   generateLaunchOptionsWithGlobal,
 } from '@xmcl/runtime-api'
 import useSWRV from 'swrv'
 import { InjectionKey, Ref } from 'vue'
+import { getAutoJoinServer, type MineLatinoLaunchServer } from './minelatino'
 import { useGlobalSettings, useSettingsState } from './setting'
 import {
   isRuntimeServiceError,
@@ -44,6 +47,8 @@ export function useInstanceLaunch(
   const { launch, kill, on, removeListener, getGameProcess, getGameProcesses } =
     useService(LaunchServiceKey)
   const { launch: launchBedrock } = useService(BedrockServiceKey)
+  const mineLatino = useService(MineLatinoServiceKey)
+  const { ensureServer } = useService(InstanceServerInfoServiceKey)
   const {
     globalAssignMemory,
     globalMaxMemory,
@@ -162,6 +167,22 @@ export function useInstanceLaunch(
     const ver = overrides?.version ?? (side === 'client' ? version.value : serverVersion.value)
     const token = getLaunchToken(userProfile, instancePath)
 
+    // MineLatino auto-join. Injected here rather than in `_launch` so the
+    // argument preview (`composables/launchPreview.ts`, which calls this
+    // directly) shows the same command line the game will actually get.
+    //
+    // Precedence is caller override > the player's own `instance.server` pin >
+    // the operator's config. `generateLaunchOptionsWithGlobal` already feeds
+    // `instance.server` into `options.server` and spreads `overrides` after it,
+    // so injecting without the pin guard would let the backend silently
+    // overrule a server the player pinned in `BaseSettingServer.vue`.
+    const mineLatinoServer = side === 'client' && !overrides?.server && !instance.value.server
+      ? await getAutoJoinServer(mineLatino)
+      : undefined
+    const launchOverrides = mineLatinoServer?.autoJoin
+      ? { ...overrides, server: { host: mineLatinoServer.host, port: mineLatinoServer.port } }
+      : overrides
+
     return await generateLaunchOptionsWithGlobal(
       { ...instance.value, path: instancePath },
       userProfile,
@@ -170,7 +191,7 @@ export function useInstanceLaunch(
         token,
         operationId,
         side,
-        overrides,
+        overrides: launchOverrides,
         dry,
         javaPath: java.value?.path,
         globalEnv: globalEnv.value,
@@ -208,6 +229,33 @@ export function useInstanceLaunch(
     // return instancePath
   }
 
+  /**
+   * Writes the MineLatino row into the instance's `servers.dat` so the server
+   * also shows up in the in-game multiplayer list.
+   *
+   * Awaited rather than fire-and-forget: the game reads `servers.dat` shortly
+   * after spawn, and a write still in flight could land after Minecraft has
+   * rewritten the file. It never throws, though — a locked or corrupt
+   * `servers.dat` must not stop the launch, since joining directly does not
+   * depend on the file at all.
+   */
+  async function ensureMineLatinoServer(
+    entry: MineLatinoLaunchServer,
+    instancePath: string,
+  ) {
+    try {
+      await ensureServer({
+        instancePath,
+        host: entry.host,
+        port: entry.port,
+        name: entry.name,
+        icon: entry.icon,
+      })
+    } catch (e) {
+      if (!isRuntimeServiceError(e)) console.warn('Failed to write the MineLatino servers.dat entry', e)
+    }
+  }
+
   async function _launch(
     action: RendererActionScope,
     instancePath: string,
@@ -236,6 +284,17 @@ export function useInstanceLaunch(
     }
     try {
       error.value = undefined
+
+      // MineLatino: make sure the server is in this instance's multiplayer list
+      // before the game reads it. Written even when `autoJoin` is off, so a
+      // player who leaves quick-play can still find the server. The launch
+      // argument itself is added in `generateLaunchOptions`, which keeps the
+      // argument preview honest.
+      if (side === 'client') {
+        const entry = await getAutoJoinServer(mineLatino)
+        if (entry) await ensureMineLatinoServer(entry, instancePath)
+      }
+
       const options = await generateLaunchOptions(
         instancePath,
         user,

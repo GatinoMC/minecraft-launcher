@@ -49,30 +49,9 @@ export class ElectronSecretStorage implements SecretStorage {
   /** Cached result of the health probe. Recomputed lazily on first use. */
   private healthy?: boolean
 
-  /**
-   * Live predicate that returns `true` when encryption should be
-   * force-disabled (every value written as plaintext `RAW1`, bypassing
-   * `safeStorage`). Driven by the `safeStorageEncryption` flight: turning that
-   * flight off lets a user (or us, remotely) opt a broken-keyring machine out
-   * of encryption without a rebuild. It is a live getter because the flight
-   * store is populated asynchronously after this storage is constructed.
-   * Reads still honor the per-blob marker, so existing `ENC1` data is still
-   * decrypted when possible.
-   */
-  private isEncryptionDisabled?: () => boolean
-
   constructor(private dir: string) {}
 
-  /**
-   * Wire the force-plaintext predicate. Called once the `kFlights` store is
-   * available (see ElectronLauncherApp).
-   */
-  setEncryptionDisabledProvider(provider: () => boolean) {
-    this.isEncryptionDisabled = provider
-  }
-
   private ensureHealthy(): boolean {
-    if (this.isEncryptionDisabled?.()) return false
     if (this.healthy === undefined) {
       this.healthy = probeHealthy()
       // eslint-disable-next-line no-console
@@ -88,8 +67,10 @@ export class ElectronSecretStorage implements SecretStorage {
 
     const marker = buf.subarray(0, MARKER_LEN)
     if (marker.equals(MARKER_RAW)) {
-      // Stored as plaintext (keyring was unhealthy when written).
-      return buf.subarray(MARKER_LEN).toString('utf-8')
+      // Older builds could persist tokens in plaintext when the OS keyring
+      // failed. Delete those blobs instead of loading secrets into memory.
+      await unlink(join(this.dir, key)).catch(() => undefined)
+      return undefined
     }
     if (marker.equals(MARKER_ENC)) {
       // Stored encrypted. Decrypt only; never fall back to plaintext, as that
@@ -126,13 +107,16 @@ export class ElectronSecretStorage implements SecretStorage {
         data = Buffer.concat([MARKER_ENC, safeStorage.encryptString(value)])
       } catch {
         // Backend regressed since the probe (e.g. KWallet just went away).
-        // Mark unhealthy and fall through to plaintext so we never write a
-        // corrupt/half-encrypted blob.
+        // Mark unhealthy. Secrets remain in memory for this process but are
+        // never downgraded to a plaintext file.
         this.healthy = false
       }
     }
     if (!data) {
-      data = Buffer.concat([MARKER_RAW, Buffer.from(value, 'utf-8')])
+      await unlink(file).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error
+      })
+      return
     }
     await writeFile(file, data)
   }

@@ -5,13 +5,12 @@ import { Configuration, Platform, build as electronBuilder } from 'electron-buil
 import { BuildOptions, build as esbuild } from 'esbuild'
 import { createReadStream, createWriteStream, existsSync } from 'fs'
 import { copy, emptyDir, ensureFile } from 'fs-extra'
-import { copyFile, readdir, stat, unlink, writeFile } from 'fs/promises'
+import { copyFile, stat, unlink, writeFile } from 'fs/promises'
 import path, { join, resolve } from 'path'
 import createPrintPlugin from 'plugins/esbuild.print.plugin'
 import { createGzip } from 'zlib'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
-import { buildAppInstaller } from './build/appinstaller-builder'
 import { config as electronBuilderConfig } from './build/electron-builder.config'
 import { resolveKoffiBinary } from './build/koffi'
 import esbuildConfig from './esbuild.config'
@@ -172,6 +171,21 @@ async function start() {
       await promisify(pipeline)(createReadStream(dest), createGzip(), createWriteStream(gzipDest))
       console.log(`  ${chalk.blue('•')} prepare asar with checksum ${chalk.blue('from')}=${src} ${chalk.blue('to')}=${dest}`)
 
+      // electron-builder writes `app-update.yml` from `package.json`'s
+      // `repository` field even when `publish` is empty, and that repository is
+      // still upstream's. Left in place, electron-updater's github provider
+      // would offer — and install — stock XMCL over this fork (the Linux check
+      // path reaches it directly). Removing it makes every platform throw
+      // ENOENT inside electron-updater, which `ElectronUpdater.checkUpdateTask`
+      // turns into the MineLatino `/api/release` manifest.
+      const updateConfig = context.packager.platform.name === 'mac'
+        ? join(context.appOutDir, `${context.packager.appInfo.productFilename}.app/Contents/Resources/app-update.yml`)
+        : join(context.appOutDir, 'resources/app-update.yml')
+      if (existsSync(updateConfig)) {
+        await unlink(updateConfig)
+        console.log(`  ${chalk.blue('•')} removed upstream update config ${chalk.blue('path')}=${updateConfig}`)
+      }
+
       // Pin the exact Electron version used for this build. The release
       // pipeline reads this to tag the `@xmcl/app` npm package, so the
       // portable script installer knows which Electron prebuilt to fetch from
@@ -180,26 +194,6 @@ async function start() {
         version,
         electron: context.packager.info.framework.version,
       }, null, 2))
-    },
-    async artifactBuildStarted(context) {
-      if (context.targetPresentableName.toLowerCase() === 'appx') {
-        console.log(`  ${chalk.blue('•')} copy appx icons`)
-        const files = await readdir(path.join(__dirname, './icons'))
-        const storeFiles = files.filter(f => f.endsWith('.png') &&
-          !f.endsWith('256x256.png') &&
-          !f.endsWith('tray.png'))
-          .map((f) => [
-            path.join(__dirname, 'icons', f),
-            path.join(__dirname, 'build', 'appx', f.substring(f.indexOf('@') + 1)),
-          ] as const)
-        await Promise.all(storeFiles.map(v => ensureFile(v[1]).then(() => copyFile(v[0], v[1]))))
-      }
-    },
-    async artifactBuildCompleted(context) {
-      if (!context.arch) return
-      if (context.target && context.target.name === 'appx') {
-        await buildAppInstaller(version, path.join(__dirname, './build/output/xmcl.appinstaller'), electronBuilderConfig.appx!.publisher!)
-      }
     },
   }
 

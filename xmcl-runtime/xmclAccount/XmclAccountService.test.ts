@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LAUNCHER_PROTOCOL } from '~/constant'
 import { ProviderCredentialExchangeCache } from './ProviderCredentialExchangeCache'
 import { XmclAccountApiError, XmclAccountSessionResponseError } from './XmclAccountApi'
 import { generateXmclDpopKey, serializeXmclDpopKey } from './XmclAccountDpop'
@@ -84,7 +85,7 @@ it('registers the server-approved browser OAuth callback path', () => {
 
   handler({
     request: {
-      url: new URL('xmcl://launcher/commercial-auth?state=unknown'),
+      url: new URL(`${LAUNCHER_PROTOCOL}://launcher/commercial-auth?state=unknown`),
     },
     response,
   })

@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   name?: string
   animation?: 'walking' | 'none' | 'idle' | 'running'
   paused?: boolean
+  zoom?: number
 }>(), {
   width: 210,
   height: 400,
@@ -26,6 +27,7 @@ const props = withDefaults(defineProps<{
   name: 'Steve',
   skin: '',
   animation: 'idle',
+  zoom: 0.5,
 })
 
 const canvasRef = ref(null)
@@ -85,10 +87,13 @@ onMounted(() => {
     canvas: canvasRef.value!,
     width: props.width,
     height: props.height,
-    nameTag: props.name || undefined,
     fov: 45,
-    zoom: 0.5,
+    zoom: props.zoom,
   })
+
+  // Shift the model down so the nametag above the head
+  // fits fully within the canvas at high zoom levels.
+  viewer.playerObject.position.y = -0.35
 
   viewer.animation = animationObject.value
   viewer.renderPaused = props.paused ?? false
@@ -114,10 +119,6 @@ watch(() => props.cape, (v) => {
   } else {
     activeViewer.resetCape()
   }
-})
-
-watch(() => props.name, (v) => {
-  if (viewer) viewer.nameTag = v || null
 })
 
 watch(() => props.paused, (paused) => {

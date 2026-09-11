@@ -34,3 +34,6 @@ e2e/test-results/
 
 # local download-probe / benchmark artifacts (opt-in tests)
 /bench-out/
+
+# local icon scratch work (superseded by xmcl-electron-app/build/brand-icons.mjs)
+/icon-work/

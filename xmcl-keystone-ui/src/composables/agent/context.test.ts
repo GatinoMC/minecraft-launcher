@@ -20,7 +20,7 @@ describe('Agent session context', () => {
 
   test('refreshes a frozen prompt after the virtual shell tool rename', () => {
     const stored = 'The `bash` tool is a virtual XMCL command runner'
-    const generated = 'The `vfs_shell` tool is a virtual XMCL command runner'
+    const generated = 'The `vfs_shell` tool is a virtual MineLatino command runner'
     expect(resolveAgentSessionSystemPrompt(stored, generated, false)).toBe(generated)
   })
 

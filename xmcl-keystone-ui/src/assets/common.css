@@ -283,6 +283,83 @@ html ::-webkit-scrollbar {
     border-radius: var(--surface-pill-radius) !important;
 }
 
+/* ── App-wide 3D button feel ────────────────────────────────────────────
+   Every Vuetify button gets a raised, tactile look: a soft top-light sheen
+   plus a layered drop shadow for depth, a springy hover lift, and a press
+   that tips the face back in real 3D (`perspective() rotateX()`) rather than
+   just shrinking it. `text` and `plain` variants stay flat (no shadow, no
+   lift, no tilt) so dense toolbars and inline actions keep their quiet
+   appearance. All motion is composited (transform / filter / box-shadow) so
+   it never reflows neighbours. Colours come from the active theme, so this
+   works in both light and dark mode.
+
+   Two deliberate constraints on the tilt. `perspective()` lives in the
+   transform list instead of on a parent, so the rule is self-contained and
+   needs no wrapper element. And `transform-origin` is left at its default
+   centre: callsites such as `UserCardAddYggdrasilService.vue` and
+   `UserLoginForm.vue` put their own `hover:scale-*` / `active:translate-y-*`
+   utilities on `v-btn`, so moving the shared origin would reposition those. */
+.v-btn {
+    transition:
+        transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+        filter 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease !important;
+}
+
+/* Resting depth for the "solid" variants only. */
+.v-btn--variant-elevated,
+.v-btn--variant-flat,
+.v-btn--variant-tonal,
+.v-btn--variant-outlined {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        0 6px 14px -6px rgba(0, 0, 0, 0.55),
+        0 2px 5px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Hover: lift off the surface and brighten slightly (skips flat variants). */
+.v-btn:not(.v-btn--disabled):not(.v-btn--variant-text):not(.v-btn--variant-plain):hover {
+    transform: translateY(-2px);
+    filter: brightness(1.07) saturate(1.04);
+}
+
+.v-btn--variant-elevated:not(.v-btn--disabled):hover,
+.v-btn--variant-flat:not(.v-btn--disabled):hover,
+.v-btn--variant-tonal:not(.v-btn--disabled):hover,
+.v-btn--variant-outlined:not(.v-btn--disabled):hover {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 16px 28px -12px rgba(0, 0, 0, 0.6),
+        0 6px 14px -6px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Press: tip the face back in 3D, settle it down a pixel, and invert the
+   sheen — a physical key being pushed, not a flat shrink. A positive rotateX
+   sends the top edge away from the viewer, which is what sells the depth
+   against the flattened inset shadow below. */
+.v-btn:not(.v-btn--disabled):not(.v-btn--variant-text):not(.v-btn--variant-plain):active {
+    transform: perspective(700px) rotateX(9deg) translateY(1px) scale(0.985);
+    filter: brightness(0.97);
+}
+
+.v-btn--variant-elevated:not(.v-btn--disabled):active,
+.v-btn--variant-flat:not(.v-btn--disabled):active,
+.v-btn--variant-tonal:not(.v-btn--disabled):active,
+.v-btn--variant-outlined:not(.v-btn--disabled):active {
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.32),
+        0 2px 5px -3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Keyboard focus: a clear accent ring that follows the button's shape. */
+.v-btn:focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: 2px;
+}
+
 /* ── Card / panel utility classes ──
    Opt-in. Apply on `<v-card class="surface-card">` or a plain `<div>` to
    inherit the shared shape/colour tokens. Existing components that

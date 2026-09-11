@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: Chọn thư mục gốc
 agent:
   accessRequiredHint: Đăng ký XMCL để sử dụng Trợ lý tích hợp hoặc cấu hình nhà cung cấp AI của riêng bạn trong phần cài đặt.
-  subscribeXmcl: Đăng ký XMCL
   callingTool: đang gọi {name}…
   disabledPlaceholder: Trợ lý đã bị vô hiệu hóa
   emptyHint: Yêu cầu trợ lý kiểm tra phiên bản của bạn, bật/tắt mod, đọc nhật ký hoạt động hoặc chẩn đoán sự cố crash.
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: Các kênh phản hồi
   description: Tôi đã tìm thấy lỗi hoặc tôi muốn đưa ra đề xuất
-  discord: Discord
-  discordDescription: Tham gia Kênh Discord
-  discordJoin: Tham gia
   generateReport: Tạo báo cáo
   generateSaveAs: Lưu báo cáo vào
-  github: Sự cố Github (Github Issue)
-  githubDescription: Mở một Github Issue để cho biết ý kiến của bạn
-  githubOpenIssue: Github
   hint: Nhấp vào nút để tạo báo cáo và liên hệ với nhóm phát triển. Báo cáo sẽ chứa thông tin thiết bị của bạn bao gồm loại hệ điều hành, phiên bản, tên người dùng (trong hệ điều hành của bạn), v.v.
-  kook: Kook
-  kookDescription: Kook là một ứng dụng thay thế cho discord dành cho người dùng Trung Quốc Đại Lục
   name: Phản hồi
-  qq: Nhóm QQ
-  qqDescription: 'Tham gia nhóm QQ phản hồi và nói chuyện trực tiếp với tác giả. Số nhóm: {number}'
-  qqEnterGroup: Tham gia
 fileDetail:
   fileSize: Dung lượng tệp
   filesize: Dung lượng tệp
@@ -1384,12 +1372,7 @@ serverStatus:
   timeout: §4Kết nối máy chủ hết thời gian!
 setting:
   about: Giới thiệu
-  aboutBmclDescription: BMCL API cung cấp các bản tải xuống thuận tiện cho người dùng tại Trung Quốc Đại Lục
-  aboutContributors: 🧑‍💻 Những người đóng góp 🧑‍💻
-  aboutDenoDescription: XMCL tận dụng nền tảng tiện lợi của Deno Deploy cho các ứng dụng JavaScript không máy chủ (serverless)
   aboutLicense: GIẤY PHÉP MIT
-  aboutLicenseInfo: Ký mã Windows miễn phí được cung cấp bởi SignPath.io, chứng chỉ bởi SignPath Foundation
-  aboutSponsors: 😇 Nhà tài trợ 😇
   advancedJavaOptions: Tùy chọn Java nâng cao
   advancedSettings: Cài đặt nâng cao
   advancedSettingsHint: Vùng nguy hiểm - đặt lại hoặc quản lý dữ liệu trình khởi chạy

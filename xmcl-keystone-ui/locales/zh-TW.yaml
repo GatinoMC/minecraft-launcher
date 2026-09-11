@@ -279,21 +279,10 @@ commandPalette:
 feedback:
   channel: 聯絡管道
   description: 我找到了漏洞/我想提出建議
-  discord: Discord
-  discordDescription: 加入 Discord 頻道
-  discordJoin: 加入
   generateReport: 產生報告
   generateSaveAs: 將報告儲存至
-  github: Github Issue
-  githubDescription: 透過 Github Issue 來回饋您的想法
-  githubOpenIssue: Github
   hint: 按一下按鈕產生報告並聯絡開發團隊。報告會包含您的裝置資訊，例如作業系統類型、版本、作業系統使用者名稱等。
-  kook: Kook
-  kookDescription: 加入 Kook (僅限大陸地區)
   name: 回饋
-  qq: QQ 群
-  qqDescription: 加入 QQ 回饋群直接和作者聊聊吧，群組號碼：{number}
-  qqEnterGroup: 加入
 fileDetail:
   fileSize: 檔案大小
   filesize: 檔案大小
@@ -1310,7 +1299,6 @@ serverStatus:
   timeout: 伺服器響應超時！
 agent:
   accessRequiredHint: 訂閱 XMCL 即可使用內建 AI 助手，或前往設定自行配置 AI 供應商。
-  subscribeXmcl: 訂閱 XMCL
   notConfiguredHint: 請在設定 → 基本設定 → AI 助手中設定 API 金鑰、模型和 OpenAI 相容端點，例如 OpenAI 或相容 Claude 的閘道。
 setting:
   aiAgentApiKeyDescription: 配置 OpenAI 相容供應商，例如 OpenAI 或 Claude 閘道。API 金鑰僅儲存在本機裝置。
@@ -1330,12 +1318,7 @@ setting:
     loadConfirmMessage: 載入已保存的主題將取代目前主題，請先備份。
     loadTheme: 載入主題
   about: 關於
-  aboutBmclDescription: BMCL API 為中國地區用戶提供便捷的下載服務
-  aboutContributors: 🧑‍💻 貢獻者 🧑‍💻
-  aboutDenoDescription: XMCL 使用 Deno Deploy 平台提供的無伺服器 JavaScript 應用程式
   aboutLicense: MIT 授權
-  aboutLicenseInfo: Windows 代碼簽名由 SignPath.io 免費提供，簽署人為 SignPath Foundation
-  aboutSponsors: 😇 贊助商 😇
   advancedJavaOptions: 進階 Java 選項
   advancedSettings: 進階設定
   advancedSettingsHint: 危險區域 - 重置或管理啟動器資料

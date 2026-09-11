@@ -27,11 +27,10 @@ app.on('web-contents-created', (event, contents) => {
   })
 })
 
-autoUpdater.setFeedURL({
-  provider: 'github',
-  repo: 'x-minecraft-launcher',
-  owner: 'voxelum',
-})
+// No feed URL on purpose. Upstream pointed electron-updater at its own GitHub
+// releases here; for this fork that would offer stock XMCL builds. `BaseService`
+// skips `checkUpdate` while `HAS_DEV_SERVER` is set, and a packaged build reads
+// the MineLatino manifest instead (see `main/utils/updater.ts`).
 autoUpdater.logger = null
 
 app.whenReady().then(async () => {

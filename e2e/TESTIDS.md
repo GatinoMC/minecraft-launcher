@@ -6,7 +6,7 @@ This file is the contract between the launcher UI in `xmcl-keystone-ui/` and the
 
 If the anchor you need is not here, add a `data-testid="…"` attribute to the corresponding Vue component, then re-run `pnpm gen:testids`.
 
-**Total anchors:** 258 (in 293 Vue files)
+**Total anchors:** 292 (in 314 Vue files)
 
 | Test ID | Defined in |
 |---|---|
@@ -31,8 +31,8 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `add-instance-next` | [`xmcl-keystone-ui/src/components/StepperFooter.vue#L16`](../xmcl-keystone-ui/src/components/StepperFooter.vue#L16) |
 | `add-server-button` | [`xmcl-keystone-ui/src/views/BaseSettingServer.vue#L64`](../xmcl-keystone-ui/src/views/BaseSettingServer.vue#L64) |
 | `agent-abort` | [`xmcl-keystone-ui/src/views/AppOmniDialog.vue#L41`](../xmcl-keystone-ui/src/views/AppOmniDialog.vue#L41) |
-| `agent-api-key` | [`xmcl-keystone-ui/src/views/SettingGeneral.vue#L117`](../xmcl-keystone-ui/src/views/SettingGeneral.vue#L117) |
-| `agent-api-key-clear` | [`xmcl-keystone-ui/src/views/SettingGeneral.vue#L141`](../xmcl-keystone-ui/src/views/SettingGeneral.vue#L141) |
+| `agent-api-key` | [`xmcl-keystone-ui/src/views/SettingGeneral.vue#L125`](../xmcl-keystone-ui/src/views/SettingGeneral.vue#L125) |
+| `agent-api-key-clear` | [`xmcl-keystone-ui/src/views/SettingGeneral.vue#L149`](../xmcl-keystone-ui/src/views/SettingGeneral.vue#L149) |
 | `agent-confirm-accept` | [`xmcl-keystone-ui/src/views/AppAgentChat.vue#L154`](../xmcl-keystone-ui/src/views/AppAgentChat.vue#L154) |
 | `agent-confirm-allow-all` | [`xmcl-keystone-ui/src/views/AppAgentChat.vue#L146`](../xmcl-keystone-ui/src/views/AppAgentChat.vue#L146) |
 | `agent-confirm-cancel` | [`xmcl-keystone-ui/src/views/AppAgentChat.vue#L141`](../xmcl-keystone-ui/src/views/AppAgentChat.vue#L141) |
@@ -67,12 +67,12 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `blueprint-market-btn` | [`xmcl-keystone-ui/src/views/BlueprintActions.vue#L15`](../xmcl-keystone-ui/src/views/BlueprintActions.vue#L15) |
 | `blueprint-market-item` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L74`](../xmcl-keystone-ui/src/views/Blueprint.vue#L74) |
 | `blueprint-market-tab` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L30`](../xmcl-keystone-ui/src/views/Blueprint.vue#L30) |
-| `blueprint-material-chip` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L246`](../xmcl-keystone-ui/src/views/Blueprint.vue#L246) |
+| `blueprint-material-chip` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L247`](../xmcl-keystone-ui/src/views/Blueprint.vue#L247) |
 | `blueprint-page` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L4`](../xmcl-keystone-ui/src/views/Blueprint.vue#L4) |
-| `blueprint-replace-button` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L187`](../xmcl-keystone-ui/src/views/Blueprint.vue#L187) |
-| `blueprint-replace-dialog` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L392`](../xmcl-keystone-ui/src/views/Blueprint.vue#L392) |
-| `blueprint-replace-from` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L417`](../xmcl-keystone-ui/src/views/Blueprint.vue#L417) |
-| `blueprint-replace-to` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L429`](../xmcl-keystone-ui/src/views/Blueprint.vue#L429) |
+| `blueprint-replace-button` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L188`](../xmcl-keystone-ui/src/views/Blueprint.vue#L188) |
+| `blueprint-replace-dialog` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L393`](../xmcl-keystone-ui/src/views/Blueprint.vue#L393) |
+| `blueprint-replace-from` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L418`](../xmcl-keystone-ui/src/views/Blueprint.vue#L418) |
+| `blueprint-replace-to` | [`xmcl-keystone-ui/src/views/Blueprint.vue#L430`](../xmcl-keystone-ui/src/views/Blueprint.vue#L430) |
 | `blueprint-search` | [`xmcl-keystone-ui/src/views/BlueprintExtension.vue#L13`](../xmcl-keystone-ui/src/views/BlueprintExtension.vue#L13) |
 | `collection-install-all` | [`xmcl-keystone-ui/src/components/AppCollectionInstallAll.vue#L2`](../xmcl-keystone-ui/src/components/AppCollectionInstallAll.vue#L2) |
 | `collection-install-all-button` | [`xmcl-keystone-ui/src/components/AppCollectionInstallAll.vue#L10`](../xmcl-keystone-ui/src/components/AppCollectionInstallAll.vue#L10) |
@@ -83,6 +83,8 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `command-palette-instance-duplicate` | [`xmcl-keystone-ui/src/views/AppCommandPalette.vue#L191`](../xmcl-keystone-ui/src/views/AppCommandPalette.vue#L191) |
 | `command-palette-instance-launch` | [`xmcl-keystone-ui/src/views/AppCommandPalette.vue#L176`](../xmcl-keystone-ui/src/views/AppCommandPalette.vue#L176) |
 | `command-palette-instance-select` | [`xmcl-keystone-ui/src/views/AppCommandPalette.vue#L161`](../xmcl-keystone-ui/src/views/AppCommandPalette.vue#L161) |
+| `cosmetics-preview-next` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoCosmeticsScreen.vue#L30`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoCosmeticsScreen.vue#L30) |
+| `cosmetics-preview-previous` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoCosmeticsScreen.vue#L28`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoCosmeticsScreen.vue#L28) |
 | `create-instance` | [`xmcl-keystone-ui/src/views/AppSideBarInstances.vue#L35`](../xmcl-keystone-ui/src/views/AppSideBarInstances.vue#L35) |
 | `custom-css-editor-textarea` | [`xmcl-keystone-ui/src/components/CustomCssEditor.vue#L26`](../xmcl-keystone-ui/src/components/CustomCssEditor.vue#L26) |
 | `custom-css-global-toggle` | [`xmcl-keystone-ui/src/components/AppearanceItems.vue#L320`](../xmcl-keystone-ui/src/components/AppearanceItems.vue#L320) |
@@ -139,17 +141,19 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `local-collection-name-input` | [`xmcl-keystone-ui/src/components/AppLocalCollectionList.vue#L77`](../xmcl-keystone-ui/src/components/AppLocalCollectionList.vue#L77) |
 | `local-collection-new` | [`xmcl-keystone-ui/src/components/AppLocalCollectionList.vue#L99`](../xmcl-keystone-ui/src/components/AppLocalCollectionList.vue#L99) |
 | `login-authority` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L25`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L25) |
+| `login-offline-warning` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L112`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L112) |
+| `login-offline-warning-dismiss` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L119`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L119) |
 | `login-password` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L74`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L74) |
-| `login-submit` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L130`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L130) |
+| `login-submit` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L151`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L151) |
 | `login-username` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L36`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L36)<br>[`xmcl-keystone-ui/src/components/UserLoginForm.vue#L56`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L56) |
 | `market-detail-collection-menu` | [`xmcl-keystone-ui/src/components/MarketProjectDetail.vue#L60`](../xmcl-keystone-ui/src/components/MarketProjectDetail.vue#L60) |
 | `market-detail-install` | [`xmcl-keystone-ui/src/components/MarketProjectDetail.vue#L164`](../xmcl-keystone-ui/src/components/MarketProjectDetail.vue#L164) |
 | `market-filter-favorite-tab` | [`xmcl-keystone-ui/src/components/MarketFilterPanel.vue#L24`](../xmcl-keystone-ui/src/components/MarketFilterPanel.vue#L24) |
 | `market-item-install` | [`xmcl-keystone-ui/src/components/MarketItem.vue#L57`](../xmcl-keystone-ui/src/components/MarketItem.vue#L57) |
-| `market-multi-select-toggle` | [`xmcl-keystone-ui/src/views/Mod.vue#L27`](../xmcl-keystone-ui/src/views/Mod.vue#L27)<br>[`xmcl-keystone-ui/src/views/ResourcePack.vue#L26`](../xmcl-keystone-ui/src/views/ResourcePack.vue#L26)<br>[`xmcl-keystone-ui/src/views/ShaderPack.vue#L26`](../xmcl-keystone-ui/src/views/ShaderPack.vue#L26) |
+| `market-multi-select-toggle` | [`xmcl-keystone-ui/src/views/Mod.vue#L28`](../xmcl-keystone-ui/src/views/Mod.vue#L28)<br>[`xmcl-keystone-ui/src/views/ResourcePack.vue#L26`](../xmcl-keystone-ui/src/views/ResourcePack.vue#L26)<br>[`xmcl-keystone-ui/src/views/ShaderPack.vue#L26`](../xmcl-keystone-ui/src/views/ShaderPack.vue#L26) |
 | `market-page-size` | [`xmcl-keystone-ui/src/components/MarketFilterPanel.vue#L76`](../xmcl-keystone-ui/src/components/MarketFilterPanel.vue#L76) |
 | `me-user-switcher` | [`xmcl-keystone-ui/src/components/UserAccountSwitcher.vue#L16`](../xmcl-keystone-ui/src/components/UserAccountSwitcher.vue#L16) |
-| `microsoft-error-help` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L181`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L181) |
+| `microsoft-error-help` | [`xmcl-keystone-ui/src/components/UserLoginForm.vue#L202`](../xmcl-keystone-ui/src/components/UserLoginForm.vue#L202) |
 | `minecraft-friends-accepted-list` | [`xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L140`](../xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L140) |
 | `minecraft-friends-add-button` | [`xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L68`](../xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L68) |
 | `minecraft-friends-add-input` | [`xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L58`](../xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L58) |
@@ -160,6 +164,36 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `minecraft-friends-menu` | [`xmcl-keystone-ui/src/views/MeProfilePanel.vue#L196`](../xmcl-keystone-ui/src/views/MeProfilePanel.vue#L196) |
 | `minecraft-friends-menu-activator` | [`xmcl-keystone-ui/src/views/MeProfilePanel.vue#L155`](../xmcl-keystone-ui/src/views/MeProfilePanel.vue#L155) |
 | `minecraft-friends-outgoing-list` | [`xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L226`](../xmcl-keystone-ui/src/views/AppMinecraftFriendsDialog.vue#L226) |
+| `minelatino-account` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L20`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L20) |
+| `minelatino-add-version` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L173`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L173)<br>[`xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L135`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L135) |
+| `minelatino-clasificaciones-external` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L61`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L61) |
+| `minelatino-clasificaciones-playtime-refresh` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L49`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L49) |
+| `minelatino-clasificaciones-refresh` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L38`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L38) |
+| `minelatino-clasificaciones-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L18`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoClasificacionesScreen.vue#L18) |
+| `minelatino-edit-profile` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L72`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilePanel.vue#L72) |
+| `minelatino-logout` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L131`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L131) |
+| `minelatino-news-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoNewsScreen.vue#L11`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoNewsScreen.vue#L11) |
+| `minelatino-options` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L93`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L93) |
+| `minelatino-play` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L18`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L18) |
+| `minelatino-players` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L93`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L93) |
+| `minelatino-preset-create` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L94`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L94) |
+| `minelatino-preset-error` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L25`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L25) |
+| `minelatino-preset-skipped` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L40`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L40) |
+| `minelatino-preset-use` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L107`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L107) |
+| `minelatino-presets` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L5`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPresets.vue#L5) |
+| `minelatino-profiles-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilesScreen.vue#L9`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilesScreen.vue#L9) |
+| `minelatino-required-mods` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L10`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L10) |
+| `minelatino-required-mods-cancel` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L64`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L64) |
+| `minelatino-required-mods-play` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L73`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L73) |
+| `minelatino-start` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L186`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L186)<br>[`xmcl-keystone-ui/src/views/minelatino/MineLatinoStart.vue#L15`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStart.vue#L15) |
+| `minelatino-store-open` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L39`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L39) |
+| `minelatino-store-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L16`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L16) |
+| `minelatino-update` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L109`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L109) |
+| `minelatino-update-check` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L99`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L99) |
+| `minelatino-update-download` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L89`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L89) |
+| `minelatino-update-install` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L78`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L78) |
+| `minelatino-update-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L17`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdateScreen.vue#L17) |
+| `minelatino-updates-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdatesScreen.vue#L10`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoUpdatesScreen.vue#L10) |
 | `modrinth-project-bind` | [`xmcl-keystone-ui/src/components/BaseSettingModrinthProjectCard.vue#L10`](../xmcl-keystone-ui/src/components/BaseSettingModrinthProjectCard.vue#L10) |
 | `modrinth-project-bind-cancel` | [`xmcl-keystone-ui/src/views/AppModrinthProjectBindDialog.vue#L41`](../xmcl-keystone-ui/src/views/AppModrinthProjectBindDialog.vue#L41) |
 | `modrinth-project-bind-confirm` | [`xmcl-keystone-ui/src/views/AppModrinthProjectBindDialog.vue#L42`](../xmcl-keystone-ui/src/views/AppModrinthProjectBindDialog.vue#L42) |
@@ -189,15 +223,15 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `modrinth-version-publish-confirm` | [`xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L54`](../xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L54) |
 | `modrinth-version-publish-dialog` | [`xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L3`](../xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L3) |
 | `modrinth-version-submit` | [`xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L53`](../xmcl-keystone-ui/src/views/AppModrinthVersionPublishDialog.vue#L53) |
-| `multiplayer-group-id` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L86`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L86) |
-| `multiplayer-join` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L97`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L97) |
-| `multiplayer-page` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L3`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L3) |
+| `multiplayer-group-id` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L87`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L87)<br>[`xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L153`](../xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L153) |
+| `multiplayer-join` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L98`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L98)<br>[`xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L163`](../xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L163) |
+| `multiplayer-page` | [`xmcl-keystone-ui/src/views/Multiplayer.vue#L3`](../xmcl-keystone-ui/src/views/Multiplayer.vue#L3)<br>[`xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L3`](../xmcl-keystone-ui/src/views/MultiplayerDesktop.vue#L3) |
 | `nav-accounts` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L26`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L26)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L150`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L150)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L30`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L30) |
 | `nav-add-instance` | [`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L72`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L72) |
-| `nav-agent` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L66`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L66)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L187`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L187)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L85`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L85) |
-| `nav-agent-confirmation` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L74`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L74)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L196`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L196)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L94`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L94) |
-| `nav-agent-running` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L83`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L83)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L205`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L205)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L103`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L103) |
-| `nav-multiplayer` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L96`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L96)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L215`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L215)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L115`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L115) |
+| `nav-agent` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L50`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L50)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L186`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L186)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L84`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L84) |
+| `nav-agent-confirmation` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L58`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L58)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L195`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L195)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L93`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L93) |
+| `nav-agent-running` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L67`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L67)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L204`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L204)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L102`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L102) |
+| `nav-multiplayer` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L95`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L95)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L214`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L214)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L114`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L114) |
 | `nav-settings` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L108`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L108)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L226`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L226)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L127`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L127) |
 | `nav-store` | [`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L39`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L39)<br>[`xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L165`](../xmcl-keystone-ui/src/views/AppSideBarClassic.vue#L165)<br>[`xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L45`](../xmcl-keystone-ui/src/views/AppSideBarNotch.vue#L45) |
 | `refresh-all-servers` | [`xmcl-keystone-ui/src/views/BaseSettingServer.vue#L54`](../xmcl-keystone-ui/src/views/BaseSettingServer.vue#L54) |
@@ -208,7 +242,7 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `remote-server-reconcile` | [`xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L9`](../xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L9) |
 | `remote-server-save` | [`xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L116`](../xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L116) |
 | `remote-server-test` | [`xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L126`](../xmcl-keystone-ui/src/views/BaseSettingServerRemote.vue#L126) |
-| `resource-pack-drag-handle` | [`xmcl-keystone-ui/src/views/ResourcePackItem.vue#L22`](../xmcl-keystone-ui/src/views/ResourcePackItem.vue#L22) |
+| `resource-pack-drag-handle` | [`xmcl-keystone-ui/src/views/ResourcePackItem.vue#L24`](../xmcl-keystone-ui/src/views/ResourcePackItem.vue#L24) |
 | `resource-pack-item` | [`xmcl-keystone-ui/src/views/ResourcePackItem.vue#L3`](../xmcl-keystone-ui/src/views/ResourcePackItem.vue#L3) |
 | `save-world-map-canvas` | [`xmcl-keystone-ui/src/components/SaveWorldMap.vue#L10`](../xmcl-keystone-ui/src/components/SaveWorldMap.vue#L10) |
 | `save-world-map-copy` | [`xmcl-keystone-ui/src/components/SaveWorldMap.vue#L103`](../xmcl-keystone-ui/src/components/SaveWorldMap.vue#L103) |

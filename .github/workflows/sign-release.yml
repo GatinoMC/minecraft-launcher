@@ -1,137 +1,154 @@
-name: Sign Release
+name: Build and sign Windows release
 
-# Manual workflow to sign the .appx in a draft release via SignPath, then
-# re-upload the signed binary (and its .sha256) to the same release.
-#
-# Why a separate workflow?
-#   SignPath signing requires a human to approve the request in the SignPath
-#   web UI. If approval is forgotten while the main `Build` workflow is
-#   waiting, the in-line sign step times out and the appx ends up missing
-#   from the release. Splitting it out lets the release draft be created
-#   immediately (with an unsigned .appx) and signed on demand.
-#
-# Typical flow:
-#   1. Push a `chore(release)` commit. `Build` produces a draft release
-#      containing the unsigned `.appx`.
-#   2. When ready, run this workflow with the release tag (e.g. `v0.56.7`).
-#   3. Approve the request in SignPath when prompted.
-#   4. The signed `.appx` and `.appx.sha256` replace the unsigned ones,
-#      and the draft is automatically flipped to a published release.
-#
-# NOTE: The SignPath project trust config must allow this workflow file
-# path (`.github/workflows/sign-release.yml`) in addition to (or instead
-# of) the old build.yml entry, or signing requests will be rejected.
-
+# SignPath Foundation requires the binary submitted for signing to be built
+# automatically from the tagged source. This workflow deliberately rebuilds
+# the Windows installer instead of uploading a locally produced release asset.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to sign (e.g. v0.56.7). Leave empty to sign the latest draft release.'
-        required: false
+        description: 'Existing release tag to rebuild and sign (for example v0.68.52)'
+        required: true
         type: string
 
 permissions:
-  contents: write  # gh release download / upload
+  actions: read
+  contents: write
 
 jobs:
   sign:
     runs-on: windows-latest
-    # SignPath approval can sit in a queue for a while. Give it room.
     timeout-minutes: 120
+    env:
+      ELECTRON_CACHE: ${{ github.workspace }}\.cache\electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}\.cache\electron-builder
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Resolve release tag
-        id: resolve-tag
+      - name: Check SignPath configuration
+        shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_ARTIFACT_CONFIGURATION_SLUG: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: |
+          $required = @(
+            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_PROJECT_SLUG',
+            'SIGNPATH_SIGNING_POLICY_SLUG',
+            'SIGNPATH_ARTIFACT_CONFIGURATION_SLUG',
+            'SIGNPATH_API_TOKEN'
+          )
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace((Get-Item "Env:$_").Value) }
+          if ($missing.Count -gt 0) {
+            throw "SignPath has not approved/configured this repository yet. Missing: $($missing -join ', ')"
+          }
+
+      - name: Check out the exact release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify tag and package version
         shell: pwsh
         run: |
-          $tag = "${{ inputs.tag }}"
-          if ([string]::IsNullOrWhiteSpace($tag)) {
-            # No tag supplied: pick the most recent draft release. Builds
-            # publish their drafts here, so the newest draft is the target.
-            $tag = gh release list --limit 30 --json tagName,isDraft,createdAt |
-              ConvertFrom-Json |
-              Where-Object { $_.isDraft } |
-              Sort-Object { [datetime]$_.createdAt } -Descending |
-              Select-Object -First 1 -ExpandProperty tagName
-            if ([string]::IsNullOrWhiteSpace($tag)) {
-              throw "No draft release found to sign. Specify a tag explicitly."
-            }
-            Write-Host "Resolved latest draft release tag: $tag"
-          } else {
-            Write-Host "Using supplied tag: $tag"
+          $tagVersion = '${{ inputs.tag }}' -replace '^v', ''
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($tagVersion -ne $packageVersion) {
+            throw "Tag ${{ inputs.tag }} does not match package version $packageVersion"
           }
-          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Download .appx from release
+          gh release view '${{ inputs.tag }}' | Out-Null
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path signing-input | Out-Null
-          gh release download "${{ steps.resolve-tag.outputs.tag }}" --pattern '*.appx' --dir signing-input
-          $appx = Get-ChildItem signing-input -Filter *.appx
-          if ($appx.Count -eq 0) {
-            throw "No .appx asset found on release ${{ steps.resolve-tag.outputs.tag }}"
-          }
-          $appx | ForEach-Object { Write-Host "Downloaded $($_.Name) ($([math]::Round($_.Length/1MB,2)) MB)" }
 
-      - name: Upload .appx as workflow artifact
+      - name: Restore Electron caches
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ env.ELECTRON_CACHE }}
+            ${{ env.ELECTRON_BUILDER_CACHE }}
+          key: windows-electron-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Windows release from source
+        shell: pwsh
+        env:
+          NODE_ENV: production
+          NODE_OPTIONS: --max-old-space-size=32768
+        run: |
+          pnpm build:renderer
+          pnpm build:all
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $installer = Get-ChildItem xmcl-electron-app/build/output -Filter 'minelatino-*-win32-x64.exe'
+          if ($installer.Count -ne 1) {
+            throw "Expected exactly one Windows installer, found $($installer.Count)"
+          }
+
+      - name: Upload unsigned installer for provenance
         id: upload-artifact
         uses: actions/upload-artifact@v6
         with:
-          name: appx
-          path: signing-input/*.appx
+          name: minelatino-windows-unsigned-${{ inputs.tag }}
+          path: xmcl-electron-app/build/output/minelatino-*-win32-x64.exe
+          if-no-files-found: error
 
-      - name: Submit signing request
+      - name: Submit SignPath signing request
         uses: signpath/github-action-submit-signing-request@v2
         with:
-          api-token: ${{ secrets.CODE_SIGN_TOKEN }}
-          organization-id: ab51b40d-a5bd-4d25-ae54-66ccabf86161
-          project-slug: x-minecraft-launcher
-          signing-policy-slug: release-signing
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
           github-artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
-          artifact-configuration-slug: appx
           wait-for-completion: true
-          output-artifact-directory: signed/
+          output-artifact-directory: signed
 
-      - name: Compute sha256 for signed .appx
+      - name: Verify signed installer and refresh metadata
         shell: pwsh
         run: |
-          Get-ChildItem signed -Filter *.appx | ForEach-Object {
-            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-            $shaFile = "$($_.FullName).sha256"
-            [System.IO.File]::WriteAllText($shaFile, $hash)
-            Write-Host "$($_.Name) -> $hash"
+          $installer = Get-ChildItem signed -Recurse -Filter 'minelatino-*-win32-x64.exe'
+          if ($installer.Count -ne 1) {
+            throw "Expected exactly one signed Windows installer, found $($installer.Count)"
+          }
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+          if ($signature.Status -ne 'Valid') {
+            throw "SignPath returned an installer with signature status $($signature.Status)"
           }
 
-      - name: Upload signed assets to release
+          $sha256 = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText("$($installer.FullName).sha256", $sha256)
+
+          $bytes = [System.IO.File]::ReadAllBytes($installer.FullName)
+          $sha512 = [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData($bytes))
+          $version = '${{ inputs.tag }}' -replace '^v', ''
+          $latest = @(
+            "version: $version",
+            'files:',
+            "  - url: $($installer.Name)",
+            "    sha512: $sha512",
+            "    size: $($installer.Length)",
+            "path: $($installer.Name)",
+            "sha512: $sha512",
+            "releaseDate: '$([DateTime]::UtcNow.ToString('o'))'"
+          ) -join "`n"
+          [System.IO.File]::WriteAllText((Join-Path signed 'latest.yml'), $latest)
+          Write-Host "Verified $($signature.SignerCertificate.Subject)"
+
+      - name: Replace release installer with signed build
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
         run: |
-          # --clobber replaces existing assets with the same name, so the
-          # unsigned .appx that build.yml uploaded is swapped for the
-          # signed one (and a fresh .appx.sha256 is uploaded alongside).
-          gh release upload "${{ steps.resolve-tag.outputs.tag }}" (Get-ChildItem signed -Filter *.appx).FullName --clobber
-          gh release upload "${{ steps.resolve-tag.outputs.tag }}" (Get-ChildItem signed -Filter *.appx.sha256).FullName --clobber
-
-      - name: Publish release
-        # Signing succeeded and the signed assets are in place, so flip the
-        # draft off. `gh release edit --draft=false` is a no-op if the
-        # release is already published.
-        #
-        # NOTE: must use PAT_GITHUB_TOKEN (not the workflow's GITHUB_TOKEN).
-        # Events caused by GITHUB_TOKEN don't trigger downstream workflows,
-        # so publishing with GITHUB_TOKEN silently skips `Deploy Release`
-        # (which listens for `release: [published]`). The PAT belongs to a
-        # human (ci010) so the publish event cascades normally.
-        # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
-        env:
-          GH_TOKEN: ${{ secrets.PAT_GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          gh release edit "${{ steps.resolve-tag.outputs.tag }}" --draft=false
+          $installer = Get-ChildItem signed -Recurse -Filter 'minelatino-*-win32-x64.exe' | Select-Object -First 1
+          gh release upload '${{ inputs.tag }}' $installer.FullName "$($installer.FullName).sha256" (Join-Path signed 'latest.yml') --clobber

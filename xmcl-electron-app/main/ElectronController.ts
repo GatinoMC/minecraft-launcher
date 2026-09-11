@@ -9,6 +9,7 @@ import loggerWinUrl from '@renderer/logger.html'
 import migrateWinUrl from '@renderer/migration.html'
 import { InstalledAppManifest, Settings } from '@xmcl/runtime-api'
 import { Client, LauncherAppController, MicrosoftAuthTelemetryEvent } from '@xmcl/runtime/app'
+import { LAUNCHER_PRODUCT_NAME } from '@xmcl/runtime/constant'
 import { Logger } from '@xmcl/runtime/infra'
 import { kSettings } from '@xmcl/runtime/settings'
 import { BrowserWindow, Event, HandlerDetails, Session, Tray, WebContents, app, dialog, ipcMain, nativeTheme, protocol, shell } from 'electron'
@@ -227,7 +228,7 @@ export class ElectronController implements LauncherAppController {
     await app.whenReady()
     const restoredSession = this.app.session.getSession(defaultApp.url)
     const browser = new BrowserWindow({
-      title: 'XMCL Launcher Migrate',
+      title: `${LAUNCHER_PRODUCT_NAME} Launcher Migrate`,
       frame: false,
       resizable: false,
       width: 600,
@@ -272,7 +273,7 @@ export class ElectronController implements LauncherAppController {
     const enableTranslucency = this.settings?.windowTranslucent ?? false
 
     const browser = new BrowserWindow({
-      title: 'XMCL Launcher Browser',
+      title: `${LAUNCHER_PRODUCT_NAME} Launcher Browser`,
       frame: false,
       transparent: true,
       resizable: false,

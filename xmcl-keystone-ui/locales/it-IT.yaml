@@ -262,20 +262,7 @@ commandPalette:
 feedback:
   channel: Canali
   description: Ho trovato un bug o voglio fare un suggerimento
-  discord: Discord
-  discordDescription: Unisciti al canale Discord
-  discordJoin: Unisciti
-  github: Problema Github
-  githubDescription: Apri un problema Github per dire il tuo pensiero
-  githubOpenIssue: Github
-  kook: Kook
-  kookDescription: Kook è un'app alternativa per Discord per gli utenti della Cina continentale
   name: Feedback
-  qq: Gruppo QQ
-  qqDescription: >-
-    Entra nel gruppo di feedback QQ e parla direttamente con gli autori. Numero di
-      gruppo: {number}
-  qqEnterGroup: Unisciti
 fileDetail:
   fileSize: Dimensione del file
   filesize: Dimensione del file
@@ -1218,7 +1205,6 @@ serverStatus:
   timeout: §4Tmeout della conessione del server!
 agent:
   accessRequiredHint: Abbonati a XMCL per usare l’agente integrato, oppure configura il tuo provider IA nelle impostazioni.
-  subscribeXmcl: Abbonati a XMCL
   notConfiguredHint: Configura una chiave API, un modello e un endpoint compatibile con OpenAI in Impostazioni → Generale → Agente IA. Ad esempio, usa OpenAI o un gateway compatibile con Claude.
 setting:
   aiAgentApiKeyDescription: Configura un provider compatibile con OpenAI, come OpenAI o un gateway per Claude. La chiave viene archiviata localmente su questo dispositivo.
@@ -1238,15 +1224,7 @@ setting:
     loadConfirmMessage: Caricare un tema salvato sostituirà il tema attuale. Fai un backup se necessario.
     loadTheme: Carica tema
   about: Di
-  aboutBmclDescription: >-
-    L'API BMCL fornisce download convenienti per gli utenti nella Cina continentale
-  aboutContributors: 🧑‍💻 Collaboratori 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL sfrutta la piattaforma semplice di Deno Deploy per applicazioni JavaScript senza server
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Firma del codice gratuita su Windows fornita da SignPath.io, certificato dalla SignPath Foundation
-  aboutSponsors: 😇 Sponsor 😇
   advancedJavaOptions: Opzioni Java avanzate
   advancedSettings: Impostazioni avanzate
   advancedSettingsHint: Zona pericolosa - ripristina o gestisci i dati del launcher

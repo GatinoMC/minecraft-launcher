@@ -1,10 +1,12 @@
 name: Deploy Release
 on:
   release:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     types: [published]
 
 jobs:
   publish:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     runs-on: ubuntu-latest
     steps:
     - name: Download Releases
@@ -31,6 +33,7 @@ jobs:
         repo: 'voxelum/xmcl-page'
 
   publish-asar-npm:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     name: Publish app.asar to npm
     runs-on: ubuntu-latest
     steps:
@@ -90,6 +93,7 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   notify:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     needs:
       - publish
     name: Notify Kook and discord
@@ -103,6 +107,7 @@ jobs:
         discord: ${{ secrets.DISCORD_WEBHOOK }}
 
   update-brew:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     needs: 
       - publish
     name: Update Brew
@@ -175,6 +180,7 @@ jobs:
         git push origin HEAD:master
 
   update-winget:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     needs: 
       - publish
     name: Upload To winget
@@ -209,6 +215,7 @@ jobs:
           URL: ${{ format('https://xmcl-core-api.azurewebsites.net/api/appx?version={0}', steps.version.outputs.result) }}
 
   update-flatpak:
+    if: github.repository == 'Voxelum/x-minecraft-launcher'
     needs:
       - publish
     name: Update Flatpak metadata

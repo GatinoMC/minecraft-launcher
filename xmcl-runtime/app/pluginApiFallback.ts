@@ -56,8 +56,6 @@ export const pluginApiFallback: LauncherAppPlugin = (app) => {
       const tokenType = authorization.tokenType === 'DPoP' ? 'DPoP' : 'Bearer'
       setHeader(request.headers, 'Authorization', `${tokenType} ${authorization.accessToken}`)
       setHeader(request.headers, 'DPoP', authorization.dpopProof)
-    } else if (request.url.host === 'api.curseforge.com') {
-      request.headers['x-api-key'] = process.env.CURSEFORGE_API_KEY || ''
     }
   }
   app.protocol.registerHandler('https', handler)

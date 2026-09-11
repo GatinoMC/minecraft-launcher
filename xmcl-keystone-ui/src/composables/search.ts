@@ -4,6 +4,7 @@ import { useMarketSort } from './marketSort'
 import { searlizers, useQuery, useQueryOverride } from './query'
 import type { MaybeRef } from 'vue'
 import { RuntimeVersions } from '@xmcl/instance'
+import { curseforgeApiAvailable } from '@/util/clients'
 
 /**
  * The common modloader for modrinth and curseforge
@@ -30,7 +31,16 @@ export function useSearchModel(runtime: Ref<RuntimeVersions>) {
   // Provider visibility is a launcher-wide preference, not an instance
   // filter. Keep it in local storage so changing it for one instance is
   // reflected by every market page and survives instance switches/restarts.
-  const isCurseforgeActive = useLocalStorage('marketCurseforgeActive', true, { writeDefaults: false })
+  const persistedCurseforgeActive = useLocalStorage('marketCurseforgeActive', true, { writeDefaults: false })
+  // CurseForge rejects every request without a distribution API key. While the
+  // private backend key is unavailable, keep Modrinth usable instead of
+  // surfacing a CurseforgeApiError over the combined marketplace.
+  const isCurseforgeActive = computed({
+    get: () => curseforgeApiAvailable.value && persistedCurseforgeActive.value,
+    set: (value: boolean) => {
+      if (curseforgeApiAvailable.value) persistedCurseforgeActive.value = value
+    },
+  })
   const isModrinthActive = useLocalStorage('marketModrinthActive', true, { writeDefaults: false })
   const source = ref('remote' as 'local' | 'remote' | 'favorite')
   const notRemote = computed(() => source.value !== 'remote')
@@ -53,7 +63,7 @@ export function useSearchModel(runtime: Ref<RuntimeVersions>) {
   const { modrinthSort, curseforgeSort } = useMarketSort(sort)
 
   const isModrinthDisabled = computed(() => notRemote.value || !isModrinthActive.value)
-  const isCurseforgeDisabled = computed(() => notRemote.value || !isCurseforgeActive.value)
+  const isCurseforgeDisabled = computed(() => !curseforgeApiAvailable.value || notRemote.value || !isCurseforgeActive.value)
 
   // Keep the game version filter aligned with the selected instance's Minecraft
   // version. This watcher lives for the whole app lifetime (the model is created

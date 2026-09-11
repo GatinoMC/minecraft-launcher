@@ -304,21 +304,10 @@ commandPalette:
 feedback:
   channel: Kanallar
   description: Bir Hata buldum veya bir öneride bulunmak istiyorum
-  discord: Discord
-  discordDescription: Discord Kanalına Katıl
-  discordJoin: Katıl
   generateReport: Rapor Oluştur
   generateSaveAs: Raporu şuraya kaydet
-  github: Github Sorunu (Issue)
-  githubDescription: Düşüncenizi anlatmak için bir Github Sorunu açın
-  githubOpenIssue: Github
   hint: Raporu oluşturmak ve geliştirici ekibiyle iletişime geçmek için düğmeye tıklayın. Rapor, işletim sistemi türü, sürümü, kullanıcı adı (işletim sisteminizdeki) vb. cihaz bilgilerinizi içerecektir.
-  kook: Kook
-  kookDescription: Kook, Çin Anakarası kullanıcıları için discord'a alternatif bir uygulamadır
   name: Geri Bildirim
-  qq: QQ Grubu
-  qqDescription: 'Geri bildirim QQ grubuna girin ve yazarlarla doğrudan konuşun. Grup Numarası: {number}'
-  qqEnterGroup: Katıl
 fileDetail:
   fileSize: Dosya Boyutu
   filesize: Dosya boyutu
@@ -1452,12 +1441,7 @@ setting:
     successGlobal: Arka plan resmi güncellendi.
     successInstance: Örnek arka plan resmi güncellendi.
     failed: Arka plan resmi ayarlanamadı
-  aboutBmclDescription: BMCL API, Çin Anakarası'ndaki kullanıcılar için kolay indirmeler sağlar
-  aboutContributors: 🧑‍💻 Katkıda Bulunanlar 🧑‍💻
-  aboutDenoDescription: XMCL, sunucusuz JavaScript uygulamaları için Deno Deploy'un sorunsuz platformundan yararlanır
   aboutLicense: MIT LİSANSI
-  aboutLicenseInfo: Windows'ta ücretsiz kod imzalama SignPath.io tarafından, sertifika ise SignPath Foundation tarafından sağlanmaktadır
-  aboutSponsors: 😇 Sponsorlar 😇
   aiAgentApiKey: Yapay Zeka Temsilcisi API Anahtarı
   aiAgentApiKeyDescription: OpenAI veya Claude için bir ağ geçidi gibi OpenAI uyumlu bir sağlayıcı yapılandırın. Anahtar bu cihazda yerel olarak saklanır.
   aiAgentApiKeyPlaceholder: OpenAI veya Claude sağlayıcısı API anahtarı
@@ -1805,7 +1789,6 @@ reinstall:
   name: '{version} yeniden kur'
 agent:
   accessRequiredHint: Yerleşik temsilciyi kullanmak için XMCL’ye abone olun veya ayarlarda kendi yapay zeka sağlayıcınızı yapılandırın.
-  subscribeXmcl: XMCL’ye abone ol
   callingTool: '{name} çağrılıyor…'
   disabledPlaceholder: Temsilci devre dışı
   emptyHint: Temsilciden örneğinizi incelemesini, modları değiştirmesini, günlükleri okumasını veya çökmeyi teşhis etmesini isteyin.

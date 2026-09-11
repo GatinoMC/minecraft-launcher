@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: மூல கோப்பகத்தைத் தேர்ந்தெடுக்கவும்
 agent:
   accessRequiredHint: உள்ளமைந்த முகவரைப் பயன்படுத்த XMCL-க்கு சந்தா செலுத்தவும் அல்லது அமைப்புகளில் உங்கள் சொந்த AI வழங்குநரைக் கட்டமைக்கவும்.
-  subscribeXmcl: XMCL-க்கு சந்தா செலுத்தவும்
   callingTool: '{name} ஐ அழைக்கிறது...'
   disabledPlaceholder: முகவர் முடக்கப்பட்டது
   emptyHint: உங்கள் நிகழ்வை ஆய்வு செய்ய, மோட்களை மாற்ற, பதிவுகளைப் படிக்க அல்லது செயலிழப்பைக் கண்டறிய முகவரிடம் கேளுங்கள்.
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: சேனல்கள்
   description: நான் ஒரு பிழையைக் கண்டறிந்தேன் அல்லது பரிந்துரை செய்ய விரும்புகிறேன்
-  discord: டிஸ்கார்ட் (Discord)
-  discordDescription: டிஸ்கார்ட் சேனலில் இணையுங்கள்
-  discordJoin: இணை
   generateReport: அறிக்கையை உருவாக்கு
   generateSaveAs: அறிக்கையை இங்கே சேமிக்கவும்
-  github: கிட்ஹப் பிரச்சனை (Github Issue)
-  githubDescription: உங்கள் கருத்தை தெரிவிக்க Github Issue திறக்கவும்
-  githubOpenIssue: கிட்ஹப் (Github)
   hint: அறிக்கையை உருவாக்கி டெவலப்பர் குழுவைத் தொடர்பு கொள்ள பொத்தானைக் கிளிக் செய்யவும். இந்த அறிக்கையில் இயக்க முறைமை வகை, பதிப்பு, பயனர் பெயர் (உங்கள் கணினியில்) உள்ளிட்ட உங்கள் சாதன விவரங்கள் இருக்கும்.
-  kook: கூக் (Kook)
-  kookDescription: Kook என்பது சீன பிரதான நிலப்பரப்பு பயனர்களுக்கு Discord க்கான மாற்று பயன்பாடாகும்
   name: கருத்து
-  qq: QQ குழு
-  qqDescription: 'கருத்து QQ குழுவில் நுழைந்து ஆசிரியர்களுடன் நேரடியாகப் பேசவும். குழு எண்: {number}'
-  qqEnterGroup: இணை
 fileDetail:
   fileSize: கோப்பு அளவு
   filesize: கோப்பு அளவு
@@ -1384,12 +1372,7 @@ serverStatus:
   timeout: §4சேவையக இணைப்பு காலாவதியானது!
 setting:
   about: பற்றி
-  aboutBmclDescription: சீன நிலப்பரப்பில் உள்ள பயனர்களுக்கு வசதியான பதிவிறக்கங்களை BMCL API வழங்குகிறது
-  aboutContributors: 🧑‍💻 பங்களிப்பாளர்கள் 🧑‍💻
-  aboutDenoDescription: சேவையகமற்ற ஜாவாஸ்கிரிப்ட் பயன்பாடுகளுக்காக Deno Deploy இன் எளிதான தளத்தை XMCL பயன்படுத்துகிறது
   aboutLicense: எம்ஐடி உரிமம் (MIT LICENSE)
-  aboutLicenseInfo: விண்டோஸில் இலவச குறியீடு கையொப்பமிடுதல் SignPath.io வழங்குகிறது, சான்றிதழ் SignPath அறக்கட்டளையால் வழங்கப்படுகிறது
-  aboutSponsors: 😇 ஸ்பான்சர்கள் 😇
   advancedJavaOptions: மேம்பட்ட ஜாவா விருப்பங்கள்
   advancedSettings: மேம்பட்ட அமைப்புகள்
   advancedSettingsHint: ஆபத்தான பகுதி - லான்ச்சர் தரவை மீட்டமைக்கவும் அல்லது நிர்வகிக்கவும்

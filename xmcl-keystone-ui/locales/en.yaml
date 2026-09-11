@@ -35,10 +35,191 @@ HomeLaunchMultiInstanceDialog:
   confirm: Yes, Launch
   description: You are launching multiple instances of Minecraft. Are you sure?
   title: Multiple Instances
+MineLatinoAssistant:
+  title: AI Assistant
+  tooltip: Ask the MineLatino AI assistant
+MineLatinoAuth:
+  offlineWarning: 'Non-premium accounts only work when the server accepts them. If MineLatino runs in online mode, the game rejects you with "Failed to verify username".'
+  offlineWarningDismiss: Don't show again
+MineLatinoClasificaciones:
+  error: The leaderboard could not be loaded.
+  loading: Loading leaderboard…
+  openExternal: Open in browser
+  retry: Retry
+  subtitle: Server player rankings
+  title: Leaderboards
+  tabs:
+    ranking: Ranking
+    playtime: Playtime
+  playtimeTitle: Players with most hours played
+  playtimeRank: '#'
+  playtimeName: Player
+  playtimeHours: Hours
+  playtimeEmpty: No playtime data yet.
+  playtimeLoading: Loading playtime…
+  playtimeError: Could not load the playtime ranking.
+MineLatinoHome:
+  announcement: Announcement
+  attachment: Attachment
+  close: Close
+  closeStore: Close store
+  discord: Discord
+  featuredEmpty: No featured products yet.
+  joinDiscord: Join our Discord
+  maintenanceTitle: The server is under maintenance
+  mentionChannel: channel
+  mentionRole: role
+  mentionUser: user
+  news: News
+  newsEmpty: No announcements yet. Check back soon!
+  newsError: The announcements could not be loaded.
+  next: Next
+  offline: Offline
+  offlineHint: Showing the last copy that could be downloaded.
+  openDiscord: Open Discord
+  openInDiscord: Open in Discord
+  openLink: Open
+  prev: Previous
+  refresh: Refresh
+  store: Store
+  updates: Updates
+  updatesEmpty: No publications yet.
+  updatesError: The publications could not be loaded.
+  viewAll: View all
+MineLatinoNav:
+  cosmeticos: Cosmetics
+  actualizaciones: Updates
+  actualizar: Update
+  anuncios: Announcements
+  clasificaciones: Leaderboards
+  jugar: Play
+  perfiles: Profiles
+  tienda: Store
+MineLatinoProfiles:
+  title: Profiles
+  subtitle: Manage your Minecraft profiles
+  create: Create profile
+  empty: No profiles yet. Create one to get started!
+  delete: Delete profile
+  deleteTitle: Delete profile
+  deleteConfirm: Are you sure you want to delete "{name}"? The instance and all its data will be removed.
+  deleteCancel: Cancel
+  deleteConfirmBtn: Delete
+MineLatinoCreateProfile:
+  installFailed: 'The profile was created, but these items could not be installed: {items}. You can retry from the profile content catalog.'
+  requiresLoader: To add mods, return to the previous step and select Forge, Fabric, NeoForge or Quilt.
+  performanceTitle: Optimized profile
+  performanceDescription: Add Sodium, Lithium, FerriteCore, ImmediatelyFast, and Entity Culling for better FPS, memory usage, and responsiveness.
+  performanceAdd: Add recommended
+  performanceAdded: Recommended added
+  createFailed: Could not create the profile. Check the configuration and try again.
+  title: Create profile
+  stepConfig: Basic configuration
+  stepContent: Mods, textures and shaders
+  stepConfirm: Confirm and create
+  name: Profile name
+  mcVersion: Minecraft version
+  loader: Mod loader
+  tabs:
+    mods: Mods
+    resourcepacks: Resource Packs
+    shaders: Shaders
+  searchPlaceholder: Search on Modrinth…
+  searchError: Could not load content.
+  searchEmpty: No results found.
+  install: Add
+  loadMore: Load more
+  summary: Profile summary
+  contentSummary: Content to install
+  creating: Creating profile and installing content…
+  create: Create
+  cancel: Cancel
+  next: Next
+  sortRelevance: Relevance
+  sortDownloads: Downloads
+  sortNewest: Newest
+  sortUpdated: Updated
+  toggleSnapshots: Show snapshots and betas
+MineLatinoPlay:
+  addVersion: Add version
+  copied: Copied
+  copyAddress: Copy server address
+  empezar: Start
+  latency: Latency
+  login: Sign in
+  noProfile: No profile yet. Create one below to start playing.
+  offline: Offline
+  online: Online
+  pingMs: '{ms} ms'
+  players: '{online}/{max}'
+  playersOffline: Server unreachable
+  playersOnline: Players online
+  playtime: Hours played
+  playtimeHours: '{hours} h'
+  startTitle: MineLatino
+  version: Version
+MineLatinoPreset:
+  create: Create profile
+  created: Profile {name} created
+  creating: Creating…
+  loaderUnavailable: No {loader} version is available for Minecraft {minecraft}.
+  mods: '{count} mods'
+  recommended: Recommended
+  skippedMods: 'These mods could not be downloaded: {mods}. You can add them later from the profile.'
+  subtitle: Ready-to-play profiles with the mods the server recommends.
+  title: MineLatino profiles
+  use: Use profile
+MineLatinoRequiredMods:
+  cancel: Cancel
+  description: '{server} requires these mods. Without them you may not be able to join.'
+  openInStore: Search on Modrinth
+  playAnyway: Play anyway
+  title: Missing required mods
+MineLatinoShell:
+  accountHint: Minecraft account
+  editProfile: Edit profile
+  logout: Sign out
+  logoutText: Your account will be removed from this launcher. You can sign back in anytime.
+  logoutTitle: Sign out?
+  mostPlayed: Most played
+  mostPlayedEmpty: You have not played any profile yet.
+  navigation: Navigation
+  noSelectedProfile: No profile selected
+  options: Settings
+  playingAs: Playing as
+  profileSettings: Profile settings
+  profileContent: Available mods
+  profileVersion: Version
+MineLatinoStore:
+  catalogEmpty: No categories available yet.
+  catalogError: The store catalog could not be loaded.
+  categories: Categories
+  chooseCategory: Choose a category to see its products.
+  openProduct: View product
+  outOfStock: Out of stock
+  productCount: '{count} products'
+  productsEmpty: No products in this category yet.
+  productsError: The products could not be loaded.
+  sale: Sale
+  subtitle: Browse the shop by game mode and open any product to buy it.
+MineLatinoUpdate:
+  available: New version available
+  check: Check for updates
+  checking: Checking…
+  currentVersion: Current version
+  downloadUpdate: Download and update
+  downloading: Downloading update…
+  installRestart: Restart to install
+  latest: You are on the latest version.
+  openRelease: View on GitHub
+  ready: Downloaded, ready to install
+  releaseNotes: What is new
+  subtitle: Updates in place, so you never have to download the launcher again.
+  title: Launcher update
 SettingMigrationDialog:
   selectRootDirectory: Select Root Directory
 agent:
-  accessRequiredHint: Subscribe to XMCL to use the built-in Agent, or configure your own AI provider in Settings.
+  accessRequiredHint: Configure your own AI provider in Settings to use the built-in Agent.
   abort: Stop generation
   callingTool: calling {name}…
   confirmAccept: Continue
@@ -57,7 +238,6 @@ agent:
     → AI Agent. For example, use OpenAI or a Claude-compatible gateway.
   notConfiguredTitle: Agent unavailable
   openSettings: Open settings
-  subscribeXmcl: Subscribe to XMCL
   passiveGameCrashed: Game crashed
   passiveGameExitCode: Exit code {code}
   passiveGameExited: Game exited
@@ -85,7 +265,7 @@ agent:
     Build a modpack: find mods for a feature I want and install them into this
     instance
   thinking: thinking…
-  title: XMCL Agent
+  title: MineLatino Agent
   toolArguments: Arguments
   toolResult: Result
   toolRunning: Waiting for result…
@@ -451,28 +631,13 @@ commandPalette:
 feedback:
   channel: Channels
   description: I found a Bug or I want to make a suggestion
-  discord: Discord
-  discordDescription: Join Discord Channel
-  discordJoin: Join
   generateReport: Generate Report
   generateSaveAs: Save the report to
-  github: Github Issue
-  githubDescription: Open an Github Issue to tell your thought
-  githubOpenIssue: Github
   hint: >-
     Click the button to create the report and contact the developer team. The
     report will contain your device info including operating system type,
     version, user name (in your os), etc.
-  kook: Kook
-  kookDescription: Kook is an alternate app for discord for Chinese Mainland users
   name: Feedback
-  qq: QQ Group
-  qqDescription: >-
-    Enter the feedback QQ group and direct talk with authors. Group Number:
-    {number}
-  qqEnterGroup: Join
-  reddit: Reddit
-  redditDescription: Join the r/XMCL subreddit community
 fileDetail:
   fileSize: File Size
   filesize: File size
@@ -672,7 +837,7 @@ instances:
   addVanilla: Create from vanilla-like Minecraft
   addVanillaDescription: >-
     Import from common .minecraft folder. This will duplciate the original game
-    profile to XMCL.
+    profile to MineLatino.
   edition: Edition
   editionJava: Java Edition
   editionBedrock: Bedrock Edition
@@ -749,9 +914,9 @@ launchBlocked:
       java file or raise the permission of launcher.
     title: No permission to launch
   launchLinuxDisplayUnavailable:
-    environmentMissing: XMCL could not recover the X11 display information from your desktop session. Restart XMCL from a terminal in the current desktop session, or sign out and sign in again.
-    noGraphicalSession: XMCL is not running in a graphical desktop session. Start XMCL from your desktop session before launching Minecraft.
-    sandboxDenied: The application sandbox cannot access X11. Grant XMCL access to the X11 socket in your Flatpak permissions, then restart XMCL.
+    environmentMissing: MineLatino Launcher could not recover the X11 display information from your desktop session. Restart MineLatino Launcher from a terminal in the current desktop session, or sign out and sign in again.
+    noGraphicalSession: MineLatino Launcher is not running in a graphical desktop session. Start MineLatino Launcher from your desktop session before launching Minecraft.
+    sandboxDenied: The application sandbox cannot access X11. Grant MineLatino Launcher access to the X11 socket in your Flatpak permissions, then restart MineLatino Launcher.
     title: X11 display unavailable
     xwaylandMissing: Minecraft needs XWayland in this Wayland session. Install the XWayland package provided by your Linux distribution, then sign out and sign in again.
     xwaylandNotRunning: XWayland is installed but no X11 display is running. Enable XWayland in your compositor configuration, then sign out and sign in again.
@@ -925,16 +1090,16 @@ xmclAccount:
   accountSummary: Account
   confirmMerge: Confirm account merge
   createdAt: Created {date}
-  description: Your passwordless XMCL identity, separate from Minecraft game accounts.
+  description: Your passwordless MineLatino identity, separate from Minecraft game accounts.
   expiresAt: Expires {date}
-  gameAccountsSeparate: Removing a game account does not unlink an XMCL login method.
+  gameAccountsSeparate: Removing a game account does not unlink a MineLatino login method.
   guest: Guest
-  identityConflict: This {provider} login belongs to another XMCL Account. Accounts are never merged automatically.
+  identityConflict: This {provider} login belongs to another MineLatino Account. Accounts are never merged automatically.
   linkAccountWith: Link account with
   mergePreview: Review the resources that will move before confirming.
-  mergeNeedsSession: Sign in to the XMCL Account you want to keep before reviewing the merge.
+  mergeNeedsSession: Sign in to the MineLatino Account you want to keep before reviewing the merge.
   mergeQueued: Account merge is in progress.
-  requestFailed: The XMCL Account service could not complete this request. Your game account is unchanged.
+  requestFailed: The MineLatino Account service could not complete this request. Your game account is unchanged.
   reviewMerge: Review merge
   session: Session
   sessionActive: Active
@@ -946,7 +1111,7 @@ xmclAccount:
     deleted: Deleted
     deletion_pending: Deletion pending
     merged: Merged
-  title: XMCL Account
+  title: MineLatino Account
 minecraftFriends:
   accept: Accept
   add: Add a friend
@@ -1370,9 +1535,9 @@ modrinthCard:
   currentVersion: Current Version
 multiplayer:
   addFunds: Add funds
-  autoShareAmbiguous: Multiple games are running. Select the instance hosting the LAN world so XMCL can share it.
+  autoShareAmbiguous: Multiple games are running. Select the instance hosting the LAN world so MineLatino can share it.
   availableBalance: Available balance
-  balanceHint: Available for XMCL Together services
+  balanceHint: Available for MineLatino Together services
   billing: Billing
   billingDescription: Manage relay access, your Together Home plan, and payments.
   billingError: Together billing could not be loaded. Try again in a moment.
@@ -1386,7 +1551,7 @@ multiplayer:
     Unable to establish connection. Check if both peers have compatible NAT
     types.
   connectionTogetherWarning: >-
-    A room member has been unable to connect to you for a while. Try XMCL
+    A room member has been unable to connect to you for a while. Try MineLatino
     Together to improve connectivity for everyone in the room. Only the room
     master needs Together.
   connectedToMaster: Connected to the room master
@@ -1445,7 +1610,7 @@ multiplayer:
   joinOrCreateGroup: Join/Create Group
   joinOrCreateGroupHint: Get group id from your friends or create a group
   joinCreatesMissingRoomHint: If this room does not exist, you will create it and become its master.
-  loginRequiredDescription: P2P multiplayer uses XMCL online services. Sign in to an XMCL Account to continue.
+  loginRequiredDescription: P2P multiplayer uses MineLatino online services. Sign in to a MineLatino Account to continue.
   loginRequiredTitle: Sign in for P2P multiplayer
   kernel: P2P Kernel
   kernelDescription: >-
@@ -1457,7 +1622,7 @@ multiplayer:
   name: Multiplayer on LAN
   natTogetherWarning: >-
     Your router may have trouble connecting to the room master. If connections
-    fail, try XMCL Together to improve connectivity between you and your friends.
+    fail, try MineLatino Together to improve connectivity between you and your friends.
   openConsumerPortal: Open Consumer Portal
   refundHint: Need a refund? Visit the Waffo Consumer Portal to manage your orders and subscriptions.
     Only the room master needs to purchase Together for the room.
@@ -1484,7 +1649,7 @@ multiplayer:
     active: Active
     cancelled: Cancelled
     payment_due: Payment due
-  togetherName: Minecraft Together
+  togetherName: MineLatino Together
   togetherSupportHint: If multiplayer is not working, join our Discord and contact the development team. We will help you resolve the problem.
   trial:
     active: Trial active
@@ -1501,8 +1666,8 @@ multiplayer:
   orderStatus: 'Waffo order: {status}'
   planDescription: 20 GB of managed relay traffic each month, plus AI troubleshooting for your modpack.
   relayAllowanceSummary: '{remaining} remaining of {total} this period'
-  relayServiceAvailable: XMCL Together relay service available
-  waffoHint: Payments are completed securely on Waffo Pancake. XMCL never receives your card number.
+  relayServiceAvailable: MineLatino Together relay service available
+  waffoHint: Payments are completed securely on Waffo Pancake. MineLatino never receives your card number.
   waitingForMaster: Waiting for the room master to reconnect
 myStuff: My Stuff
 natType:
@@ -1926,16 +2091,14 @@ setting:
   multiplayerTransport: Together transport
   multiplayerTransportDescription: Choose the WebRTC implementation used by Together. Changing transport disconnects active peers.
   about: About
-  aboutBmclDescription: BMCL API provides convenient downloads for users in Chinese Mainland
-  aboutContributors: 🧑‍💻 Contributors 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL leverages Deno Deploy's hassle-free platform for serverless JavaScript
-    applications
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Free code signing on Windows provided by SignPath.io, certificate by
-    SignPath Foundation
-  aboutSponsors: 😇 Sponsors 😇
+  baseProjectDescription: MineLatino Launcher is a modified distribution based on X Minecraft Launcher (XMCL), the open-source project created by ci010 and its community, used under the MIT License.
+  baseProjectDisclaimer: MineLatino maintains its own modifications and support. The original XMCL project is not responsible for this distribution.
+  baseProjectTitle: Based on X Minecraft Launcher (XMCL)
+  launcherVersion: Version {version}
+  openSource: Open source
+  viewMitLicense: View MIT License
+  viewXmclSource: View XMCL source
   advancedJavaOptions: Advanced Java Options
   advancedSettings: Advanced Settings
   advancedSettingsHint: Danger zone - reset or manage launcher data
@@ -2027,7 +2190,7 @@ setting:
   developerMode: Developer Mode
   developerModeDescription: Developer Mode is for testing your own mods
   disableTelemetry: Disable Telemetry
-  disableTelemetryDescription: XMCL will collect the game launch and user login events.
+  disableTelemetryDescription: MineLatino will collect the game launch and user login events.
   enableDedicatedGPUOptimization: Assign Dedicated GPU
   enableDedicatedGPUOptimizationDescription: This option will assign dedicated GPU to Minecraft process.
   enableDiscord: Enable Discord Presence
@@ -2326,8 +2489,8 @@ theme:
   selectImage: Select Image
   selectMusic: Select Music
   selectVideo: Select Video
-  title: XMCL
-title: XMCL
+  title: MineLatino Launcher
+title: MineLatino Launcher
 transportType:
   host: Host Candidate
   prflx: Peer Reflexive Candidate

@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: اختر المجلد الرئيسي
 agent:
   accessRequiredHint: اشترك في XMCL عشان تستخدم العميل المدمج، أو ظبّط مزود الذكاء الاصطناعي بتاعك في الإعدادات.
-  subscribeXmcl: اشترك في XMCL
   callingTool: بيستدعي {name}…
   disabledPlaceholder: العميل معطل
   emptyHint: اطلب من العميل يفحص النسخة بتاعتك، أو يفعل/يعطل المودات، أو يقرأ السجلات، أو يشخص سبب الكراش.
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: القنوات
   description: لقيت مشكلة (Bug) أو عاوز أقول اقتراح
-  discord: ديسكورد
-  discordDescription: انضم لقناة الديسكورد
-  discordJoin: انضم
   generateReport: إنشاء تقرير
   generateSaveAs: حفظ التقرير في
-  github: مشكلة على جيت هاب
-  githubDescription: افتح تذكرة مشكلة (Issue) على جيت هاب وقول لنا رأيك
-  githubOpenIssue: جيت هاب
   hint: اضغط على الزرار لعمل التقرير والتواصل مع فريق التطوير. التقرير بيحتوي على معلومات جهازك زي نوع نظام التشغيل وإصداره، واسم المستخدم (في النظام)، إلخ.
-  kook: Kook
-  kookDescription: تطبيق Kook هو بديل لديسكورد للمستخدمين في الصين
   name: الآراء والشكاوى
-  qq: جروب QQ
-  qqDescription: 'ادخل جروب QQ وتكلم مع المطورين مباشرة. رقم الجروب: {number}'
-  qqEnterGroup: انضم
 fileDetail:
   fileSize: حجم الملف
   filesize: حجم الملف
@@ -1382,12 +1370,7 @@ serverStatus:
   timeout: §4انتهت مهلة الاتصال بالسيرفر!
 setting:
   about: حول البرنامج
-  aboutBmclDescription: خدمة BMCL API بتوفر تنزيلات سريعة للمستخدمين في الصين
-  aboutContributors: 🧑‍💻 المساهمون 🧑‍💻
-  aboutDenoDescription: XMCL بيستخدم منصة Deno Deploy المستقرة لتشغيل تطبيقات الجافا سكريبت بدون خوادم
   aboutLicense: ترخيص MIT
-  aboutLicenseInfo: توقيع كود مجاني على ويندوز مقدم من SignPath.io، والشهادة من SignPath Foundation
-  aboutSponsors: 😇 الداعمون والرعاة 😇
   advancedJavaOptions: خيارات جافا المتقدمة
   advancedSettings: الإعدادات المتقدمة
   advancedSettingsHint: منطقة خطر - إعادة ضبط أو إدارة بيانات اللانشر

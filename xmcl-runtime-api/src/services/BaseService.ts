@@ -115,7 +115,8 @@ export interface BaseService extends GenericEventEmitter<BaseServiceEventMap> {
    */
   getEnvironment(): Promise<Environment>
   /**
-   * let the launcher to handle a url open. The url can be xmcl:// protocol
+   * let the launcher to handle a url open. The url can be the launcher's own
+   * deep-link protocol (see `LAUNCHER_PROTOCOL` in `xmcl-runtime/constant.ts`)
    */
   handleUrl(url: string): Promise<boolean>
   /**

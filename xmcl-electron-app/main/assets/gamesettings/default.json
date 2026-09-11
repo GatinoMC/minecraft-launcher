@@ -13,7 +13,7 @@
     "useVbo": true,
     "mipmapLevels": 4,
     "anaglyph3d": false,
-    "fov": 0,
+    "fov": 1,
     "gamma": 0,
     "saturation": 0,
     "guiScale": 0,

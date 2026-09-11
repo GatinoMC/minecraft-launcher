@@ -48,7 +48,6 @@ agent:
   notConfiguredHint: >-
     请在设置 → 通用 → AI Agent 中填写 API Key、模型和 OpenAI 兼容 Endpoint，例如 OpenAI 或兼容 Claude 的网关。
   openSettings: 打开设置
-  subscribeXmcl: 订阅 XMCL
   setupGuide: 配置指南
   emptyHint: >-
     让 Agent 检查你的实例、启用/禁用模组、读取日志或诊断崩溃。
@@ -365,21 +364,10 @@ commandPalette:
 feedback:
   channel: 联系渠道
   description: 我找到了漏洞/我想反馈
-  discord: Discord
-  discordDescription: 加入 Discord 频道
-  discordJoin: 加入
   generateReport: 生成报告
   generateSaveAs: 将报告保存在
-  github: Github Issue
-  githubDescription: 通过 Github Issue 来反馈您的想法
-  githubOpenIssue: Github
   hint: 点击生成报告按钮并联系开发团队。这个报告会包含你的设备信息，如操作系统，版本，操作系统的用户名等。
-  kook: Kook
-  kookDescription: 加入 Kook (国外请选 Discord)
   name: 反馈
-  qq: QQ 群
-  qqDescription: 加入反馈群直接和作者聊聊吧，群号 {number}
-  qqEnterGroup: 加群
 fileDetail:
   fileSize: 文件大小
   filesize: 文件大小
@@ -1669,12 +1657,7 @@ setting:
     loadConfirmMessage: 加载已保存的主题将替换当前主题，请先备份。
     loadTheme: 加载主题
   about: 关于
-  aboutBmclDescription: BMCL API 为中国地区用户提供便捷的下载服务
-  aboutContributors: 🧑‍💻 贡献者 🧑‍💻
-  aboutDenoDescription: XMCL 使用 Deno Deploy 提供的无服务器 JavaScript 应用平台
   aboutLicense: MIT 许可证
-  aboutLicenseInfo: 感谢 SignPath.io 提供免费的 Windows 代码签名
-  aboutSponsors: 😇 赞助商 😇
   advancedJavaOptions: 高级 Java 选项
   advancedSettings: 高级设置
   advancedSettingsHint: 危险区域 - 重置或管理启动器数据

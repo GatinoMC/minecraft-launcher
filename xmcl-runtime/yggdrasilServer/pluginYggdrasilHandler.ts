@@ -4,6 +4,7 @@ import { sign } from 'crypto'
 import { Readable } from 'stream'
 import { finished } from 'stream/promises'
 import { LauncherAppPlugin } from '~/app'
+import { LAUNCHER_PROTOCOL } from '~/constant'
 import { kPeerFacade } from '~/peer'
 import { UserService } from '~/user'
 
@@ -77,7 +78,7 @@ export const pluginYggdrasilHandler: LauncherAppPlugin = (app) => {
     return undefined
   }
 
-  app.protocol.registerHandler('xmcl', async ({ request, response, handle }) => {
+  app.protocol.registerHandler(LAUNCHER_PROTOCOL, async ({ request, response, handle }) => {
     if (request.url.pathname.startsWith('/yggdrasil')) {
       logger.log(`Process ${request.url.toString()}`)
       const pathname = request.url.pathname.substring('/yggdrasil'.length) || ''

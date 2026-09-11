@@ -283,24 +283,11 @@ commandPalette:
 feedback:
   channel: Kanalen
   description: Ik heb een Bug gevonden of ik wil een suggestie doen
-  discord: Discord
-  discordDescription: Word lid van het Discord-kanaal
-  discordJoin: Lid worden
   generateReport: Rapport genereren
   generateSaveAs: Sla het rapport op als
-  github: Github Issue
-  githubDescription: Open een Github Issue om je gedachten te delen
-  githubOpenIssue: Github
   hint: >-
     Klik op de knop om het rapport te maken en contact op te nemen met het team. Het rapport bevat je apparaatinfo inclusief besturingssysteemtype, versie, gebruikersnaam (in je os), enz.
-  kook: Kook
-  kookDescription: >-
-    Kook is een alternatieve app voor discord voor gebruikers op het Chinese vasteland
   name: Feedback
-  qq: QQ Groep
-  qqDescription: >-
-    Ga naar de feedback QQ-groep en praat direct met auteurs. Groepsnummer: {number}
-  qqEnterGroup: Lid worden
 fileDetail:
   fileSize: Bestandsgrootte
   filesize: Bestandsgrootte
@@ -1227,7 +1214,6 @@ serverStatus:
   timeout: §4Verbind server time-out!
 agent:
   accessRequiredHint: Subscríbete a XMCL para usar o axente integrado ou configura o teu propio provedor de IA nos axustes.
-  subscribeXmcl: Subscribirse a XMCL
   notConfiguredHint: Stel een API-sleutel, model en OpenAI-compatibel endpoint in via Instellingen → Algemeen → AI-agent. Gebruik bijvoorbeeld OpenAI of een Claude-compatibele gateway.
 setting:
   aiAgentApiKeyDescription: Configureer een OpenAI-compatibele provider, zoals OpenAI of een gateway voor Claude. De sleutel wordt lokaal op dit apparaat opgeslagen.
@@ -1247,14 +1233,7 @@ setting:
     loadConfirmMessage: Cargar un tema gardado substituirá o tema actual. Fai unha copia se é necesario.
     loadTheme: Cargar tema
   about: Over
-  aboutBmclDescription: BMCL API fornece descargas convenientes para usuarios en China continental
-  aboutContributors: 🧑‍💻 Colaboradores 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL aproveita a plataforma descomplicada de Deno Deploy para aplicacións JavaScript sen servidor
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Asinatura de código gratuíta en Windows proporcionada por SignPath.io, certificado por SignPath Foundation
-  aboutSponsors: 😇 Patrocinadores 😇
   advancedJavaOptions: Geavanceerde Java Opties
   advancedSettings: Geavanceerde Instellingen
   advancedSettingsHint: Gevarenzone - reset of beheer launcherdata

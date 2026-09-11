@@ -92,7 +92,7 @@
       hover
 
       style="width: 100%"
-      to="https://github.com/voxelum/x-minecraft-launcher/releases"
+      to="https://github.com/FredyGraces20/MineLatino-Launcher/releases"
       target="browser"
       push
     >
@@ -140,10 +140,10 @@ const hintRedownload = computed(() =>
 )
 
 const openOfficialWebsite = () => {
-  window.open('https://xmcl.app', 'browser')
+  window.open('https://minelatino.com', 'browser')
 }
 const openGithub = () => {
-  window.open('https://github.com/voxelum/x-minecraft-launcher/releases', 'browser')
+  window.open('https://github.com/FredyGraces20/MineLatino-Launcher/releases', 'browser')
 }
 </script>
 

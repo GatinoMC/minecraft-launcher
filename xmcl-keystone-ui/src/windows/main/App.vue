@@ -1,18 +1,20 @@
 <template>
-  <v-app v-if="!showSetup" class="h-full max-h-screen overflow-hidden select-none" :class="{ 'dark': isDark }">
+  <v-app v-if="!showSetup" class="h-full max-h-screen overflow-hidden select-none" :theme="mineLatinoShell ? 'dark' : undefined" :class="{ 'dark': isDark || mineLatinoShell, 'ml-premium': mineLatinoShell }">
     <AppBackground />
     <div class="w-full h-full absolute left-0 header-overlay" :style="{
       height: headerHeight + 70 + 'px',
       'background-image': `linear-gradient(${appBarColor} 0%, color-mix(in srgb, ${appBarColor}, transparent) 65%, transparent 100%)`
     }">
     </div>
-    <AppSystemBar :back="sidebarStyle === 'notch'" />
+    <AppSystemBar :back="showSystemBack" />
     <div
       class="app-layout flex-grow relative flex overflow-auto"
       :class="[layoutClasses, { 'workspace-side-panel-attached': hasAttachedWorkspacePanel }]"
     >
-      <AppSideBarClassic v-if="sidebarStyle === 'classic'" />
-      <AppSideBarNotch v-else />
+      <template v-if="!mineLatinoShell">
+        <AppSideBarClassic v-if="sidebarStyle === 'classic'" />
+        <AppSideBarNotch v-else />
+      </template>
       <main class="relative flex max-h-full flex-1 flex-col overflow-auto" :class="mainClasses">
         <router-view v-slot="{ Component }">
           <transition name="fade-transition" mode="out-in">
@@ -27,6 +29,9 @@
     <AppAddInstanceDialog />
     <AppGameExitDialog />
     <AppUnauthenticatedWarningDialog />
+    <!-- Eagerly mounted, not in `lazyDialogComponents`: it registers the
+         pre-click listener that raises the dialog in the first place. -->
+    <MineLatinoRequiredModsDialog />
     <AppMultiplayerLoginDialog />
     <AppImageDialog />
     <AppSharedTooltip />
@@ -35,7 +40,7 @@
     <AppSideBarGroupSettingDialog :default-color="defaultColor" />
     <AppGamepadPrompt />
   </v-app>
-  <v-app v-else class="h-full max-h-screen overflow-hidden" :class="{ 'dark': isDark }">
+  <v-app v-else class="h-full max-h-screen overflow-hidden" :theme="mineLatinoShell ? 'dark' : undefined" :class="{ 'dark': isDark || mineLatinoShell, 'ml-premium': mineLatinoShell }">
     <AppSystemBar no-user no-task />
     <div class="app-layout relative flex min-h-0 flex-1 overflow-hidden">
       <Setup @ready="onReady" />
@@ -48,6 +53,7 @@
 
 <script lang=ts setup>
 import '@/assets/common.css'
+import '@/views/minelatino/minelatino-premium.css'
 import AppImageDialog from '@/components/AppImageDialog.vue'
 import AppSharedTooltip from '@/components/AppSharedTooltip.vue'
 import { useAuthProfileImportNotification } from '@/composables/authProfileImport'
@@ -67,6 +73,7 @@ import { kTheme } from '@/composables/theme'
 import { kTutorial } from '@/composables/tutorial'
 import { kInFocusMode } from '@/composables/uiLayout'
 import { kSidebarSettings, useInjectSidebarSettings, useSidebarSettings } from '@/composables/sidebarSettings'
+import { isMineLatinoConfigured, useMineLatinoConfig } from '@/composables/minelatino'
 import { basename } from '@/util/basename'
 import { injection } from '@/util/inject'
 import AppAddInstanceDialog from '@/views/AppAddInstanceDialog.vue'
@@ -76,6 +83,7 @@ import AppContextMenu from '@/views/AppContextMenu.vue'
 import AppGameExitDialog from '@/views/AppGameExitDialog.vue'
 import AppMultiplayerLoginDialog from '@/views/AppMultiplayerLoginDialog.vue'
 import AppUnauthenticatedWarningDialog from '@/views/AppUnauthenticatedWarningDialog.vue'
+import MineLatinoRequiredModsDialog from '@/views/minelatino/MineLatinoRequiredModsDialog.vue'
 import UserProfileDialog from '@/components/UserProfileDialog.vue'
 import AppNotifier from '@/views/AppNotifier.vue'
 import AppSideBarClassic from '@/views/AppSideBarClassic.vue'
@@ -175,6 +183,21 @@ const sidebarSettings = useSidebarSettings()
 provide(kSidebarSettings, sidebarSettings)
 const sidebarPosition = computed(() => sidebarSettings.position.value)
 const sidebarStyle = computed(() => sidebarSettings.style.value)
+
+// A branded MineLatino build replaces the XMCL sidebar + dashboard with the
+// big-tile shell (`/minelatino`), so the navigation rail is hidden entirely and
+// the system bar's back button stands in for it on the reused XMCL screens
+// (mods / resource packs / shaders / settings / account) that Jugar opens. On
+// the shell's own routes the in-screen header already carries a back button.
+const mineLatinoConfig = useMineLatinoConfig()
+const mineLatinoShell = computed(() => isMineLatinoConfigured(mineLatinoConfig.value))
+// Keep the branded palette available to teleported menus and dialogs too.
+watchEffect(() => document.documentElement.classList.toggle('ml-premium-theme', mineLatinoShell.value))
+onUnmounted(() => document.documentElement.classList.remove('ml-premium-theme'))
+const showSystemBack = computed(() => {
+  if (mineLatinoShell.value) return !route.path.startsWith('/minelatino')
+  return sidebarStyle.value === 'notch'
+})
 
 const layoutClasses = computed(() => ({
   'flex-row': sidebarPosition.value === 'left' || sidebarPosition.value === 'right',

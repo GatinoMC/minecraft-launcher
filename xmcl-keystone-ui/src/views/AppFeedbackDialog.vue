@@ -92,57 +92,60 @@
 <script lang="ts" setup>
 import FeedbackCard from '../components/FeedbackCard.vue'
 import { useDialog } from '../composables/dialog'
+import { useMineLatino } from '@/composables/minelatino'
 
 const { hide, isShown } = useDialog('feedback')
 const { t } = useI18n()
 
-const feedbackChannels = computed(() => [
-  {
-    title: t('feedback.github'),
-    description: t('feedback.githubDescription'),
-    icon: 'code',
-    color: 'black',
-    link: 'https://github.com/Voxelum/x-minecraft-launcher/issues/new',
-    target: 'browser',
-    buttonText: t('feedback.githubOpenIssue')
-  },
-  {
-    title: t('feedback.reddit'),
-    description: t('feedback.redditDescription'),
-    icon: 'xmcl:reddit',
-    color: 'deep-orange darken-1',
-    link: 'https://www.reddit.com/r/XMCL/',
-    target: 'browser',
-    buttonText: t('feedback.discordJoin')
-  },
-  {
-    title: t('feedback.qq'),
-    description: t('feedback.qqDescription', { number: 858391850 }),
-    icon: 'chat',
-    color: 'blue',
-    link: 'https://jq.qq.com/?_wv=1027&k=5Py5zM1',
-    target: '_blank',
-    buttonText: t('feedback.qqEnterGroup')
-  },
-  {
-    title: t('feedback.kook'),
-    description: t('feedback.kookDescription'),
-    icon: 'chat',
-    color: 'purple',
-    link: 'https://kook.top/gqjSHh',
-    target: 'browser',
-    buttonText: t('feedback.qqEnterGroup')
-  },
-  {
-    title: t('feedback.discord'),
-    description: t('feedback.discordDescription'),
-    icon: 'xmcl:discord',
-    color: 'indigo darken-2',
-    link: 'https://discord.gg/W5XVwYY7GQ',
-    target: 'browser',
-    buttonText: t('feedback.discordJoin')
+// MineLatino's own community surfaces, straight from the operator config, so
+// the dialog never points at the upstream launcher's communities.
+const { store, links, newsInviteUrl } = useMineLatino()
+
+const feedbackChannels = computed(() => {
+  const channels: {
+    title: string
+    description: string
+    icon: string
+    color: string
+    link: string
+    target: string
+    buttonText: string
+  }[] = []
+  if (newsInviteUrl.value) {
+    channels.push({
+      title: t('MineLatinoHome.discord'),
+      description: t('MineLatinoHome.joinDiscord'),
+      icon: 'xmcl:discord',
+      color: 'indigo darken-2',
+      link: newsInviteUrl.value,
+      target: 'browser',
+      buttonText: t('MineLatinoHome.openDiscord'),
+    })
   }
-])
+  if (store.value?.url) {
+    channels.push({
+      title: t('MineLatinoHome.store'),
+      description: store.value.url,
+      icon: 'storefront',
+      color: 'amber darken-2',
+      link: store.value.url,
+      target: 'browser',
+      buttonText: t('MineLatinoHome.openLink'),
+    })
+  }
+  for (const link of links.value) {
+    channels.push({
+      title: link.label,
+      description: link.url,
+      icon: link.icon ?? 'link',
+      color: 'blue-grey darken-1',
+      link: link.url,
+      target: 'browser',
+      buttonText: t('MineLatinoHome.openLink'),
+    })
+  }
+  return channels
+})
 
 watch(isShown, (v) => {
   if (v) {

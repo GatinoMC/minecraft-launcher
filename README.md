@@ -1,3 +1,12 @@
+# MineLatino Launcher
+
+MineLatino Launcher is the public MineLatino distribution of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher), maintained under the MIT license with its own account, cosmetics, server and update integrations.
+
+- [Download official MineLatino releases](https://github.com/FredyGraces20/MineLatino-Launcher/releases)
+- [MineLatino code signing policy](CODE_SIGNING_POLICY.md)
+- [Privacy policy](PRIVACY.md)
+- [Upstream attribution](NOTICE)
+
 <p align="center">
   <a href="https://xmcl.app" target="_blank">
     <img alt="Logo" width="100" src="https://github.com/Voxelum/x-minecraft-launcher/blob/master/xmcl-electron-app/icons/dark@256x256.png">
@@ -89,7 +98,7 @@ flatpak install flathub app.xmcl.voxelum
 - 📦 **Support import/export** CurseForge & Modrinth modpacks with compliance!
 - 🔒 **Support multiple account systems**. Built-in Microsoft login and Mojang Yggdrasil API. It also has builtin support of [ely.by](https://ely.by/) and [littleskin.cn](https://littleskin.cn). You can also add third-party authentication servers!
 - 🔗 **Peer to peer connection between users**. You can play multiplayer over LAN even you are not in same physical LAN!
-- 🔑 **Code sign & modern packaging**. Under Windows, you can use `appx` and `appinstaller` to install the app. You won't receive blocking messages from your browser or see SmartScreen errors anymore! 😎
+- 🔑 **Windows release integrity**. MineLatino publishes checksums for every release and is prepared for SignPath signing. Until its own application is approved, Windows may still show a SmartScreen warning for unsigned installers.
 
 ## Core Libraries
 
@@ -132,8 +141,8 @@ For i18n localization developer, please follow [Getting Started with Localizatio
 
 ## Sponsorship
 
-| [![](https://github.com/DGP-Studio/Snap.Hutao/assets/10614984/73ae8b90-f3c7-4033-b2b7-f4126331ce66)](https://signpath.io/) | Free code signing on Windows provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/) |
-| :----------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+| Provider | Service |
+| :------: | :------ |
 | [![](https://deno.com/images/deno_logo_4.gif)](https://deno.com/deploy) | [Deno Deploy](https://deno.com/deploy), XMCL leverage its hassle-free platform for serverless JavaScript applications. Provided by [Deno](https://deno.com/)   |
 | [![](assets/EdgeOne.png)](https://edgeone.ai/) | [Best Asian CDN, Edge, and Secure Solutions - Tencent EdgeOne](https://edgeone.ai/),CDN acceleration and security protection for this project are sponsored by Tencent EdgeOne. |
 

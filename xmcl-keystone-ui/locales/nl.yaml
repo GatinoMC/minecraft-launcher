@@ -284,24 +284,11 @@ commandPalette:
 feedback:
   channel: Kanalen
   description: Ik heb een bug gevonden of ik wil een suggestie doen
-  discord: Discord
-  discordDescription: Neem deel aan het Discord-kanaal
-  discordJoin: Deelnemen
   generateReport: Rapport Genereerren
   generateSaveAs: Sla het rapport op in
-  github: Github Issue
-  githubDescription: Open een Github Issue om uw gedachten te delen
-  githubOpenIssue: Github
   hint: >-
     Klik op de knop om het rapport te maken en contact op te nemen met het ontwikkelaarsteam. Het rapport zal apparaatinformatie bevatten, inclusief besturingssysteemtype, versie, gebruikersnaam (in uw besturingssysteem), etc.
-  kook: Kook
-  kookDescription: >-
-    Kook is een alternatieve app voor discord voor gebruikers in het vasteland van China
   name: Feedback
-  qq: QQ Groep
-  qqDescription: >-
-    Betreed de feedback QQ-groep en praat direct met de auteurs. Groepsnummer: {number}
-  qqEnterGroup: Deelnemen
 fileDetail:
   fileSize: Bestandsgrootte
   filesize: Bestandsgrootte
@@ -1231,7 +1218,6 @@ serverStatus:
   timeout: §4Verbinden met server timeout!
 agent:
   accessRequiredHint: Abonneer je op XMCL om de ingebouwde agent te gebruiken, of configureer je eigen AI-provider in de instellingen.
-  subscribeXmcl: Abonneren op XMCL
   notConfiguredHint: Stel een API-sleutel, model en OpenAI-compatibel endpoint in via Instellingen → Algemeen → AI-agent. Gebruik bijvoorbeeld OpenAI of een Claude-compatibele gateway.
 setting:
   aiAgentApiKeyDescription: Configureer een OpenAI-compatibele provider, zoals OpenAI of een gateway voor Claude. De sleutel wordt lokaal op dit apparaat opgeslagen.
@@ -1251,14 +1237,7 @@ setting:
     loadConfirmMessage: Het laden van een opgeslagen thema vervangt het huidige thema. Maak indien nodig een back-up.
     loadTheme: Thema laden
   about: Over
-  aboutBmclDescription: BMCL API biedt handige downloads voor gebruikers in Chinees Vasteland
-  aboutContributors: 🧑‍💻 Bijdragers 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL maakt gebruik van het probleemloze platform van Deno Deploy voor serverloze JavaScript-toepassingen
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Gratis codetekening op Windows verzorgd door SignPath.io, certificaat door SignPath Foundation
-  aboutSponsors: 😇 Sponsors 😇
   advancedJavaOptions: Geavanceerde Java Opties
   advancedSettings: Geavanceerde Instellingen
   advancedSettingsHint: Gevaarlijke zone - resetten of beheren van launcher data

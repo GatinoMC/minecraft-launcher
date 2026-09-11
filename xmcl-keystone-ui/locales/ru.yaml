@@ -38,7 +38,6 @@ SettingMigrationDialog:
   selectRootDirectory: Выбрать корневой каталог
 agent:
   accessRequiredHint: Оформите подписку XMCL, чтобы использовать встроенный Agent, или настройте собственного поставщика ИИ в настройках.
-  subscribeXmcl: Оформить подписку XMCL
   title: XMCL Agent
   statusReady: Готов
   statusWorking: Работаю…
@@ -308,23 +307,11 @@ commandPalette:
 feedback:
   channel: Каналы
   description: Сообщите о своей проблеме/идее здесь.
-  discord: Discord
-  discordDescription: Присоединяйтесь к каналу Discord.
-  discordJoin: Присоединиться
   generateReport: Создать отчёт
   generateSaveAs: Сохранить отчёт
-  github: Проблема в Github
-  githubDescription: Создайте проблему на Github, чтобы сообщить о своей проблеме/идее.
-  githubOpenIssue: Github
   hint: >-
     Нажмите на кнопку, чтобы создать отчёт и связаться с командой разработчиков. Отчёт будет содержать информацию о вашем устройстве, включая тип операционной системы, версию, имя пользователя (в операционной системе) и другие данные.
-  kook: Kook
-  kookDescription: Kook - это альтернатива Discord на территории материкового Китая
   name: Обратная связь
-  qq: Группа QQ
-  qqDescription: >-
-    Войдите в группу обратной связи QQ и напрямую поговорите с авторами. Номер группы: {number}
-  qqEnterGroup: Присоединиться
 fileDetail:
   fileSize: Размер файла
   filesize: Размер файла
@@ -1274,12 +1261,7 @@ setting:
     loadConfirmMessage: Загрузка сохранённой темы заменит текущую. При необходимости сделайте резервную копию.
     loadTheme: Загрузить тему
   about: О
-  aboutBmclDescription: BMCL API предоставляет удобные загрузки для пользователей материка
-  aboutContributors: 🧑‍💻 Участники 🧑‍💻
-  aboutDenoDescription: XMCL использует серверную платформу Deno Deploy для приложений JavaScript
   aboutLicense: Лицензия MIT
-  aboutLicenseInfo: Благодарим SignPath.io за бесплатную подпись кода Windows
-  aboutSponsors: 😇 Спонсоры 😇
   advancedJavaOptions: Расширенные параметры Java
   advancedSettings: Расширенные настройки
   advancedSettingsHint: Опасная зона - сброс или управление данными лаунчера

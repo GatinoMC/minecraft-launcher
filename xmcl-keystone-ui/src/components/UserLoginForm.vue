@@ -103,6 +103,27 @@
     />
 
     <v-alert
+      v-if="isOffline && showOfflineWarning"
+      density="compact"
+      variant="tonal"
+      color="warning"
+      rounded="lg"
+      class="text-left text-sm min-h-[min-content]"
+      data-testid="login-offline-warning"
+    >
+      {{ t('MineLatinoAuth.offlineWarning') }}
+      <v-btn
+        size="x-small"
+        variant="text"
+        class="ml-1 px-1"
+        data-testid="login-offline-warning-dismiss"
+        @click="dismissOfflineWarning"
+      >
+        {{ t('MineLatinoAuth.offlineWarningDismiss') }}
+      </v-btn>
+    </v-alert>
+
+    <v-alert
       v-if="errorMessage"
       density="compact"
       variant="tonal"
@@ -258,6 +279,7 @@ import {
 import { Ref, watch } from 'vue'
 import { useNotifier } from '@/composables/notifier'
 import { useAccountSystemHistory, useAuthorityItems } from '../composables/login'
+import { useMineLatinoAuth } from '../composables/minelatino'
 import { kUserContext, useLoginValidation } from '../composables/user'
 import UserLoginAuthoritySelect from './UserLoginAuthoritySelect.vue'
 
@@ -290,6 +312,9 @@ const data = reactive({
 })
 const isOffline = computed(() => authority.value === AUTHORITY_DEV)
 const isLogining = ref(false)
+// MineLatino: a non-premium account only works when the server accepts it, so
+// the caveat is shown once instead of on every login.
+const { showOfflineWarning, dismissOfflineWarning } = useMineLatinoAuth()
 
 // Label
 const getUserServiceAccount = (serv: string) => {

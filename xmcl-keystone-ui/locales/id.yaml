@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: Pilih Direktori Utama
 agent:
   accessRequiredHint: Berlangganan XMCL untuk menggunakan Agen bawaan, atau konfigurasikan penyedia AI Anda sendiri di Pengaturan.
-  subscribeXmcl: Berlangganan XMCL
   callingTool: memanggil {name}…
   disabledPlaceholder: Agen dinonaktifkan
   emptyHint: Minta agen untuk memeriksa instansi Anda, mengaktifkan/menonaktifkan mod, membaca log, atau mendiagnosis crash.
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: Saluran
   description: Saya menemukan Bug atau saya ingin memberikan saran
-  discord: Discord
-  discordDescription: Bergabung ke Saluran Discord
-  discordJoin: Gabung
   generateReport: Buat Laporan
   generateSaveAs: Simpan laporan ke
-  github: Masalah Github
-  githubDescription: Buka Masalah Github untuk menyampaikan pendapat Anda
-  githubOpenIssue: Github
   hint: Klik tombol untuk membuat laporan dan hubungi tim pengembang. Laporan akan berisi info perangkat Anda termasuk jenis sistem operasi, versi, nama pengguna (di sistem operasi Anda), dll.
-  kook: Kook
-  kookDescription: Kook adalah aplikasi alternatif untuk Discord bagi pengguna di Tiongkok Daratan
   name: Umpan Balik
-  qq: Grup QQ
-  qqDescription: 'Masuk ke grup QQ umpan balik dan bicara langsung dengan pembuat. Nomor Grup: {number}'
-  qqEnterGroup: Gabung
 fileDetail:
   fileSize: Ukuran Berkas
   filesize: Ukuran berkas
@@ -1384,12 +1372,7 @@ serverStatus:
   timeout: §4Batas waktu koneksi server habis!
 setting:
   about: Tentang
-  aboutBmclDescription: BMCL API menyediakan unduhan yang nyaman bagi pengguna di Tiongkok Daratan
-  aboutContributors: 🧑‍💻 Kontributor 🧑‍💻
-  aboutDenoDescription: XMCL memanfaatkan platform bebas repot Deno Deploy untuk aplikasi JavaScript serverless
   aboutLicense: LISENSI MIT
-  aboutLicenseInfo: Penandatanganan kode gratis di Windows disediakan oleh SignPath.io, sertifikat oleh SignPath Foundation
-  aboutSponsors: 😇 Sponsor 😇
   advancedJavaOptions: Opsi Java Lanjutan
   advancedSettings: Pengaturan Lanjutan
   advancedSettingsHint: Zona bahaya - atur ulang atau kelola data peluncur

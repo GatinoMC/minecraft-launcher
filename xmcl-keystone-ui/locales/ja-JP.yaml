@@ -271,21 +271,10 @@ commandPalette:
 feedback:
   channel: チャンネル
   description: バグを見つけました / 提案があります
-  discord: Discord
-  discordDescription: Discordチャンネルに参加
-  discordJoin: 参加
   generateReport: レポートを作成
   generateSaveAs: レポートの保存先
-  github: Github Issue
-  githubDescription: Github Issueを開き意見を共有
-  githubOpenIssue: Github
   hint: クリックしてレポートを作成し開発者に連絡します。レポートはあなたのデバイス情報(OS, バージョン, OSにおけるユーザー名)などを含みます。
-  kook: Kook
-  kookDescription: Kook は中国本土のユーザーのためのDiscordの代替アプリです
   name: フィードバック
-  qq: QQグループ
-  qqDescription: 'フィードバック用QQグループに参加し著者に直接連絡を取る。 グループナンバー: {number}'
-  qqEnterGroup: 参加
 fileDetail:
   fileSize: ファイルサイズ
   filesize: ファイルサイズ
@@ -1266,7 +1255,6 @@ serverStatus:
   timeout: §4サーバーへの接続がタイムアウト!
 agent:
   accessRequiredHint: 内蔵エージェントを使用するには XMCL に登録するか、設定で独自の AI プロバイダーを構成してください。
-  subscribeXmcl: XMCL に登録
   notConfiguredHint: 設定 → 一般 → AIエージェントで API キー、モデル、OpenAI 互換エンドポイントを設定してください。たとえば、OpenAI または Claude 互換ゲートウェイを使用します。
 setting:
   aiAgentApiKeyDescription: OpenAI や Claude 用ゲートウェイなど、OpenAI 互換プロバイダーを設定します。キーはこのデバイスにローカル保存されます。
@@ -1286,12 +1274,7 @@ setting:
     loadConfirmMessage: 保存済みテーマを読み込むと現在のテーマが置き換わります。必要ならバックアップしてください。
     loadTheme: テーマを読み込む
   about: について
-  aboutBmclDescription: BMCL APIは、中国本土のユーザーに便利なダウンロードを提供します
-  aboutContributors: 🧑‍💻 コントリビューター 🧑‍💻
-  aboutDenoDescription: XMCLはサーバーレスJavaScriptアプリケーション用のDeno Deployの手間のかかからないプラットフォームを活用しています
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: SignPath.ioが提供するWindows上の無料コード署名、SignPath Foundationによる証明書
-  aboutSponsors: 😇 スポンサー 😇
   advancedJavaOptions: 高度なJavaオプション
   advancedSettings: 詳細設定
   advancedSettingsHint: 危険ゾーン - ランチャーデータのリセットまたは管理

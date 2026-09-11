@@ -299,23 +299,11 @@ commandPalette:
 feedback:
   channel: 'القنوات'
   description: 'لقد وجدت خطأ أو أريد تقديم اقتراح'
-  discord: 'الفتنة'
-  discordDescription: 'انضم إلى قناة الديسكورد'
-  discordJoin: 'ينضم'
   generateReport: 'إنشاء تقرير'
   generateSaveAs: 'احفظ التقرير في'
-  github: 'قضية جيثب'
-  githubDescription: 'افتح إصدار Github لتخبر أفكارك'
-  githubOpenIssue: 'جيثب'
   hint: >-
     انقر فوق الزر لإنشاء التقرير والاتصال بفريق التطوير. سيحتوي التقرير على معلومات جهازك بما في ذلك نوع نظام التشغيل والإصدار واسم المستخدم (في نظام التشغيل لديك)، وما إلى ذلك.
-  kook: 'كوك'
-  kookDescription: 'Kook هو تطبيق بديل للخلاف لمستخدمي البر الرئيسي الصيني'
   name: 'تعليق'
-  qq: 'مجموعة كيو كيو'
-  qqDescription: >-
-    أدخل مجموعة التعليقات QQ وتحدث مباشرة مع المؤلفين. رقم المجموعة: {number}
-  qqEnterGroup: 'ينضم'
 fileDetail:
   fileSize: 'حجم الملف'
   filesize: 'حجم الملف'
@@ -1278,7 +1266,6 @@ serverStatus:
   timeout: '§4 مهلة خادم الاتصال!'
 agent:
   accessRequiredHint: اشترك في XMCL لاستخدام العميل المدمج، أو قم بتهيئة موفر الذكاء الاصطناعي الخاص بك في الإعدادات.
-  subscribeXmcl: الاشتراك في XMCL
   notConfiguredHint: اضبط مفتاح API والنموذج ونقطة نهاية متوافقة مع OpenAI في الإعدادات → عام → عميل الذكاء الاصطناعي. على سبيل المثال، استخدم OpenAI أو بوابة متوافقة مع Claude.
 setting:
   aiAgentApiKeyDescription: قم بتكوين موفر متوافق مع OpenAI، مثل OpenAI أو بوابة لـ Claude. يتم تخزين المفتاح محليًا على هذا الجهاز.
@@ -1286,14 +1273,7 @@ setting:
   aiAgentEndpointPlaceholder: https://api.openai.com/v1/chat/completions
   aiAgentModelPlaceholder: gpt-5.6 أو claude-sonnet-4-5
   about: 'عن'
-  aboutBmclDescription: 'يوفر BMCL API تنزيلات مريحة للمستخدمين في البر الرئيسي الصيني'
-  aboutContributors: '🧑‍💻 المساهمون 🧑‍💻'
-  aboutDenoDescription: >-
-    تستفيد XMCL من منصة Deno Deploy الخالية من المتاعب لتطبيقات JavaScript بدون خادم
   aboutLicense: 'رخصة معهد ماساتشوستس للتكنولوجيا'
-  aboutLicenseInfo: >-
-    توقيع رمز مجاني على Windows مقدم من SignPath.io، وشهادة من SignPath Foundation
-  aboutSponsors: '😇 الرعاة 😇'
   advancedJavaOptions: 'خيارات جافا المتقدمة'
   advancedSettings: 'الإعدادات المتقدمة'
   advancedSettingsHint: 'منطقة الخطر - إعادة ضبط بيانات المشغل أو إدارتها'

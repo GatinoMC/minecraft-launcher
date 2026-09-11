@@ -306,24 +306,11 @@ commandPalette:
 feedback:
   channel: Kanäle
   description: Ich habe einen Fehler gefunden oder habe eine Anregung
-  discord: Discord
-  discordDescription: Dem Discord-Kanal beitreten
-  discordJoin: Beitreten
   generateReport: Einen Bericht erstellen
   generateSaveAs: Bericht speichern
-  github: Github Issue
-  githubDescription: Öffnen Sie einen GitHub Issue, um Ihre Meinung mitzuteilen
-  githubOpenIssue: Github
   hint: >-
     Klicken Sie auf die Schaltfläche , um einen Bericht zu erstellen und das Entwicklungsteam zu kontaktieren. Der Bericht enthält Informationen über Ihr Gerät, einschließlich Betriebssystemtyp, Version, Benutzername (im Betriebssystem) und andere Daten.
-  kook: Kook
-  kookDescription: >-
-    Kook ist eine alternative Anwendung für Discord-Nutzer auf dem chinesischen Festland. Festland China
   name: Rückmeldung
-  qq: QQ-Gruppe
-  qqDescription: >-
-    Treten Sie der QQ-Feedback-Gruppe bei und sprechen Sie direkt mit авторами. Номер групи: {number}
-  qqEnterGroup: Beitreten
 fileDetail:
   fileSize: Größe der Datei
   filesize: Größe der Datei
@@ -1308,7 +1295,6 @@ serverStatus:
   timeout: §4Es ist Zeit, sich mit dem Server zu verbinden!
 agent:
   accessRequiredHint: Abonniere XMCL, um den integrierten Agenten zu verwenden, oder konfiguriere deinen eigenen KI-Anbieter in den Einstellungen.
-  subscribeXmcl: XMCL abonnieren
   notConfiguredHint: Legen Sie einen API-Schlüssel, ein Modell und einen OpenAI-kompatiblen Endpunkt unter Einstellungen → Allgemein → KI-Agent fest. Verwenden Sie zum Beispiel OpenAI oder ein Claude-kompatibles Gateway.
 setting:
   aiAgentApiKeyDescription: Konfigurieren Sie einen OpenAI-kompatiblen Anbieter, z. B. OpenAI oder ein Gateway für Claude. Der Schlüssel wird lokal auf diesem Gerät gespeichert.
@@ -1328,14 +1314,7 @@ setting:
     loadConfirmMessage: Das Laden eines gespeicherten Themes ersetzt das aktuelle. Bitte vorher sichern.
     loadTheme: Theme laden
   about: Um
-  aboutBmclDescription: BMCL API bietet bequeme Downloads für Benutzer in der chinesischen Provinz
-  aboutContributors: 🧑‍💻 Mitwirkende 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL nutzt die unkomplizierte Plattform von Deno Deploy für serverlose JavaScript-Anwendungen
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Kostenlose Code-Signierung unter Windows von SignPath.io, Zertifikat von SignPath Foundation
-  aboutSponsors: 😇 Sponsoren 😇
   advancedJavaOptions: Erweiterte Java-Optionen
   advancedSettings: Erweiterte Einstellungen
   advancedSettingsHint: Gefahrenzone - Launcher-Daten zurücksetzen oder verwalten

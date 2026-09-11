@@ -115,6 +115,19 @@ export interface InstanceServerInfoService {
   /** Append a new entry to the instance's `servers.dat`. */
   addServer(options: AddInstanceServerOptions): Promise<void>
 
+  /**
+   * Idempotent {@link addServer}: append the entry only when no row matches
+   * `(host, port)`, otherwise refresh the existing row in place.
+   *
+   * Callers that re-apply a server on every launch or on every config poll
+   * (a launcher-wide default server, for instance) need this instead of
+   * `addServer`, which appends unconditionally and would duplicate the row.
+   * Fields the caller leaves undefined keep the value already stored, so a
+   * player-set `acceptTextures` survives a refresh that only carries an icon.
+   * Resolves without touching the file when the row is already up to date.
+   */
+  ensureServer(options: AddInstanceServerOptions): Promise<void>
+
   /** Edit the first matching entry in the instance's `servers.dat`. */
   updateServer(options: UpdateInstanceServerOptions): Promise<void>
 

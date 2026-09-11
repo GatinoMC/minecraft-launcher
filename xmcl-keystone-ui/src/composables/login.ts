@@ -7,6 +7,7 @@ import {
 } from '@xmcl/runtime-api'
 import { Ref } from 'vue'
 import { DialogKey } from './dialog'
+import { useMineLatinoAuth } from './minelatino'
 import { injection } from '@/util/inject'
 import { kUserContext } from './user'
 import { kSettingsState } from './setting'
@@ -89,11 +90,15 @@ export function useAllowThirdparty() {
 export function useAuthorityItems(authorities: Ref<AuthorityMetadata[] | undefined>) {
   const { t } = useI18n()
   const thirdParty = useAllowThirdparty()
+  const { isAuthorityAllowed } = useMineLatinoAuth()
   const items: Ref<AuthorityItem[]> = computed(() => {
     if (!authorities.value) return []
     const result = [] as AuthorityItem[]
     for (const v of authorities.value) {
-      if (!thirdParty.value && v.authority !== AUTHORITY_MICROSOFT) continue
+      if (!thirdParty.value && v.authority !== AUTHORITY_MICROSOFT && v.authority !== AUTHORITY_DEV) continue
+      // MineLatino: the operator decides whether premium and non-premium logins
+      // are offered at all. Other authorities are left to the rules above.
+      if (!isAuthorityAllowed(v.authority)) continue
       if (v.authority === AUTHORITY_MICROSOFT) {
         result.push({
           value: AUTHORITY_MICROSOFT,

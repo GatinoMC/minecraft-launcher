@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: मूलनिर्देशिकां चिनोतु
 agent:
   accessRequiredHint: अन्तर्निर्मितप्रतिनिधिम् उपयोक्तुं XMCL-सदस्यतां गृह्णातु, अथवा विकल्पेषु स्वकीयम् AI-प्रदातारं विन्यस्यतु।
-  subscribeXmcl: XMCL-सदस्यतां गृह्णातु
   callingTool: '{name} आह्वयति...'
   disabledPlaceholder: प्रतिनिधिः असमर्थितः
   emptyHint: स्वक्षणं परीक्षितुं, मोड्स परिवर्तयितुं, वृत्तलेखं पठितुं, अथवा पतनस्य निदानं कर्तुं प्रतिनिधिं पृच्छतु।
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: वाहिन्यः
   description: मया त्रुटिः लब्धा अथवा अहं परामर्शं दातुम् इच्छामि
-  discord: Discord
-  discordDescription: Discord वाहिनीं संयुजतु
-  discordJoin: संयुजतु
   generateReport: विवरणं जनयतु
   generateSaveAs: विवरणम् अत्र रक्षतु
-  github: Github समस्या
-  githubDescription: स्वविचारान् वक्तुं Github समस्यां पञ्जीकरोतु
-  githubOpenIssue: Github
   hint: विवरणं निर्मातुं विकासकदलेन सह सम्पर्कं कर्तुं च नुदतु।
-  kook: Kook
-  kookDescription: चीनदेशस्य प्रयोक्तृणां कृते Kook इति Discord इत्यस्य विकल्पः अस्ति
   name: प्रतिपुष्टिः
-  qq: QQ समूहः
-  qqDescription: 'QQ समूहे संयुज्य लेखकैः सह साक्षात् भाषताम्। समूहसङ्ख्या: {number}'
-  qqEnterGroup: संयुजतु
 fileDetail:
   fileSize: सञ्चिकाकारः
   filesize: सञ्चिकाकारः
@@ -1382,12 +1370,7 @@ serverStatus:
   timeout: §4सम्पर्ककालः समाप्तः!
 setting:
   about: विषये
-  aboutBmclDescription: BMCL API प्रदान करोति अवतरणानि चीनदेशे।
-  aboutContributors: 🧑‍💻 योगदानकर्तारः 🧑‍💻
-  aboutDenoDescription: XMCL Deno Deploy इत्यस्य उपयोगं करोति।
   aboutLicense: MIT अनुज्ञापत्रम्
-  aboutLicenseInfo: विण्डोज इत्यत्र निःशुल्कं सङ्केत-हस्ताक्षरम् SignPath.io द्वारा दत्तम्।
-  aboutSponsors: 😇 प्रायोजकाः 😇
   advancedJavaOptions: प्रौढ-जावा-विकल्पाः
   advancedSettings: प्रौढविकल्पाः
   advancedSettingsHint: सङ्कटक्षेत्रम् - प्रवर्तकदत्तं पुनः स्थापयतु प्रबन्धयतु वा

@@ -33,7 +33,6 @@ SettingMigrationDialog:
   selectRootDirectory: रूट निर्देशिका चुनें
 agent:
   accessRequiredHint: बिल्ट-इन एजेंट का उपयोग करने के लिए XMCL की सदस्यता लें, या सेटिंग्स में अपना AI प्रदाता कॉन्फ़िगर करें।
-  subscribeXmcl: XMCL की सदस्यता लें
   callingTool: '{name} को कॉल किया जा रहा है...'
   disabledPlaceholder: एजेंट अक्षम
   emptyHint: एजेंट से अपने इंस्टेंस का निरीक्षण करने, मॉड टॉगल करने, लॉग पढ़ने या क्रैश का निदान करने के लिए कहें।
@@ -331,21 +330,10 @@ commandPalette:
 feedback:
   channel: चैनल
   description: मुझे एक बग मिला है या मैं एक सुझाव देना चाहता हूँ
-  discord: डिस्कॉर्ड
-  discordDescription: डिस्कॉर्ड चैनल से जुड़ें
-  discordJoin: जुड़ें
   generateReport: रिपोर्ट तैयार करें
   generateSaveAs: रिपोर्ट को इसमें सहेजें
-  github: गिटहब समस्या (Issue)
-  githubDescription: अपने विचार बताने के लिए गिटहब पर एक समस्या खोलें
-  githubOpenIssue: गिटहब
   hint: रिपोर्ट बनाने और डेवलपर टीम से संपर्क करने के लिए बटन पर क्लिक करें। रिपोर्ट में आपके डिवाइस की जानकारी शामिल होगी जैसे ऑपरेटिंग सिस्टम का प्रकार, संस्करण, उपयोगकर्ता का नाम (आपके ओएस में) आदि।
-  kook: कुक (Kook)
-  kookDescription: कुक चीनी मुख्य भूमि के उपयोगकर्ताओं के लिए डिस्कॉर्ड का एक वैकल्पिक ऐप है
   name: प्रतिक्रिया (Feedback)
-  qq: QQ समूह
-  qqDescription: 'प्रतिक्रिया QQ समूह में प्रवेश करें और लेखकों से सीधे बात करें। समूह संख्या: {number}'
-  qqEnterGroup: जुड़ें
 fileDetail:
   fileSize: फ़ाइल का आकार
   filesize: फ़ाइल का आकार
@@ -1384,12 +1372,7 @@ serverStatus:
   timeout: §4सर्वर से कनेक्शन टाइमआउट!
 setting:
   about: के बारे में
-  aboutBmclDescription: BMCL API चीनी मुख्य भूमि के उपयोगकर्ताओं के लिए सुविधाजनक डाउनलोड प्रदान करता है
-  aboutContributors: 🧑‍💻 योगदानकर्ता 🧑‍💻
-  aboutDenoDescription: XMCL Deno Deploy के सरल प्लेटफॉर्म का उपयोग करता है
   aboutLicense: MIT लाइसेंस
-  aboutLicenseInfo: विंडोज पर मुफ्त कोड हस्ताक्षर SignPath.io द्वारा प्रदान किया गया है, प्रमाणपत्र SignPath Foundation द्वारा प्रदान किया गया है
-  aboutSponsors: 😇 प्रायोजक 😇
   advancedJavaOptions: उन्नत Java विकल्प
   advancedSettings: उन्नत सेटिंग
   advancedSettingsHint: खतरनाक क्षेत्र - लॉन्चर डेटा रीसेट या प्रबंधित करें

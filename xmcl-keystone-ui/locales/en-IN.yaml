@@ -39,7 +39,6 @@ SettingMigrationDialog:
   selectRootDirectory: Select Root Directory
 agent:
   accessRequiredHint: Subscribe to XMCL to use the built-in Agent, or configure your own AI provider in Settings.
-  subscribeXmcl: Subscribe to XMCL
   callingTool: calling {name}…
   disabledPlaceholder: Agent disabled
   emptyHint: >-
@@ -395,26 +394,13 @@ commandPalette:
 feedback:
   channel: Channels
   description: I found a Bug or I want to make a suggestion
-  discord: Discord
-  discordDescription: Join Discord Channel
-  discordJoin: Join
   generateReport: Generate Report
   generateSaveAs: Save the report to
-  github: Github Issue
-  githubDescription: Open an Github Issue to tell your thought
-  githubOpenIssue: Github
   hint: >-
     Click the button to create the report and contact the developer team. The
     report will contain your device info including operating system type,
     version, user name (in your os), etc.
-  kook: Kook
-  kookDescription: Kook is an alternate app for discord for Chinese Mainland users
   name: Feedback
-  qq: QQ Group
-  qqDescription: >-
-    Enter the feedback QQ group and direct talk with authors. Group Number:
-    {number}
-  qqEnterGroup: Join
 fileDetail:
   fileSize: File Size
   filesize: File size
@@ -1601,16 +1587,7 @@ serverStatus:
   timeout: §4Connect server timeout!
 setting:
   about: About
-  aboutBmclDescription: BMCL API provides convenient downloads for users in Chinese Mainland
-  aboutContributors: 🧑‍💻 Contributors 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL leverages Deno Deploy's hassle-free platform for serverless JavaScript
-    applications
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Free code signing on Windows provided by SignPath.io, certificate by
-    SignPath Foundation
-  aboutSponsors: 😇 Sponsors 😇
   advancedJavaOptions: Advanced Java Options
   advancedSettings: Advanced Settings
   advancedSettingsHint: Danger zone - reset or manage launcher data

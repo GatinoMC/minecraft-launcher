@@ -1,0 +1,33 @@
+MineLatino Launcher
+===================
+
+This product is a fork of XMCL (x-minecraft-launcher) and is distributed under
+the same MIT license, reproduced in full in the LICENSE file at the root of
+this repository.
+
+Attribution
+-----------
+
+XMCL (x-minecraft-launcher)
+  Copyright (c) 2023 ci010 (cijhn@hotmail.com)
+  https://github.com/Voxelum/x-minecraft-launcher
+  Licensed under the MIT License.
+
+This fork was created from upstream commit
+30b9f92441064ef972ff8798a4d157170515f149 (version 0.68.1). All MineLatino
+additions — the MineLatino home screen, the MineLatino backend contract, the
+packaging identity and the self-update manifest — are likewise released under
+the MIT License.
+
+The MIT license text of the upstream project is retained unmodified in
+LICENSE. Where individual bundled packages carry their own licenses, those
+remain in force and are reproduced in their respective directories
+(see packages/*/LICENSE and xmcl-runtime/nativeReplacer/LICENSE).
+
+Trademarks
+----------
+
+"Minecraft" is a trademark of Mojang Synergies AB. This project is not
+affiliated with, endorsed by, or sponsored by Mojang or Microsoft. The XMCL
+name and logo belong to their respective authors; the MineLatino name and
+logo are used here only to identify this fork.

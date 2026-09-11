@@ -34,6 +34,7 @@ import {
 import { kInstances, useInstances } from '@/composables/instances'
 import { kJavaContext, useJavaContext } from '@/composables/java'
 import { kLaunchTask, useLaunchTask } from '@/composables/launchTask'
+import { isMineLatinoConfigured, useMineLatinoConfig } from '@/composables/minelatino'
 import { kModDependenciesCheck, useModDependenciesCheck } from '@/composables/modDependenciesCheck'
 import { kModLibCleaner, useModLibCleaner } from '@/composables/modLibCleaner'
 import { kModUpgrade, useModUpgrade } from '@/composables/modUpgrade'
@@ -93,11 +94,32 @@ export default defineComponent({
     const onNavigate = (route: string) => { void router.push(route) }
     windowController.on('navigate', onNavigate)
     onUnmounted(() => windowController.removeListener('navigate', onNavigate))
-    watch([instances.ready, instances.allInstances], ([ready, current], [wasReady, previous]) => {
-      if (ready && current.length === 0 && (!wasReady || previous.length > 0) && router.currentRoute.value.path !== '/me') {
-        router.replace('/me')
-      }
-    })
+    // Startup routing. A branded MineLatino build lives in the big-tile shell,
+    // so the two stock landing routes (the `/` dashboard and `/me`) are pulled
+    // into `/minelatino` whatever the instance count; every other path is left
+    // alone so navigation the player started (`/mods`, `/setting`,
+    // `/minelatino/*`, ...) is never fought. An unbranded build keeps the
+    // upstream behaviour: becoming ready with no instances lands on `/me`. The
+    // decision waits for the config so a branded build is never briefly treated
+    // as unbranded, and `isMineLatinoConfigured` is the same predicate the shell
+    // uses to render itself.
+    const mineLatinoConfig = useMineLatinoConfig()
+    watch(
+      [instances.ready, instances.allInstances, mineLatinoConfig],
+      ([ready, current, config], [wasReady, previous]) => {
+        if (!ready || !config) return
+        const path = router.currentRoute.value.path
+        if (isMineLatinoConfigured(config)) {
+          if (path === '/' || path === '/me') {
+            router.replace('/minelatino')
+          }
+          return
+        }
+        if (current.length === 0 && (!wasReady || previous.length > 0) && path !== '/me') {
+          router.replace('/me')
+        }
+      },
+    )
     const instance = useInstance(instances.selectedInstance, instances.instances)
     const settings = useSettingsState()
     const multiplayerTransport = computed(() => settings.state.value?.multiplayerTransport ?? 'webrtc')

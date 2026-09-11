@@ -153,7 +153,7 @@ export function assertAgentCommandSyntax(argv: string[]) {
     /(^\d*)[<>]/.test(token) ||
     token.includes('$(') ||
     token.includes('`'))
-  if (unsupported) throw new Error(`Unsupported shell syntax: ${unsupported}. The vfs_shell tool accepts one XMCL command only.`)
+  if (unsupported) throw new Error(`Unsupported shell syntax: ${unsupported}. The vfs_shell tool accepts one MineLatino command only.`)
 }
 
 interface ParsedArgs {

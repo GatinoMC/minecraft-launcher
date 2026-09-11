@@ -26,7 +26,9 @@ async function transform(
 ): Promise<Uint8Array> {
   const writer = stream.writable.getWriter()
   const output = new Response(stream.readable).arrayBuffer()
-  await writer.write(input.slice().buffer)
+  // Node 24's Web CompressionStream rejects a bare ArrayBuffer while browsers
+  // and Node both accept Uint8Array as a BufferSource.
+  await writer.write(input.slice())
   await writer.close()
   return new Uint8Array(await output)
 }

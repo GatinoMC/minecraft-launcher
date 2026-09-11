@@ -39,6 +39,7 @@ import { ResourcePackPreviewService } from '@xmcl/runtime/resourcePack'
 import { ServerStatusService } from '@xmcl/runtime/serverStatus'
 import { ThemeService } from '@xmcl/runtime/theme'
 import { LocalSkinService, OfficialUserService, UserService, MinecraftFriendsService } from '@xmcl/runtime/user'
+import { MineLatinoService } from './minelatino/MineLatinoService'
 import { ServerService } from './ServerService'
 
 export const definedServices = [
@@ -87,4 +88,7 @@ export const definedServices = [
   PeerService,
   ThemeService,
   InstanceThemeService,
+  // Main-process only: it creates the BrowserWindow used for the store and
+  // talks to the MineLatino backend, so the renderer never makes those calls.
+  MineLatinoService,
 ]

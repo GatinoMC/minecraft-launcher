@@ -2,6 +2,7 @@ import { AppManifest, InstalledAppManifest } from '@xmcl/runtime-api'
 import { unlink, writeFile } from 'fs-extra'
 // import generateIco from 'icon-gen/dist/lib/ico'
 import { join } from 'path'
+import { LAUNCHER_PROTOCOL } from '../../constant'
 import { LauncherApp } from '../LauncherApp'
 
 export async function removeShortcut(outputDir: string, man: InstalledAppManifest) {
@@ -14,7 +15,7 @@ export async function removeShortcut(outputDir: string, man: InstalledAppManifes
 export async function createLinkWin32(app: LauncherApp, exePath: string, outputDir: string, man: InstalledAppManifest, globalShortcut: boolean): Promise<void> {
   const urlContent =
   `[InternetShortcut]
-  URL=xmcl://launcher/app?url=${man.url}
+  URL=${LAUNCHER_PROTOCOL}://launcher/app?url=${man.url}
   WorkingDirectory=.
   IconIndex=0
   IconFile=${man.iconSets.icon}`

@@ -4,6 +4,7 @@ import filenamifyCombined from 'filenamify'
 import { ensureDir, readFile, readdir, rm, stat, writeFile } from 'fs-extra'
 import { join } from 'path'
 import { Logger } from '~/infra'
+import { LAUNCHER_PROTOCOL } from '~/constant'
 import { LauncherApp } from '../app/LauncherApp'
 import { isSystemError } from '@xmcl/utils'
 import { ENOENT_ERROR } from '../util/fs'
@@ -28,7 +29,7 @@ export class LauncherAppManager implements AppsHost {
     this.app.controller.handle('launch-app', (_, url) => this.bootAppByUrl(url))
     this.app.controller.handle('create-app-shortcut', (_, url) => this.createShortcut(url))
 
-    app.protocol.registerHandler('xmcl', ({ request, response }) => {
+    app.protocol.registerHandler(LAUNCHER_PROTOCOL, ({ request, response }) => {
       const parsed = request.url
       if (parsed.host === 'launcher' && parsed.pathname === '/app') {
         const params = parsed.searchParams

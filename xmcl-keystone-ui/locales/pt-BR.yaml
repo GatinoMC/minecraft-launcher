@@ -285,23 +285,11 @@ commandPalette:
 feedback:
   channel: Opções
   description: Encontrei um Bug ou Quero fazer uma sugestão
-  discord: Discord
-  discordDescription: Entrar no Servidor do Discord
-  discordJoin: Entrar
   generateReport: Gerar um relatório
   generateSaveAs: Salvar o relatório em
-  github: Problema no GitHub
-  githubDescription: Relate um  problema no GitHub
-  githubOpenIssue: Github
   hint: >-
     Aperte no botão para criar um relatório e entrar em contato com a equipe de desenvolvimento. O relatório terá informações do seu dispositivo, incluindo o tipo do sistema operacional, versão, nome de usuário (em seu sistema operacional), etc.
-  kook: Kook
-  kookDescription: Kook é uma alternativa ao Discord para usuário da China continental.
   name: Feedback
-  qq: QQ Group
-  qqDescription: >-
-    Entre no grupo do QQ e converse diretamente com os autores. ID do grupo: {number}
-  qqEnterGroup: Entrar
 fileDetail:
   fileSize: Tamanho do arquivo
   hash: Hash
@@ -1226,7 +1214,6 @@ serverStatus:
   timeout: §4Tempo de conexão do servidor expirado!
 agent:
   accessRequiredHint: Assine o XMCL para usar o agente integrado ou configure seu próprio provedor de IA nas configurações.
-  subscribeXmcl: Assinar o XMCL
   notConfiguredHint: Configure uma chave de API, modelo e endpoint compatível com OpenAI em Configurações → Geral → Agente de IA. Por exemplo, use OpenAI ou um gateway compatível com Claude.
 setting:
   aiAgentApiKeyDescription: Configure um provedor compatível com OpenAI, como OpenAI ou um gateway para Claude. A chave é armazenada localmente neste dispositivo.
@@ -1246,14 +1233,7 @@ setting:
     loadConfirmMessage: Carregar um tema salvo substituirá o tema atual. Faça backup se necessário.
     loadTheme: Carregar tema
   about: Sobre
-  aboutBmclDescription: BMCL API fornece downloads convenientes para usuários na China continental
-  aboutContributors: 🧑‍💻 Contribuidores 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL aproveita a plataforma sem problemas do Deno Deploy para aplicações JavaScript sem servidor
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Assinatura de código gratuita no Windows fornecida por SignPath.io, certificado pela SignPath Foundation
-  aboutSponsors: 😇 Patrocinadores 😇
   advancedJavaOptions: Opções avançadas do Java
   advancedSettings: Configurações avançadas
   advancedSettingsHint: Zona de perigo - redefinir ou gerenciar dados do launcher

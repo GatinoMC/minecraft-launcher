@@ -47,6 +47,43 @@ export class InstanceServerInfoService extends AbstractService implements IInsta
     await this.pushState(instancePath, infos)
   }
 
+  async ensureServer({ instancePath, name, host, port, icon, acceptTextures }: AddInstanceServerOptions): Promise<void> {
+    const infos = await this.read(instancePath)
+    const idx = findServerIndex(infos, host, port)
+    const current = idx >= 0 ? infos[idx] : undefined
+    const built = buildServerInfo({
+      // `findServerIndex` deliberately ignores `name`, so a rebrand that only
+      // renames the server still lands on the existing row instead of adding a
+      // second one with the new name.
+      name: name ?? current?.name ?? host,
+      host,
+      port,
+      icon: icon ?? current?.icon,
+      acceptTextures: (acceptTextures ?? current?.acceptTextures) as 0 | 1,
+    })
+
+    if (current) {
+      // This runs on every launch, so an unchanged row must not rewrite the
+      // file: that would bump `mtime` and wake the chokidar watcher in
+      // `watch()` for nothing.
+      if (
+        current.name === built.name
+        && current.ip === built.ip
+        && current.icon === built.icon
+        && current.acceptTextures === built.acceptTextures
+      ) {
+        return
+      }
+      infos[idx] = built
+    } else {
+      infos.push(built)
+    }
+
+    this.log(`ensureServer ${current ? 'updated' : 'added'} ${built.name} (${built.ip}) in ${instancePath}`)
+    await this.write(instancePath, infos)
+    await this.pushState(instancePath, infos)
+  }
+
   async updateServer({ instancePath, host, port, name, update }: UpdateInstanceServerOptions): Promise<void> {
     const infos = await this.read(instancePath)
     const idx = findServerIndex(infos, host, port, name)

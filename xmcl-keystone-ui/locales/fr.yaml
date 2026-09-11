@@ -286,19 +286,7 @@ commandPalette:
 feedback:
   channel: Salons
   description: J'ai trouvé un bug ou je veux faire une suggestion...
-  discord: Discord
-  discordDescription: Rejoindre le serveur Discord
-  discordJoin: Rejoindre
-  github: Problème Github
-  githubDescription: Ouvrez un problème Github pour dire ce que vous pensez
-  githubOpenIssue: Github
-  kook: Kook
-  kookDescription: Kook est une application alternative à Discord en Chine continentale
   name: Améliorer le launcher
-  qq: Groupe QQ
-  qqDescription: >-
-    Entrez dans le groupe de commentaires QQ et discutez directement avec les auteurs. Numéro de groupe : {number}
-  qqEnterGroup: Rejoindre
 fileDetail:
   filesize: Taille du fichier
 filterLocalOnly: Afficher uniquement installé
@@ -1243,7 +1231,6 @@ serverStatus:
   timeout: §4Timeout de la connexion !
 agent:
   accessRequiredHint: Abonnez-vous à XMCL pour utiliser l’agent intégré, ou configurez votre propre fournisseur d’IA dans les paramètres.
-  subscribeXmcl: S’abonner à XMCL
   notConfiguredHint: Définissez une clé API, un modèle et un endpoint compatible OpenAI dans Paramètres → Général → Agent IA. Par exemple, utilisez OpenAI ou une passerelle compatible avec Claude.
 setting:
   aiAgentApiKeyDescription: Configurez un fournisseur compatible OpenAI, comme OpenAI ou une passerelle pour Claude. La clé est stockée localement sur cet appareil.
@@ -1263,15 +1250,7 @@ setting:
     loadConfirmMessage: Charger un thème enregistré remplacera le thème actuel. Pensez à sauvegarder.
     loadTheme: Charger le thème
   about: À propos
-  aboutBmclDescription: >-
-    L'API BMCL fournit des téléchargements pratiques pour les utilisateurs en Chine continentale
-  aboutContributors: 🧑‍💻 Contributeurs 🧑‍💻
-  aboutDenoDescription: >-
-    XMCL tire parti de la plateforme sans prise de tête de Deno Deploy pour les applications JavaScript sans serveur
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: >-
-    Signature de code gratuite sous Windows fournie par SignPath.io, certificat par SignPath Foundation
-  aboutSponsors: 😇 Sponsors 😇
   advancedJavaOptions: Options Java avancées
   advancedSettings: Paramètres avancés
   advancedSettingsHint: Zone dangereuse - réinitialiser ou gérer les données du lanceur

@@ -1,0 +1,248 @@
+/* Branded design system. Root tokens also reach Vuetify's teleported surfaces.
+   The class is owned by the main app and removed when that app unmounts. */
+html.ml-premium-theme {
+  color-scheme: dark;
+  --ml-bg: #0b0e14;
+  --ml-panel: #11161f;
+  --ml-well: #0b1018;
+  --ml-raise: #1a2330;
+  --ml-border: #2a3646;
+  --ml-border-soft: #202a38;
+  --ml-text: #eef3fa;
+  --ml-dim: #b0bdd0;
+  --ml-faint: #8b9bb1;
+  --ml-accent: #53dfed;
+  --ml-accent-text: #82e9f2;
+  --ml-accent-bg: #153640;
+  --ml-accent-border: #2b6470;
+  --ml-cta: #53dfed;
+  --ml-cta-hover: #89edf5;
+  --ml-cta-lip: #235461;
+  --ml-cta-text: #081a22;
+  --ml-font-text: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --ml-font-head: var(--ml-font-text);
+  --ml-radius: 20px;
+  --ml-radius-sm: 12px;
+  --ml-ease: cubic-bezier(.2, .8, .2, 1);
+  --ml-speed: 300ms;
+  --ml-glass: linear-gradient(145deg, rgba(35, 46, 61, .84), rgba(15, 21, 31, .94));
+  --ml-shadow: 0 14px 36px -18px #000b, inset 0 1px 0 #ffffff08;
+  --surface-bg: #111823ed;
+  --surface-border: 1px solid #344254;
+  --surface-shadow: 0 24px 80px #0009, inset 0 1px 0 #ffffff0d;
+  --surface-blur: 24px;
+  --surface-dialog-radius: 24px;
+  --panel-bg: #151d28;
+  --panel-border: 1px solid #2a3646;
+  --card-clickable-lift: -3px;
+}
+
+html.ml-premium-theme .v-theme--dark {
+  --v-theme-background: 11, 14, 20;
+  --v-theme-surface: 17, 22, 31;
+  --v-theme-surface-variant: 30, 40, 54;
+  --v-theme-on-surface: 238, 243, 250;
+  --v-theme-on-background: 238, 243, 250;
+  --v-theme-primary: 83, 223, 237;
+  --v-theme-on-primary: 8, 26, 34;
+  --v-theme-secondary: 167, 151, 255;
+  --color-secondary-text: #b0bdd0;
+}
+
+html.ml-premium-theme .ml-premium {
+  font-family: var(--ml-font-text);
+  background: var(--ml-bg);
+  color: var(--ml-text);
+}
+html.ml-premium-theme .ml-premium .app-layout {
+  background: radial-gradient(ellipse at 75% 0, #26314d30, transparent 65%), var(--ml-bg);
+}
+html.ml-premium-theme .ml-premium .ml-shell { background: transparent; }
+html.ml-premium-theme .ml-premium .ml-body { background: transparent; gap: 12px; padding: 12px; }
+html.ml-premium-theme .ml-premium .ml-body > main { border-radius: 20px; }
+html.ml-premium-theme .ml-premium .ml-topbar {
+  height: 60px;
+  padding-inline: 24px;
+  background: linear-gradient(100deg, #141c28f5, #10151ff5);
+  border-bottom: 1px solid var(--ml-border-soft);
+  box-shadow: 0 1px 0 #ffffff03;
+}
+html.ml-premium-theme .ml-premium .ml-topbar-name { letter-spacing: .08em; font-size: .95rem; }
+html.ml-premium-theme .ml-premium .ml-topbar-logo { width: 34px; height: 34px; border-radius: 10px; }
+html.ml-premium-theme .ml-premium .ml-topbar-tagline { margin-left: auto; font-size: .75rem; }
+
+/* Navigation: a glass rail with an explicit, persisted compact mode. */
+html.ml-premium-theme .ml-premium .ml-side,
+html.ml-premium-theme .ml-premium .ml-right {
+  background: linear-gradient(160deg, #171f2bed, #10161fed);
+  border: 1px solid var(--ml-border-soft);
+  border-radius: 20px;
+  box-shadow: var(--ml-shadow);
+  backdrop-filter: blur(18px);
+}
+html.ml-premium-theme .ml-premium .ml-side { width: 200px; transition: width var(--ml-speed) var(--ml-ease); }
+html.ml-premium-theme .ml-premium .ml-right { width: 236px; }
+html.ml-premium-theme .ml-premium .ml-side-item { min-height: 42px; padding: 8px; gap: 10px; }
+html.ml-premium-theme .ml-premium .ml-side-item,
+html.ml-premium-theme .ml-premium .ml-side-profile,
+html.ml-premium-theme .ml-premium .ml-right-user,
+html.ml-premium-theme .ml-premium .ml-drawer-item {
+  transition: background var(--ml-speed), border-color var(--ml-speed), color var(--ml-speed), transform var(--ml-speed) var(--ml-ease);
+}
+html.ml-premium-theme .ml-premium .ml-side-icon { background: transparent; transition: transform var(--ml-speed), color var(--ml-speed); }
+html.ml-premium-theme .ml-premium .ml-side-item:hover .ml-side-icon { transform: translateY(-2px); color: var(--ml-accent); background: transparent; }
+html.ml-premium-theme .ml-premium .ml-side-item--active,
+html.ml-premium-theme .ml-premium .ml-side-profile--active,
+html.ml-premium-theme .ml-drawer-item--active {
+  background: linear-gradient(100deg, #53dfed18, #53dfed06);
+  border-color: #53dfed30;
+  color: var(--ml-accent-text);
+}
+html.ml-premium-theme .ml-premium .ml-side-item--active::before { left: -6px; height: 20px; box-shadow: 0 0 12px #53dfed70; }
+html.ml-premium-theme .ml-premium .ml-side-title,
+html.ml-premium-theme .ml-premium .ml-right-label,
+html.ml-premium-theme .ml-premium .ml-section-title {
+  border-bottom: 1px solid var(--ml-border-soft);
+  padding-bottom: 10px;
+  letter-spacing: .1em;
+  color: var(--ml-faint);
+}
+html.ml-premium-theme .ml-premium .ml-side-toggle { color: var(--ml-text); border-bottom: 1px solid var(--ml-border-soft); border-radius: 0; }
+html.ml-premium-theme .ml-premium .ml-side--collapsed { width: 72px; padding-inline: 8px; }
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-label,
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-title,
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-profile-text,
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-empty { display: none; }
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-item,
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-profile { justify-content: center; }
+html.ml-premium-theme .ml-premium .ml-side--collapsed .ml-side-dot { position: absolute; right: 4px; top: 6px; }
+
+/* Cards and form surfaces, including secondary routes and overlays. */
+html.ml-premium-theme .ml-premium .ml-panel,
+html.ml-premium-theme .ml-premium .ml-card,
+html.ml-premium-theme .ml-premium .ml-right-card,
+html.ml-premium-theme .ml-premium .ml-play-idcard,
+html.ml-premium-theme .ml-premium .ml-play-stage-card {
+  background: var(--ml-glass);
+  border: 1px solid var(--ml-border);
+  box-shadow: var(--ml-shadow);
+  border-radius: var(--ml-radius);
+}
+html.ml-premium-theme .ml-premium .ml-right-card { padding: 14px; }
+html.ml-premium-theme .ml-premium .ml-lift,
+html.ml-premium-theme .ml-premium .ml-card { transition: transform var(--ml-speed) var(--ml-ease), box-shadow var(--ml-speed), border-color var(--ml-speed); }
+html.ml-premium-theme .ml-premium .ml-lift:hover,
+html.ml-premium-theme .ml-premium .ml-card:hover { transform: translateY(-3px); border-color: var(--ml-accent-border); box-shadow: 0 18px 35px -18px #000d, 0 0 20px #53dfed08; }
+html.ml-premium-theme .ml-tag { background: #53dfed14; color: var(--ml-accent-text); }
+html.ml-premium-theme .ml-premium .v-field,
+html.ml-premium-theme .v-overlay .v-field { border-radius: 12px; transition: box-shadow var(--ml-speed), background var(--ml-speed); }
+html.ml-premium-theme .ml-premium .v-field--focused,
+html.ml-premium-theme .v-overlay .v-field--focused { box-shadow: 0 0 0 3px #53dfed16; }
+html.ml-premium-theme .ml-premium :is(button, a, [tabindex]):focus-visible,
+html.ml-premium-theme .v-overlay :is(button, a, [tabindex]):focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 3px; }
+html.ml-premium-theme .v-overlay__content > :is(.v-card, .v-list, .v-sheet) {
+  background: var(--ml-glass) !important;
+  color: var(--ml-text);
+  border: 1px solid var(--ml-border);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(24px);
+}
+
+/* One interaction language for all launcher buttons. Preserve semantic colors. */
+html.ml-premium-theme .ml-premium .v-btn,
+html.ml-premium-theme .v-overlay .v-btn {
+  border-radius: 12px !important;
+  font-family: var(--ml-font-text);
+  font-weight: 600;
+  letter-spacing: .015em;
+  text-transform: none;
+  transition: transform 300ms var(--ml-ease), box-shadow 300ms, background-color 300ms, filter 300ms !important;
+}
+html.ml-premium-theme .ml-premium .v-btn:not(.v-btn--variant-text):not(.v-btn--variant-plain),
+html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--variant-text):not(.v-btn--variant-plain) {
+  background-image: linear-gradient(170deg, #ffffff0d, #ffffff00 65%);
+  border: 1px solid #ffffff14;
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 4px 12px #0002 !important;
+}
+html.ml-premium-theme .ml-premium .v-btn:not(.v-btn--disabled):hover,
+html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px #0003, 0 0 14px #53dfed12 !important;
+}
+html.ml-premium-theme .ml-premium .v-btn:not(.v-btn--disabled):active,
+html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--disabled):active {
+  transform: scale(.98) !important;
+  box-shadow: inset 0 1px 6px #0003, 0 0 0 2px #53dfed35 !important;
+}
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn { border-radius: 12px !important; text-transform: none; letter-spacing: .015em; transition-duration: 300ms !important; }
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--primary,
+html.ml-premium-theme .ml-premium .v-btn.ml-play-start {
+  background: linear-gradient(125deg, #8aebf2, #53dfed 50%, #4eb7dc) !important;
+  color: #081a22 !important;
+  border: 1px solid #a3f4fa66;
+  box-shadow: inset 0 1px 0 #ffffff70, 0 8px 24px #53dfed20 !important;
+}
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--primary:not(.v-btn--disabled):hover,
+html.ml-premium-theme .ml-premium .v-btn.ml-play-start:not(.v-btn--disabled):hover {
+  background: linear-gradient(125deg, #adf3f8, #68e6f1 50%, #64c6e5) !important;
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 #ffffff70, 0 10px 30px #53dfed35 !important;
+}
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft { background: linear-gradient(145deg, #53dfed0e, #53dfed03) !important; border: 1px solid #53dfed35 !important; }
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft:hover { background: #53dfed15 !important; }
+html.ml-premium-theme .ml-premium .v-btn.v-btn--disabled { opacity: .4; transform: none !important; box-shadow: none !important; }
+
+/* Hero: keep the world artwork, give live stats and the player more room. */
+html.ml-premium-theme .ml-premium .ml-play { min-height: 420px; border: 1px solid var(--ml-border-soft); }
+html.ml-premium-theme .ml-premium .ml-play-scrim { background: linear-gradient(110deg, #0b101aed 5%, #0b101a70 65%, #0b101aa8); }
+html.ml-premium-theme .ml-premium .ml-play-layout { gap: 20px; padding: 24px; }
+html.ml-premium-theme .ml-premium .ml-play-info { flex: 1 1 0; min-width: 0; }
+html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 20px; backdrop-filter: blur(16px); }
+html.ml-premium-theme .ml-premium .ml-play-title { font-size: clamp(1.3rem, 2.2vw, 2rem); letter-spacing: -.035em; font-weight: 700; }
+html.ml-premium-theme .ml-premium .ml-play-logo { width: 48px; height: 48px; border-radius: 14px; }
+html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
+html.ml-premium-theme .ml-premium .ml-play-stat { background: #080d1680; padding: 10px; }
+html.ml-premium-theme .ml-premium .ml-play-stat-value { font-variant-numeric: tabular-nums; }
+html.ml-premium-theme .ml-premium .ml-play-stat-label { letter-spacing: .05em; }
+html.ml-premium-theme .ml-premium .ml-play-stage { width: 32%; min-width: 150px; }
+html.ml-premium-theme .ml-premium .ml-play-stage-card { background: linear-gradient(160deg, #24374c60, #1117239c); border-color: #53dfed20; }
+html.ml-premium-theme .ml-premium .ml-play-stage-glow { background: radial-gradient(ellipse, #53dfed38, #9c88ff18 45%, transparent 72%); }
+html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 24px; }
+html.ml-premium-theme .ml-premium .ml-play-start { min-width: 180px; height: 54px; font-size: 1rem; }
+html.ml-premium-theme .ml-premium .ml-play-addr { border: 1px solid var(--ml-border); background: #0b101860; }
+html.ml-premium-theme .ml-premium .ml-play-skin { animation-duration: 8s; }
+
+/* Fade/slide is transform-only. Motion-sensitive users get immediate changes. */
+.ml-page-enter-active,
+.ml-page-leave-active { transition: opacity 300ms var(--ml-ease), transform 300ms var(--ml-ease); }
+.ml-page-enter-from { opacity: 0; transform: translateY(8px); }
+.ml-page-leave-to { opacity: 0; transform: translateY(-6px); }
+html.ml-premium-theme .dialog-transition-enter-active,
+html.ml-premium-theme .dialog-transition-leave-active { transition-duration: 300ms !important; }
+html.ml-premium-theme .dialog-transition-enter-from,
+html.ml-premium-theme .dialog-transition-leave-to { opacity: 0; transform: translateY(12px) scale(.98); }
+
+@media (max-width: 1100px) {
+  html.ml-premium-theme .ml-premium .ml-right { width: 210px; }
+  html.ml-premium-theme .ml-premium .ml-side:not(.ml-side--collapsed) { width: 170px; }
+  html.ml-premium-theme .ml-premium .ml-body { gap: 8px; padding: 8px; }
+  html.ml-premium-theme .ml-premium .ml-play-layout { padding: 16px; gap: 12px; }
+  html.ml-premium-theme .ml-premium .ml-play-stage { display: none; }
+}
+@media (max-height: 550px) {
+  html.ml-premium-theme .ml-premium .ml-topbar { height: 44px; }
+  html.ml-premium-theme .ml-premium .ml-side { gap: 8px; }
+  html.ml-premium-theme .ml-premium .ml-side-item { min-height: 34px; padding-block: 4px; }
+  html.ml-premium-theme .ml-premium .ml-play { height: auto; min-height: 100%; }
+  html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 14px; }
+  html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ml-premium-theme *,
+  html.ml-premium-theme *::before,
+  html.ml-premium-theme *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

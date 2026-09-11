@@ -49,9 +49,7 @@ export const trayPlugin: ControllerPlugin = function (this: ElectronController) 
         this.createBrowseWindow()
       }
     }
-    const diagnose = () => {
-      this.openDevTools()
-    }
+
     const showLogs = () => {
       // shell.openPath(this.app.logManager.getLogRoot())
     }
@@ -89,14 +87,7 @@ export const trayPlugin: ControllerPlugin = function (this: ElectronController) 
       //   type: 'normal',
       //   click: showLogs,
       // },
-      {
-        label: t('showDiagnosis'),
-        type: 'normal',
-        click: () => {
-          diagnose()
-        },
-        role: 'toggleDevTools',
-      },
+
       {
         label: isTracing ? 'Stop CPU trace' : 'Start CPU trace',
         type: 'normal',

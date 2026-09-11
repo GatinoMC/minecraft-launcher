@@ -5,7 +5,10 @@ import { darkIco, darkIcon, darkTray, lightIco, lightIcon, lightTray } from './u
 import { HAS_DEV_SERVER, HOST } from './constant'
 
 const manifest: InstalledAppManifest = {
-  name: 'KeyStone Launcher',
+  // Shown for the frame between window creation and the page load, so it must
+  // match the `<title>` in xmcl-keystone-ui/src/index.html. The MineLatino
+  // config overrides it at runtime once the backend is reachable.
+  name: 'MineLatino Launcher',
   description: 'The default launcher UI',
   url: HAS_DEV_SERVER ? defaultUrl : `http://${HOST}/index.html`,
   backgroundColor: '0x424242',

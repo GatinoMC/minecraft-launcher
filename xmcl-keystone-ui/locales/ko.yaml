@@ -299,21 +299,10 @@ commandPalette:
 feedback:
   channel: 채널
   description: 버그를 발견했거나 제안을 하고 싶어요
-  discord: Discord
-  discordDescription: 디스코드 채널 참여
-  discordJoin: 참여
   generateReport: 보고서 생성
   generateSaveAs: 보고서 저장 위치
-  github: Github 이슈
-  githubDescription: 생각을 전하기 위해 Github 이슈 열기
-  githubOpenIssue: Github
   hint: 버튼을 눌러 보고서를 생성하고 개발팀에 연락하세요. 보고서에는 운영체제 종류, 버전, 사용자 이름 등 기기 정보가 포함됩니다.
-  kook: Kook
-  kookDescription: Kook은 중국 본토 사용자를 위한 디스코드 대체 앱입니다
   name: 피드백
-  qq: QQ 그룹
-  qqDescription: 'QQ 피드백 그룹에 들어가 저자와 직접 대화하세요. 그룹 번호: {number}'
-  qqEnterGroup: 참여
 fileDetail:
   fileSize: 파일 크기
   filesize: 파일 크기
@@ -1272,12 +1261,7 @@ setting:
     loadConfirmMessage: 저장된 테마를 불러오면 현재 테마가 교체됩니다. 필요하면 백업하세요.
     loadTheme: 테마 불러오기
   about: 정보
-  aboutBmclDescription: BMCL API는 중국 본토의 사용자를 위한 편리한 다운로드를 제공합니다
-  aboutContributors: 🧑‍💻 기여자 🧑‍💻
-  aboutDenoDescription: XMCL은 서버리스 JavaScript 애플리케이션을 위해 Deno Deploy의 간편한 플랫폼을 활용합니다
   aboutLicense: MIT LICENSE
-  aboutLicenseInfo: SignPath.io가 제공하는 Windows의 무료 코드 서명, SignPath Foundation에서 인증
-  aboutSponsors: 😇 스폰서 😇
   advancedJavaOptions: 고급 Java 옵션
   advancedSettings: 고급 설정
   advancedSettingsHint: 위험 구역 - 런처 데이터 재설정 또는 관리
@@ -1801,7 +1785,6 @@ reinstall:
   name: '{version} 재설치'
 agent:
   accessRequiredHint: 기본 제공 에이전트를 사용하려면 XMCL을 구독하거나 설정에서 자체 AI 제공자를 구성하세요.
-  subscribeXmcl: XMCL 구독
   callingTool: '{name} 호출 중…'
   disabledPlaceholder: 에이전트 비활성화됨
   emptyHint: 에이전트에게 인스턴스 검사, 모드 활성화/비활성화, 로그 읽기 또는 충돌 진단을 요청하세요.

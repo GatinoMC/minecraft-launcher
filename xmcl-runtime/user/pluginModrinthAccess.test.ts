@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import { describe, expect, it, vi } from 'vitest'
+import { LAUNCHER_PROTOCOL } from '~/constant'
 import { ExternalCredentialService } from '~/credential/ExternalCredentialService'
 import { UserService } from './UserService'
 import { pluginModrinthAccess } from './pluginModrinthAccess'
@@ -63,9 +64,9 @@ describe('pluginModrinthAccess', () => {
     expect(registry.getOrCreate).toHaveBeenCalledWith(ExternalCredentialService)
 
     const response = {} as Record<string, unknown>
-    handlers.get('xmcl')!({
+    handlers.get(LAUNCHER_PROTOCOL)!({
       request: {
-        url: new URL('xmcl://launcher/modrinth-auth?code=abc'),
+        url: new URL(`${LAUNCHER_PROTOCOL}://launcher/modrinth-auth?code=abc`),
       },
       response,
     })

@@ -43,7 +43,7 @@ describe('pluginYggdrasilHandler', () => {
     await handler({
       request: {
         method: 'GET',
-        url: new URL('xmcl://launcher/yggdrasil/sessionserver/session/minecraft/hasJoined?username=reter'),
+        url: new URL('minelatino://launcher/yggdrasil/sessionserver/session/minecraft/hasJoined?username=reter'),
         headers: {},
       },
       response,
@@ -64,7 +64,7 @@ describe('pluginYggdrasilHandler', () => {
     await handler({
       request: {
         method: 'GET',
-        url: new URL('xmcl://launcher/yggdrasil/sessionserver/session/minecraft/profile/12345678123412341234123456789abc?unsigned=false'),
+        url: new URL('minelatino://launcher/yggdrasil/sessionserver/session/minecraft/profile/12345678123412341234123456789abc?unsigned=false'),
         headers: {},
       },
       response: profileResponse,
@@ -81,7 +81,7 @@ describe('pluginYggdrasilHandler', () => {
     await handler({
       request: {
         method: 'POST',
-        url: new URL('xmcl://launcher/yggdrasil/sessionserver/session/minecraft/join'),
+        url: new URL('minelatino://launcher/yggdrasil/sessionserver/session/minecraft/join'),
         headers: {},
         body: Readable.from('{"accessToken":"token"}'),
       },

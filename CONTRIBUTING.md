@@ -124,9 +124,9 @@ pnpm install
 
 #### Set Environment Variables
 
-You should set the `CURSEFORGE_API_KEY` by creating a `.env` file under `xmcl-electron-app`. This `.env` file is added in `.gitignore` file.
-
-**DO NOT LEAK YOUR CURSEFORGE API KEY**
+MineLatino proxies CurseForge through its backend. Configure `CURSEFORGE_API_KEY`
+on the backend/Railway service; never put it in `xmcl-electron-app/.env` or a
+desktop build, where players could extract it.
 
 #### Start Launcher
 

@@ -253,20 +253,7 @@ commandPalette:
 feedback:
   channel: Kanały
   description: Znalazłem błąd lub chcę coś zasugerować
-  discord: Discord
-  discordDescription: Dołącz do kanału Discord
-  discordJoin: Dołącz
-  github: Problem Github
-  githubDescription: Otwórz wątek na Github, aby podzielić się swoimi przemyśleniami
-  githubOpenIssue: Github
-  kook: Kook
-  kookDescription: >-
-    Kook to alternatywna aplikacja dla użytkownika Discord w Chinach kontynentalnych
   name: Informacje zwrotne
-  qq: Grupa QQ
-  qqDescription: >-
-    Wejdź do grupy opinii QQ i rozmawiaj bezpośrednio z autorami. Numer grupy: {number}
-  qqEnterGroup: Dołącz
 fileDetail:
   fileSize: Rozmiar pliku
   filesize: Rozmiar pliku
@@ -1215,7 +1202,6 @@ serverStatus:
   timeout: §4Limit czasu połączenia z serwerem!
 agent:
   accessRequiredHint: Zasubskrybuj XMCL, aby używać wbudowanego agenta, lub skonfiguruj własnego dostawcę AI w ustawieniach.
-  subscribeXmcl: Subskrybuj XMCL
   notConfiguredHint: Ustaw klucz API, model i endpoint zgodny z OpenAI w Ustawienia → Ogólne → Agent AI. Na przykład użyj OpenAI albo bramki zgodnej z Claude.
 setting:
   aiAgentApiKeyDescription: Skonfiguruj dostawcę zgodnego z OpenAI, takiego jak OpenAI lub bramka dla Claude. Klucz jest przechowywany lokalnie na tym urządzeniu.
