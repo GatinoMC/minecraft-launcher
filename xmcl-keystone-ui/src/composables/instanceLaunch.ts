@@ -285,6 +285,20 @@ export function useInstanceLaunch(
     try {
       error.value = undefined
 
+      // Usually this completed in the background as soon as the profile was
+      // selected. If Play wins the race, the main process returns the same
+      // in-flight promise instead of repeating downloads or checks.
+      if (side === 'client') {
+        try {
+          await mineLatino.prepareInstance(instancePath)
+        } catch (e) {
+          // Preserve XMCL's normal launch diagnostics/repair flow as the final
+          // authority. A temporary backend failure must not make an otherwise
+          // complete offline profile unlaunchable.
+          if (!isRuntimeServiceError(e)) console.warn('MineLatino anticipatory preparation failed', e)
+        }
+      }
+
       // MineLatino: make sure the server is in this instance's multiplayer list
       // before the game reads it. Written even when `autoJoin` is off, so a
       // player who leaves quick-play can still find the server. The launch

@@ -49,6 +49,7 @@ import { kLocalCollections, useLocalCollections } from '@/composables/localColle
 import { kPeerState, usePeerState } from '@/composables/peers'
 import { kSearchModel, useSearchModel } from '@/composables/search'
 import { kServerStatusCache, useServerStatusCache } from '@/composables/serverStatus'
+import { useService } from '@/composables/service'
 import { kSettingsState, useSettingsState } from '@/composables/setting'
 import {
   DEFAULT_CARD_CLICKABLE_RADIUS,
@@ -77,6 +78,7 @@ import { kLocalVersions, useLocalVersions } from '@/composables/versionLocal'
 import { kSupportedAuthorityMetadata, useSupportedAuthority } from '@/composables/yggrasil'
 import { vuetify } from '@/vuetify'
 import { provide, watchEffect } from 'vue'
+import { MineLatinoServiceKey } from '@xmcl/runtime-api'
 import { useTogetherMultiplayer } from './multiplayerTogether'
 
 export default defineComponent({
@@ -90,6 +92,26 @@ export default defineComponent({
     const java = useJavaContext()
     const localVersions = useLocalVersions()
     const instances = useInstances()
+    const { prepareInstance } = useService(MineLatinoServiceKey)
+    let preparationTimer: ReturnType<typeof setTimeout> | undefined
+    watch(
+      instances.selectedInstance,
+      (instancePath) => {
+        if (preparationTimer) clearTimeout(preparationTimer)
+        if (!instancePath) return
+        // Let rapid profile changes settle before starting network or disk work.
+        // The main process deduplicates this with Play and periodic auto-mod sync.
+        preparationTimer = setTimeout(() => {
+          void prepareInstance(instancePath).catch((error: unknown) => {
+            console.warn(`[minelatino] Background profile preparation failed for ${instancePath}`, error)
+          })
+        }, 500)
+      },
+      { immediate: true },
+    )
+    onUnmounted(() => {
+      if (preparationTimer) clearTimeout(preparationTimer)
+    })
     const router = useRouter()
     const onNavigate = (route: string) => { void router.push(route) }
     windowController.on('navigate', onNavigate)

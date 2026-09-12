@@ -83,12 +83,20 @@ export const FALLBACK_CONFIG: MineLatinoConfig = {
   presets: [{
     id: 'minelatino-1-21-4',
     name: 'MineLatino 1.21.4',
-    description: 'Perfil Fabric 1.21.4 con el mod de cosméticos MineLatino.',
+    description: 'Perfil Fabric 1.21.4 listo para jugar, con mods MineLatino y optimizaciones de rendimiento.',
     minecraftVersion: '1.21.4',
     loader: 'fabric',
-    mods: [],
+    mods: [
+      { projectId: 'P7dR8mSH' }, // Fabric API
+      { projectId: 'AANobbMI' }, // Sodium
+      { projectId: 'gvQqBUqZ' }, // Lithium
+      { projectId: 'uXXizFIs' }, // FerriteCore
+      { projectId: '5ZwdcRci' }, // ImmediatelyFast
+      { projectId: 'NNAgCjsB' }, // Entity Culling
+    ],
     icon: 'star',
     recommended: false,
+    autoCreate: true,
   }, {
     id: 'minelatino-1-21-11',
     name: 'MineLatino 1.21.11',
@@ -105,6 +113,24 @@ export const FALLBACK_CONFIG: MineLatinoConfig = {
     ],
     icon: 'star',
     recommended: true,
+    autoCreate: true,
+  }, {
+    id: 'minelatino-26-2',
+    name: 'MineLatino 26.2',
+    description: 'Perfil Fabric 26.2 listo para jugar, con mods MineLatino y optimizaciones de rendimiento.',
+    minecraftVersion: '26.2',
+    loader: 'fabric',
+    mods: [
+      { projectId: 'P7dR8mSH' }, // Fabric API
+      { projectId: 'AANobbMI' }, // Sodium
+      { projectId: 'gvQqBUqZ' }, // Lithium
+      { projectId: 'uXXizFIs' }, // FerriteCore
+      { projectId: '5ZwdcRci' }, // ImmediatelyFast
+      { projectId: 'NNAgCjsB' }, // Entity Culling
+    ],
+    icon: 'star',
+    recommended: false,
+    autoCreate: true,
   }],
   links: [],
   maintenance: {
@@ -191,6 +217,7 @@ function asPreset(value: unknown): MineLatinoPreset | undefined {
     }).filter(mod => mod.projectId),
     icon: asString(source.icon) || undefined,
     recommended: asBoolean(source.recommended, false),
+    autoCreate: asBoolean(source.autoCreate, false),
   }
 }
 

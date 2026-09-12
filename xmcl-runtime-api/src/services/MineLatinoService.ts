@@ -75,6 +75,8 @@ export interface MineLatinoPreset {
   icon?: string
   /** The preset the Play button offers when the player has no profile yet. */
   recommended?: boolean
+  /** Create this managed profile automatically on first launch or upgrade. */
+  autoCreate?: boolean
 }
 
 export interface MineLatinoStoreConfig {
@@ -397,6 +399,13 @@ export interface MineLatinoService extends GenericEventEmitter<MineLatinoService
    * manually (e.g. right after creating a new instance).
    */
   syncAutoMods(): Promise<void>
+
+  /**
+   * Prepares one profile before the player presses Play. The main process
+   * installs/repairs its Minecraft runtime, libraries, assets, Java runtime and
+   * MineLatino auto-mods. Concurrent calls for the same profile share one job.
+   */
+  prepareInstance(instancePath: string): Promise<void>
 
   getCosmeticsAccount(): Promise<MineLatinoCosmeticsAccount | undefined>
   registerCosmeticsAccount(input: Required<MineLatinoAccountCredentials>): Promise<MineLatinoCosmeticsAccount>
