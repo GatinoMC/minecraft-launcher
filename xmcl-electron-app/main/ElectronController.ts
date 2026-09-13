@@ -23,6 +23,7 @@ import { getLoginSuccessHTML } from './utils/login'
 import { createWindowTracker } from './utils/windowSizeTracker'
 import { MultiplayerNetworkDiagnosticsController } from './MultiplayerNetworkDiagnosticsController'
 import { BrowserRtcController } from './BrowserRtcController'
+import { isSafeExternalUrl, isTrustedRendererUrl } from './utils/rendererSecurity'
 
 export class ElectronController implements LauncherAppController {
   protected windowsVersion?: { major: number; minor: number; build: number }
@@ -61,7 +62,12 @@ export class ElectronController implements LauncherAppController {
   maximized: boolean | undefined
 
   private windowOpenHandler: Parameters<WebContents['setWindowOpenHandler']>[0] = (detail: HandlerDetails) => {
-    const url = new URL(detail.url)
+    let url: URL
+    try {
+      url = new URL(detail.url)
+    } catch {
+      return { action: 'deny' }
+    }
     const features = detail.features.split(',')
     const width = parseInt(features.find(f => f.startsWith('width'))?.split('=')[1] ?? '1024', 10)
     const height = parseInt(features.find(f => f.startsWith('height'))?.split('=')[1] ?? '768', 10)
@@ -70,7 +76,7 @@ export class ElectronController implements LauncherAppController {
     const man = this.activatedManifest!
     // Determine if translucency should be enabled (from user settings or app manifest)
     const enableTranslucency = this.settings?.windowTranslucent || man.vibrancy
-    if (url.host === 'app' || detail.frameName === 'app' || (url.host.startsWith('localhost') && HAS_DEV_SERVER)) {
+    if (isTrustedRendererUrl(url.toString())) {
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
@@ -88,12 +94,15 @@ export class ElectronController implements LauncherAppController {
           webPreferences: {
             preload: indexPreload,
             devTools: IS_DEV,
+            contextIsolation: true,
+            sandbox: true,
+            nodeIntegration: false,
           },
         },
       }
     }
 
-    shell.openExternal(detail.url)
+    if (isSafeExternalUrl(detail.url)) void shell.openExternal(detail.url)
     return { action: 'deny' }
   }
 
@@ -107,9 +116,9 @@ export class ElectronController implements LauncherAppController {
   }
 
   private onWebContentWillNavigate = (event: Event, url: string) => {
-    if (!url.startsWith(HAS_DEV_SERVER ? 'http://localhost' : ('http://' + HOST))) {
+    if (!isTrustedRendererUrl(url)) {
       event.preventDefault()
-      shell.openExternal(url)
+      if (isSafeExternalUrl(url)) void shell.openExternal(url)
     }
   }
 
@@ -166,10 +175,17 @@ export class ElectronController implements LauncherAppController {
   }
 
   handle(channel: string, handler: (event: { sender: Client }, ...args: any[]) => any, once = false) {
-    if (!once) {
-      return ipcMain.handle(channel, handler)
+    const trustedHandler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => {
+      const senderUrl = event.senderFrame?.url || event.sender.getURL()
+      if (!isTrustedRendererUrl(senderUrl)) {
+        throw new Error(`Rejected IPC channel ${channel} from an untrusted renderer`)
+      }
+      return handler(event, ...args)
     }
-    return ipcMain.handleOnce(channel, handler)
+    if (!once) {
+      return ipcMain.handle(channel, trustedHandler)
+    }
+    return ipcMain.handleOnce(channel, trustedHandler)
   }
 
   broadcast(channel: string, ...payload: any[]): void {

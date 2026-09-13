@@ -14,6 +14,15 @@ import { resolveOptifineDownloadSource } from './optifineSource'
 
 const OPTIFINE_HOST = 'https://optifined.net'
 
+function isAllowedOptifinePage(raw: string) {
+  try {
+    const url = new URL(raw)
+    return url.origin === OPTIFINE_HOST && (url.pathname === '/downloads' || url.pathname === '/downloads/')
+  } catch {
+    return false
+  }
+}
+
 // See xmcl-runtime/app/pluginCommonProtocol.ts — same rationale for
 // silencing ERR_INVALID_STATE on aborted upstream fetches (issue #1446).
 const adaptWebBody = (body: ReadableStream | Readable | null | undefined) => {
@@ -72,10 +81,15 @@ export const optifine: ControllerPlugin = async function (this: ElectronControll
       minHeight: 400,
       webPreferences: {
         preload: optifinePreload,
-        contextIsolation: false,
-        sandbox: false,
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
       },
       show: false,
+    })
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+    win.webContents.on('will-navigate', (event, url) => {
+      if (!isAllowedOptifinePage(url)) event.preventDefault()
     })
     win.webContents.userAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
@@ -114,6 +128,10 @@ export const optifine: ControllerPlugin = async function (this: ElectronControll
       win.webContents.on('ipc-message', onMessage)
       win.webContents.on('did-fail-load', onLoadFailure)
       win.once('closed', onClosed)
+      if (!isAllowedOptifinePage(url)) {
+        complete({ error: new Error('Rejected untrusted OptiFine resolver URL') })
+        return
+      }
       win.loadURL(url).catch((error) => complete({ error }))
     })
   }

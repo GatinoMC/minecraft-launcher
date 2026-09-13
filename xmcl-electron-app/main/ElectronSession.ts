@@ -5,6 +5,19 @@ import { join } from 'path'
 import { Readable } from 'stream'
 import ElectronLauncherApp from './ElectronLauncherApp'
 import { HAS_DEV_SERVER, HOST } from './constant'
+import { MAIN_RENDERER_CSP } from './utils/rendererSecurity'
+
+function withMainRendererSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers)
+  headers.set('Content-Security-Policy', MAIN_RENDERER_CSP)
+  headers.set('X-Content-Type-Options', 'nosniff')
+  headers.set('Referrer-Policy', 'no-referrer')
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
 
 export class ElectronSession {
   private cached: Record<string, Session> = {}
@@ -112,10 +125,13 @@ export class ElectronSession {
 
       response.headers['access-control-allow-origin'] = ['*']
 
-      return new Response(response.body instanceof Readable ? Readable.toWeb(response.body) as any : response.body, {
+      const nativeResponse = new Response(response.body instanceof Readable ? Readable.toWeb(response.body) as any : response.body, {
         status: response.status,
         headers: response.headers,
       })
+      return !HAS_DEV_SERVER && url.host === HOST
+        ? withMainRendererSecurityHeaders(nativeResponse)
+        : nativeResponse
     }
 
     sess.protocol.handle('http', handler)

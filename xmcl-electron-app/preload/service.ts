@@ -186,9 +186,3 @@ function createServiceChannels(): ServiceChannels {
 export const serviceChannels = createServiceChannels()
 
 contextBridge.exposeInMainWorld('serviceChannels', serviceChannels)
-
-// Direct HTTP fetch via the main process, bypassing the session protocol
-// handler chain that can cause ReadableStream bodies to hang.
-contextBridge.exposeInMainWorld('netFetch', (url: string) => {
-  return ipcRenderer.invoke('net-fetch', url)
-})
