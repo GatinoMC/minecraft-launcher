@@ -16,7 +16,7 @@ El proyecto tiene una base razonable: el renderer principal usa aislamiento de c
 
 Los dos hallazgos críticos y todos los hallazgos medios/bajos fueron corregidos. El contenido remoto ahora se sanitiza, cada invocación IPC se limita al origen exacto del renderer, las ventanas remotas no reciben preload privilegiado y las actualizaciones ASAR nuevas requieren una firma Ed25519 independiente. También se eliminó el proxy de red arbitrario, se endureció OptiFine, se fijaron las acciones CI por SHA, se activó Dependabot y los dos servicios Railway se desplegaron con los controles nuevos.
 
-Queda un riesgo alto residual: el instalador público 0.68.64 no tiene firma Authenticode. El workflow ya bloquea la publicación si SignPath no devuelve una firma válida, pero faltan la aprobación/cuenta y las variables de SignPath. CurseForge y las noticias de Discord siguen degradados porque sus credenciales externas tampoco existen en Railway; `/health` ahora lo expresa como `status: degraded`.
+Queda un riesgo alto residual: los instaladores públicos 0.68.64 y 0.68.65 no tienen firma Authenticode. La publicación temporal de 0.68.65 fue autorizada expresamente con un aviso visible y checksums mientras se termina el producto. El workflow definitivo bloquea la publicación firmada si SignPath no devuelve una firma válida, pero todavía faltan la aprobación/cuenta y sus variables. CurseForge y las noticias de Discord siguen degradados porque sus credenciales externas tampoco existen en Railway; `/health` ahora lo expresa como `status: degraded`.
 
 Conteo de hallazgos:
 
@@ -135,7 +135,7 @@ Se hizo revisión estática enfocada en fronteras Electron (renderer/preload/mai
 ### SEC-005 — El instalador público de Windows no está firmado
 
 **Severidad:** Alta  
-**Estado:** Pendiente por dependencia externa de SignPath
+**Estado:** Pendiente por dependencia externa de SignPath; 0.68.65 se publica como excepción temporal autorizada
 
 **Ubicaciones:**
 
