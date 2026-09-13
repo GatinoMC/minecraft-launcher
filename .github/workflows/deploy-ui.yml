@@ -10,10 +10,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     steps:
-    - uses: actions/checkout@v5
-    - uses: pnpm/action-setup@v6
+    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+    - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
     - name: Use Node.js 22
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
       with:
         node-version: 22
         cache: 'pnpm'
@@ -25,7 +25,7 @@ jobs:
       env:
         BUILD_NUMBER: ${{ env.GITHUB_RUN_NUMBER }}
     - name: Deploy to vercel
-      uses: amondnet/vercel-action@v20
+      uses: amondnet/vercel-action@2d78157ee070f28ff89dd4da74e0369fc26d3b34 # v20
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
         vercel-args: '--prod ./xmcl-keystone-ui/dist'

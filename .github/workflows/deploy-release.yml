@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download Releases
-      uses: robinraju/release-downloader@v1.7
+      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
       with:
         repository: "voxelum/x-minecraft-launcher"
         tag: ${{ github.event.release.tag_name }}
         fileName: "xmcl.appinstaller"
         out-file-path: build
     - name: Upload to Azure
-      uses: ci010/upload-blob-to-azure@master
+      uses: ci010/upload-blob-to-azure@91adf4931c299436a9178ff7dd63bdb11ebf8695 # master
       env:
         AZURE_ACCOUNT_KEY: ${{ secrets.AZURE_ACCOUNT_KEY }}
       with:
@@ -25,7 +25,7 @@ jobs:
         container: releases
         directory: ./build
     - name: Update Web Page
-      uses: benc-uk/workflow-dispatch@v1
+      uses: benc-uk/workflow-dispatch@d004979be141727c7a17c28f603e2facc40d0855 # v1
       with:
         workflow: Deploy
         token: ${{ secrets.PAT_GITHUB_TOKEN }}
@@ -38,31 +38,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
-    - uses: pnpm/action-setup@v6
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+    - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
     - name: Download asar bundles
-      uses: robinraju/release-downloader@v1.7
+      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
       with:
         repository: "voxelum/x-minecraft-launcher"
         tag: ${{ github.event.release.tag_name }}
         fileName: "app-*.asar.gz"
         out-file-path: build
     - name: Download asar checksums
-      uses: robinraju/release-downloader@v1.7
+      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
       with:
         repository: "voxelum/x-minecraft-launcher"
         tag: ${{ github.event.release.tag_name }}
         fileName: "app-*.asar.sha256"
         out-file-path: build
     - name: Download manifest
-      uses: robinraju/release-downloader@v1.7
+      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
       with:
         repository: "voxelum/x-minecraft-launcher"
         tag: ${{ github.event.release.tag_name }}
         fileName: "manifest.json"
         out-file-path: meta
     - name: Use Node.js
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
       with:
         node-version: 22
         registry-url: 'https://registry.npmjs.org'
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Publish Release Notification
-      uses: voxelum/discord-kook-notify-action@main
+      uses: voxelum/discord-kook-notify-action@b0b95d3361016a742fb91b7d081e64d5fc578e8c # main
       with:
         version: ${{ github.event.release.tag_name }}
         token: ${{ secrets.KOOK_BOT_TOKEN }}
@@ -117,7 +117,7 @@ jobs:
       cancel-in-progress: false
     steps:
     - name: Checkout Repo
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: Voxelum/homebrew-xmcl
         path: homebrew-xmcl
@@ -126,7 +126,7 @@ jobs:
     - name: Synchronize formula repository
       working-directory: homebrew-xmcl
       run: git pull --ff-only origin master
-    - uses: actions/github-script@v8
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       name: Update Brew Formula
       with: 
         result-encoding: string
@@ -191,12 +191,12 @@ jobs:
         shell: powershell
     steps:
       - name: Download Releases
-        uses: robinraju/release-downloader@v1.8
+        uses: robinraju/release-downloader@efa4cd07bd0195e6cc65e9e30c251b49ce4d3e51 # v1.8
         with:
           repository: "voxelum/x-minecraft-launcher"
           tag: ${{ github.event.release.tag_name }}
           fileName: "version"
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         name: Get Release Version
         id: version
         with: 
@@ -224,7 +224,7 @@ jobs:
       GH_TOKEN: ${{ secrets.PAT_GITHUB_TOKEN }}
     steps:
       - name: Checkout flatpak-metadata
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: Voxelum/flatpak-metadata
           path: flatpak-metadata
@@ -291,14 +291,14 @@ jobs:
   #     - publish
   #   steps:
   #   - name: Download Releases
-  #     uses: robinraju/release-downloader@v1.7
+  #     uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
   #     with:
   #       repository: "voxelum/x-minecraft-launcher"
   #       tag: ${{ github.event.release.tag_name }}
   #       fileName: "xmcl-*.appx"
   #       out-file-path: build
   #   - name: Steup msstore cli
-  #     uses: microsoft/setup-msstore-cli@main
+  #     uses: microsoft/setup-msstore-cli@69be81fed3726f2f409d9aebe4df75702b23cb91 # main
   #   - name: Configure msstore cli
   #     run: |
   #       msstore reconfigure --tenantId ${{ secrets.AZURE_AD_TENANT_ID }} --clientSecret ${{ secrets.AZURE_AD_CLIENT_SECRET }} --clientId ${{ secrets.AZURE_AD_CLIENT_ID }} --sellerId ${{ secrets.SELLER_ID }}
