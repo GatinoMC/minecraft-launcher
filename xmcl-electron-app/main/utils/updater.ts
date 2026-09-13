@@ -19,7 +19,7 @@ import * as updater from 'electron-updater'
 import { AppUpdater, CancellationToken, UpdaterSignal } from 'electron-updater'
 import { createReadStream, createWriteStream } from 'fs'
 import { readFile, rename as renameAsync, unlink as unlinkAsync, writeFile } from 'fs-extra'
-import { closeSync, existsSync, open, rename, unlink } from 'original-fs'
+import { existsSync, rename, unlink } from 'original-fs'
 import { platform } from 'os'
 import { basename, dirname, join } from 'path'
 import { pipeline } from 'stream/promises'
@@ -30,6 +30,7 @@ import { resolveBackendUrl } from '@/minelatino/config'
 import { kSettings } from '~/settings'
 import { checksum } from '~/util/fs'
 import ElectronLauncherApp from '../ElectronLauncherApp'
+import { probeUpdateDirectory } from './updateDirectory'
 
 /**
  * The `app-<version>-<platform>[-<arch>].asar` name `build.ts` writes in its
@@ -449,26 +450,17 @@ export class ElectronUpdater implements LauncherAppUpdater {
         throw new Error(`No update found: ${updateAsarPath}`)
       }
 
-      const hasWriteAccess = await new Promise<boolean>((resolve) => {
-        open(appAsarPath, 'a', (e, fd) => {
-          if (e) {
-            resolve(false)
-          } else {
-            closeSync(fd)
-            resolve(true)
-          }
-        })
-      })
-
-      if (!hasWriteAccess) {
+      try {
+        await probeUpdateDirectory(appAsarPath)
+      } catch (cause) {
         throw new AnyError(
           'UpdateError',
           'MineLatino no puede actualizarse porque la carpeta de instalación no permite escritura. Reinstala el launcher para tu usuario o elige una carpeta donde tengas permisos.',
-          {},
+          { cause },
           { appAsarPath },
         )
       }
-      this.logger.log(`Process has write access to ${appAsarPath}; install without elevation`)
+      this.logger.log(`Process has write access to ${dirname(appAsarPath)}; install without elevation`)
 
       const args = await prepareWindowsUpdateHelper(
         appAsarPath,
@@ -482,6 +474,10 @@ export class ElectronUpdater implements LauncherAppUpdater {
         stdio: 'ignore',
         windowsHide: true,
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      })
+      await new Promise<void>((resolve, reject) => {
+        x.once('spawn', resolve)
+        x.once('error', reject)
       })
       x.unref()
       this.app.quit()
@@ -554,8 +550,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
 
   async installUpdateAndQuit(updateInfo: ReleaseInfo): Promise<void> {
     if (HAS_DEV_SERVER) {
-      this.logger.log('Currently is development environment. Skip to install update')
-      return
+      throw new Error('Las actualizaciones se instalan desde el launcher instalado. No se puede reiniciar y actualizar una sesión de desarrollo.')
     }
     if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       await this.quitAndInstallAsar()

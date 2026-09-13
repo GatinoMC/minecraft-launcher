@@ -70,6 +70,10 @@
         <div class="markdown-body" v-html="releaseNotes" />
       </div>
 
+      <v-alert v-if="updateError" type="error" variant="tonal" role="alert">
+        {{ updateError }}
+      </v-alert>
+
       <div class="ml-update-actions">
         <v-btn
           v-if="updateStatus === 'ready'"
@@ -123,7 +127,7 @@ const { t } = useI18n()
 const { isConfigured, openInBrowser } = injection(kMineLatino)
 const { render } = useMarkdown()
 const {
-  version, updateStatus, updateInfo, checkingUpdate, downloadingUpdate, installing,
+  version, updateStatus, updateInfo, checkingUpdate, downloadingUpdate, installing, updateError,
   checkUpdate, downloadUpdate, quitAndInstall,
 } = useUpdateSettings()
 

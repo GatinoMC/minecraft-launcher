@@ -34,6 +34,9 @@
       >
         {{ t('setting.maunalUpdateHint') }}
       </v-alert>
+      <v-alert v-if="updateError" type="error" variant="tonal" role="alert">
+        {{ updateError }}
+      </v-alert>
       <v-card-actions>
         <v-btn
           @click="openOfficialWebsite()"
@@ -122,7 +125,7 @@ const { t } = useI18n()
 const { render } = useMarkdown()
 const { state } = injection(kSettingsState)
 const {
-  installing, downloadingUpdate, checkingUpdate, updateInfo, updateStatus,
+  installing, downloadingUpdate, checkingUpdate, updateInfo, updateStatus, updateError,
   downloadUpdate, quitAndInstall,
 } = injection(kUpdateSettings)
 

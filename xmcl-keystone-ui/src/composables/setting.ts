@@ -16,10 +16,15 @@ export function useUpdateSettings() {
   const updateInfo = computed(() => state.value?.updateInfo)
   const version = computed(() => env.value?.version ?? '0.0.0')
   const installing = ref(false)
+  const updateError = ref('')
   async function install() {
+    if (installing.value) return
+    updateError.value = ''
     installing.value = true
     try {
       await quitAndInstall()
+    } catch (e) {
+      updateError.value = e instanceof Error ? e.message : String(e)
     } finally {
       installing.value = false
     }
@@ -27,9 +32,12 @@ export function useUpdateSettings() {
 
   const downloadingUpdate = ref(false)
   async function download() {
+    updateError.value = ''
     downloadingUpdate.value = true
     try {
       await downloadUpdate()
+    } catch (e) {
+      updateError.value = e instanceof Error ? e.message : String(e)
     } finally {
       downloadingUpdate.value = false
     }
@@ -37,9 +45,12 @@ export function useUpdateSettings() {
 
   const checkingUpdate = ref(false)
   async function check() {
+    updateError.value = ''
     checkingUpdate.value = true
     try {
       await checkUpdate()
+    } catch (e) {
+      updateError.value = e instanceof Error ? e.message : String(e)
     } finally {
       checkingUpdate.value = false
     }
@@ -51,6 +62,7 @@ export function useUpdateSettings() {
     downloadUpdate: download,
     checkUpdate: check,
     installing,
+    updateError,
     updateStatus,
     checkingUpdate,
     downloadingUpdate,

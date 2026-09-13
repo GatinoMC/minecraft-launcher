@@ -228,7 +228,7 @@ export class BaseService extends AbstractService implements IBaseService {
       }
       await this.app.updater.installUpdateAndQuit(settings.updateInfo)
     } else {
-      this.warn('There is no update available!')
+      throw new Error('No hay una actualización lista para instalar. Busca y descarga la actualización antes de reiniciar.')
     }
   }
 
