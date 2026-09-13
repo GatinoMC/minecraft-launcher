@@ -355,8 +355,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     const id = asString(order.id), cosmeticId = asString(order.cosmeticId), provider = asString(order.provider)
     const status = asString(order.status), amountMinor = asNumber(order.amountMinor, -1), currency = asString(order.currency)
     if (!/^[0-9a-f-]{36}$/i.test(id) || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(cosmeticId)
-      || !['manual', 'paypal', 'binance', 'mercadopago'].includes(provider)
-      || !['pending', 'paid', 'cancelled'].includes(status) || !Number.isSafeInteger(amountMinor) || amountMinor <= 0
+      || !['manual', 'paypal', 'binance', 'mercadopago', 'free'].includes(provider)
+      || !['pending', 'paid', 'cancelled'].includes(status) || !Number.isSafeInteger(amountMinor)
+      || (provider === 'free' ? amountMinor !== 0 || status !== 'paid' : amountMinor <= 0)
       || !/^[A-Z]{3}$/.test(currency)) return undefined
     return {
       id, cosmeticId, cosmeticName: typeof order.cosmeticName === 'string' ? order.cosmeticName : null,
@@ -721,6 +722,18 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     })
     const order = this.#normalizeCosmeticOrder(result.order)
     if (!order) throw new Error('La orden creada es inválida')
+    return order
+  }
+
+  async claimFreeCosmetic(input: { cosmeticId: string; idempotencyKey: string }) {
+    await this.initialize()
+    if (!this.#cosmeticsSession) throw new Error('Inicia sesión con tu cuenta MineLatino')
+    const result = await this.#cosmeticsRequest('/v1/account/free-claims', {
+      method: 'POST', headers: { Authorization: `Bearer ${this.#cosmeticsSession.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    const order = this.#normalizeCosmeticOrder(result.order)
+    if (!order || order.provider !== 'free') throw new Error('Respuesta de reclamación inválida')
     return order
   }
 

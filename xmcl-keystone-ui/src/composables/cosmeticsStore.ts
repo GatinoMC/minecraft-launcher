@@ -14,6 +14,8 @@ export interface CosmeticProduct {
   description: string
   amountMinor: number | null
   currency: string
+  stockMode?: 'unlimited' | 'limited'
+  stockRemaining?: number | null
   hasTexture: boolean
   hasModel: boolean
   textureCount: number
@@ -27,7 +29,15 @@ export function resourceUrl(product: CosmeticProduct, model = false) {
   return `${cosmeticsApi}/v1/resources/${encodeURIComponent(product.id)}?v=${encodeURIComponent(product.resourceVersion)}${model ? '&type=model' : ''}`
 }
 export function priceLabel(product: CosmeticProduct) {
+  if (product.amountMinor === 0) return 'Gratis'
   return product.amountMinor === null ? 'Precio por confirmar' : new Intl.NumberFormat('es', { style: 'currency', currency: product.currency }).format(product.amountMinor / 100)
+}
+export function stockLabel(product: CosmeticProduct) {
+  if (product.stockMode !== 'limited') return 'Stock ilimitado'
+  return product.stockRemaining === 0 ? 'Agotado' : `${product.stockRemaining} disponibles`
+}
+export function isSoldOut(product: CosmeticProduct) {
+  return product.stockMode === 'limited' && product.stockRemaining === 0
 }
 export function parseProduct(value: unknown): CosmeticProduct {
   const p = value as CosmeticProduct
@@ -36,7 +46,11 @@ export function parseProduct(value: unknown): CosmeticProduct {
   if (!p || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(p.id) || typeof p.name !== 'string'
     || !Object.hasOwn(cosmeticSlots, p.slot) || typeof p.description !== 'string'
     || !['USD', 'EUR', 'UYU', 'ARS', 'BRL', 'MXN'].includes(p.currency)
-    || (p.amountMinor !== null && (!Number.isSafeInteger(p.amountMinor) || p.amountMinor <= 0))
+    || (p.amountMinor !== null && (!Number.isSafeInteger(p.amountMinor) || p.amountMinor < 0))
+    || (p.stockMode !== undefined && !['unlimited', 'limited'].includes(p.stockMode))
+    || (p.stockMode === 'limited'
+      ? (!Number.isSafeInteger(p.stockRemaining) || p.stockRemaining! < 0)
+      : p.stockRemaining !== null && p.stockRemaining !== undefined)
     || typeof p.hasTexture !== 'boolean' || typeof p.hasModel !== 'boolean'
     || !Number.isSafeInteger(p.textureCount) || p.textureCount < 0 || p.textureCount > 32
     || typeof p.resourceVersion !== 'string'

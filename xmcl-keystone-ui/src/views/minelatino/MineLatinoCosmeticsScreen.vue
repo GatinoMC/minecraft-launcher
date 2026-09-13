@@ -15,7 +15,7 @@
       <div class="product-grid">
         <button v-for="product in filtered" :key="product.id" type="button" class="product-card" @click="open(product)">
           <div class="product-art" :data-thumb-id="product.id"><CosmeticThumbnail :product="product" :alt="`Vista 3D de ${product.name}`" /><span>PROBAR EN 3D ↗</span></div>
-          <div class="product-copy"><small>{{ cosmeticSlots[product.slot] }}</small><h2>{{ product.name }}</h2><strong>{{ priceLabel(product) }}</strong></div>
+          <div class="product-copy"><small>{{ cosmeticSlots[product.slot] }}</small><h2>{{ product.name }}</h2><strong>{{ priceLabel(product) }}</strong><p>{{ stockLabel(product) }}</p></div>
         </button>
       </div>
       <aside v-if="featured" class="fitting-room">
@@ -44,26 +44,33 @@
               <h2>{{ selected.name }}</h2>
               <p class="description">{{ selected.description || 'Este cosmético todavía no tiene una descripción.' }}</p>
               <div class="price">{{ priceLabel(selected) }}</div>
+              <p role="status">{{ stockLabel(selected) }}</p>
               <div class="recipient"><small>Cuenta de entrega</small><strong>{{ account?.nick || 'Inicia sesión en Cuenta MineLatino' }}</strong><span>{{ account?.accountId || 'Las compras requieren una cuenta MineLatino' }}</span></div>
               <p class="preview-hint">La compra se vinculará a tu ID interno MineLatino. Funciona con cuentas premium y no premium, aunque otra persona utilice el mismo nick.</p>
-              <v-btn block color="primary" :disabled="selected.amountMinor === null || !account" @click="openCheckout">Comprar · {{ selected.amountMinor === null ? 'Sin precio' : priceLabel(selected) }}</v-btn>
-              <span class="payment-note">La entrega se realiza únicamente después de confirmar el pago.</span>
+              <v-btn block color="primary" :disabled="selected.amountMinor === null || !account || isSoldOut(selected) || creatingOrder || claimedIds.includes(selected.id)" @click="openCheckout">{{ claimedIds.includes(selected.id) ? 'Ya reclamado' : isSoldOut(selected) ? 'Agotado' : selected.amountMinor === 0 ? 'Reclamar gratis' : `Comprar · ${selected.amountMinor === null ? 'Sin precio' : priceLabel(selected)}` }}</v-btn>
+              <span class="payment-note">{{ selected.amountMinor === 0 ? 'Entrega inmediata y gratuita. Una reclamación por cuenta.' : 'La entrega se realiza únicamente después de confirmar el pago.' }}</span>
             </div>
           </div>
         </v-card-text>
       </v-card>
     </v-dialog>
     <v-dialog v-model="checkout" max-width="470">
-      <v-card title="Finalizar compra" class="product-dialog">
+      <v-card :title="selected?.amountMinor === 0 ? 'Reclamar cosmético gratis' : 'Finalizar compra'" class="product-dialog">
         <v-card-text><v-alert v-if="checkoutError" type="error" variant="tonal" class="mb-4">{{ checkoutError }}</v-alert>
           <template v-if="createdOrder">
             <v-alert :type="createdOrder.status === 'paid' ? 'success' : 'info'" variant="tonal" class="mb-4">{{ createdOrder.status === 'paid' ? 'Cosmético entregado.' : 'Orden creada y pendiente de confirmación.' }}</v-alert>
             <div class="order-summary"><small>NÚMERO DE ORDEN</small><code>{{ createdOrder.id }}</code><strong>{{ createdOrder.cosmeticName || selected?.name }} · {{ formatOrderPrice(createdOrder) }}</strong></div>
-            <p class="my-4">Envía el número de orden y tu referencia de pago al equipo de MineLatino. Cuando un administrador valide el pago, el cosmético aparecerá automáticamente en el mod.</p>
+            <p v-if="createdOrder.status === 'paid'" class="my-4">El cosmético ya pertenece a tu cuenta. Puedes equiparlo desde el armario del mod.</p>
+            <p v-else class="my-4">Envía el número de orden y tu referencia de pago al equipo de MineLatino. Cuando un administrador valide el pago, el cosmético aparecerá automáticamente en el mod.</p>
+          </template>
+          <template v-else-if="selected?.amountMinor === 0">
+            <p>{{ selected.name }} · entrega a {{ account?.nick }}</p>
+            <p class="my-4">Es gratis y se entregará inmediatamente a tu cuenta MineLatino.</p>
+            <v-btn block color="primary" :loading="creatingOrder" :disabled="!account || isSoldOut(selected)" @click="createOrder('free')">{{ isSoldOut(selected) ? 'Agotado' : 'Confirmar reclamación gratuita' }}</v-btn>
           </template>
           <template v-else>
             <p>{{ selected?.name }} · entrega a {{ account?.nick }}</p><p class="my-4">Selecciona el medio de pago. Por ahora puedes crear una orden manual para probar el sistema completo.</p>
-            <v-btn v-for="provider in providers" :key="provider.id" :disabled="!provider.enabled" :loading="creatingOrder && selectedProvider === provider.id" block class="mb-2" @click="createOrder(provider.id)">{{ provider.name }}{{ provider.enabled ? '' : ' · Próximamente' }}</v-btn>
+            <v-btn v-for="provider in providers" :key="provider.id" :disabled="!provider.enabled || creatingOrder || !account || !selected || isSoldOut(selected)" :loading="creatingOrder && selectedProvider === provider.id" block class="mb-2" @click="createOrder(provider.id)">{{ provider.name }}{{ provider.enabled ? '' : ' · Próximamente' }}</v-btn>
             <p class="preview-hint">Ningún cosmético se entrega con una orden pendiente. La entrega ocurre al confirmar el pago en la administración.</p>
           </template>
         </v-card-text>
@@ -87,7 +94,7 @@ import { kUserContext } from '@/composables/user'
 import { useService } from '@/composables/service'
 import { injection } from '@/util/inject'
 import { MineLatinoServiceKey, type MineLatinoCosmeticOrder, type MineLatinoCosmeticsAccount as CosmeticsAccount, type MineLatinoPaymentProvider } from '@xmcl/runtime-api'
-import { CosmeticProduct, cosmeticSlots, priceLabel, useCosmeticsStore } from '@/composables/cosmeticsStore'
+import { CosmeticProduct, cosmeticSlots, isSoldOut, priceLabel, stockLabel, useCosmeticsStore } from '@/composables/cosmeticsStore'
 import { retainCarouselItemIndex, wrapCarouselIndex } from '@/util/cosmeticsCarousel'
 import CosmeticPreview from './CosmeticPreview.vue'
 import CosmeticThumbnail from './CosmeticThumbnail.vue'
@@ -102,6 +109,8 @@ const search = ref(''), slot = ref('ALL'), selected = ref<CosmeticProduct>(), di
 const account = ref<CosmeticsAccount>(), providers = ref<MineLatinoPaymentProvider[]>([]), orders = ref<MineLatinoCosmeticOrder[]>([])
 const createdOrder = ref<MineLatinoCosmeticOrder>(), checkoutError = ref(''), creatingOrder = ref(false), selectedProvider = ref('')
 const ordersDialog = ref(false), ordersLoading = ref(false), ordersError = ref('')
+const claimedIds = ref<string[]>([])
+const requestKeys = new Map<string, string>()
 const categories = [{ title: 'Todos', value: 'ALL' }, ...Object.entries(cosmeticSlots).map(([value, title]) => ({ title, value }))]
 const filtered = computed(() => products.value.filter(p => (slot.value === 'ALL' || slot.value === p.slot) && `${p.name} ${p.description}`.toLocaleLowerCase().includes((search.value || '').toLocaleLowerCase())))
 const featuredIndex = ref(0)
@@ -112,22 +121,41 @@ function open(product: CosmeticProduct) {
   if (productIndex >= 0) featuredIndex.value = productIndex
   selected.value = product; dialog.value = true; checkout.value = false
 }
-function onAccountChanged(value: CosmeticsAccount | undefined) { account.value = value; orders.value = []; createdOrder.value = undefined }
+function onAccountChanged(value: CosmeticsAccount | undefined) {
+  account.value = value; orders.value = []; createdOrder.value = undefined
+  claimedIds.value = []; checkout.value = false
+}
 async function openCheckout() {
-  if (!account.value) return
+  if (!account.value || !selected.value || selected.value.amountMinor === null || isSoldOut(selected.value) || creatingOrder.value) return
   checkout.value = true; createdOrder.value = undefined; checkoutError.value = ''
+  providers.value = []
+  if (selected.value.amountMinor === 0) return
   try { providers.value = await service.getCosmeticsPaymentProviders() }
   catch (e) { checkoutError.value = e instanceof Error ? e.message : 'No se pudieron cargar los medios de pago' }
 }
-async function createOrder(provider: MineLatinoPaymentProvider['id']) {
-  if (!selected.value || creatingOrder.value) return
+async function createOrder(provider: MineLatinoCosmeticOrder['provider']) {
+  if (!selected.value || !account.value || isSoldOut(selected.value) || creatingOrder.value) return
+  const accountId = account.value.accountId, cosmeticId = selected.value.id
+  const key = `${accountId}:${cosmeticId}:${provider}`
+  let idempotencyKey = requestKeys.get(key)
+  if (!idempotencyKey) {
+    // The packaged renderer uses http://xmcl.runtime, where randomUUID may be unavailable.
+    const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}${Math.random().toString(36).slice(2)}`
+    idempotencyKey = `launcher-${random}`.slice(0, 80)
+    requestKeys.set(key, idempotencyKey)
+  }
   creatingOrder.value = true; selectedProvider.value = provider; checkoutError.value = ''
   try {
-    const random = globalThis.crypto?.randomUUID?.().replaceAll('-', '') || `${Date.now()}${Math.random().toString(36).slice(2)}`
-    createdOrder.value = await service.createCosmeticsOrder({ cosmeticId: selected.value.id, provider, idempotencyKey: `launcher-${random}`.slice(0, 80) })
+    const order = provider === 'free'
+      ? await service.claimFreeCosmetic({ cosmeticId, idempotencyKey })
+      : await service.createCosmeticsOrder({ cosmeticId, provider, idempotencyKey })
+    requestKeys.delete(key)
+    if (account.value?.accountId !== accountId) return
+    if (selected.value?.id === cosmeticId) createdOrder.value = order
+    if (provider === 'free') claimedIds.value.push(cosmeticId)
     await loadOrders()
   } catch (e) { checkoutError.value = e instanceof Error ? e.message : 'No se pudo crear la orden' }
-  finally { creatingOrder.value = false; selectedProvider.value = '' }
+  finally { await refresh(); creatingOrder.value = false; selectedProvider.value = '' }
 }
 async function loadOrders() {
   ordersLoading.value = true; ordersError.value = ''
@@ -137,11 +165,16 @@ async function loadOrders() {
 }
 async function openOrders() { ordersDialog.value = true; checkout.value = false; await loadOrders() }
 async function cancelOrder(id: string) {
-  try { await service.cancelCosmeticsOrder(id); await loadOrders() }
+  try { await service.cancelCosmeticsOrder(id); await Promise.all([loadOrders(), refresh()]) }
   catch (e) { ordersError.value = e instanceof Error ? e.message : 'No se pudo cancelar la orden' }
 }
 function orderStatus(status: MineLatinoCosmeticOrder['status']) { return status === 'paid' ? 'Entregada' : status === 'cancelled' ? 'Cancelada' : 'Pendiente' }
-function formatOrderPrice(order: MineLatinoCosmeticOrder) { return new Intl.NumberFormat('es', { style: 'currency', currency: order.currency }).format(order.amountMinor / 100) }
+function formatOrderPrice(order: MineLatinoCosmeticOrder) { return order.amountMinor === 0 ? 'Gratis' : new Intl.NumberFormat('es', { style: 'currency', currency: order.currency }).format(order.amountMinor / 100) }
+watch(products, items => {
+  if (!selected.value) return
+  selected.value = items.find(item => item.id === selected.value?.id)
+  if (!selected.value) { dialog.value = false; checkout.value = false }
+})
 watch(() => gameProfile.value?.id, () => { checkout.value = false })
 watch(dialog, value => { if (!value) checkout.value = false })
 watch(filtered, (items, previousItems) => {

@@ -287,7 +287,7 @@ export interface MineLatinoCosmeticOrder {
   id: string
   cosmeticId: string
   cosmeticName: string | null
-  provider: MineLatinoPaymentProvider['id']
+  provider: MineLatinoPaymentProvider['id'] | 'free'
   amountMinor: number
   currency: string
   status: 'pending' | 'paid' | 'cancelled'
@@ -419,6 +419,7 @@ export interface MineLatinoService extends GenericEventEmitter<MineLatinoService
   getCosmeticsPaymentProviders(): Promise<MineLatinoPaymentProvider[]>
   getCosmeticsOrders(): Promise<MineLatinoCosmeticOrder[]>
   createCosmeticsOrder(input: { cosmeticId: string; provider: MineLatinoPaymentProvider['id']; idempotencyKey: string }): Promise<MineLatinoCosmeticOrder>
+  claimFreeCosmetic(input: { cosmeticId: string; idempotencyKey: string }): Promise<MineLatinoCosmeticOrder>
   cancelCosmeticsOrder(orderId: string): Promise<MineLatinoCosmeticOrder>
 }
 
