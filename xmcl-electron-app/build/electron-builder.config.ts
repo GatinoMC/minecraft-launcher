@@ -26,8 +26,8 @@ const artifact = 'minelatino'
  * and `ElectronUpdater.checkUpdateTask` falls back to the MineLatino manifest,
  * which is the path Windows and macOS already take.
  */
-const githubOwner = process.env.ML_GITHUB_OWNER?.trim() || 'FredyGraces20'
-const githubRepo = process.env.ML_GITHUB_REPO?.trim() || 'MineLatino-Launcher'
+const githubOwner = process.env.ML_GITHUB_OWNER?.trim() || 'GatinoMC'
+const githubRepo = process.env.ML_GITHUB_REPO?.trim() || 'minecraft-launcher'
 
 export const config = {
   productName,

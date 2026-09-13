@@ -353,7 +353,7 @@ its `dist/`.
 
 **Publishing a release (done once for v0.68.1).** After the build, the seven
 artifacts are uploaded with `gh release create v<version> <files…> --repo
-FredyGraces20/MineLatino-Launcher --target main` (the repo has two remotes —
+GatinoMC/minecraft-launcher --target main` (the repo has two remotes —
 `origin` and upstream — so `--repo`/`gh repo set-default` is required). Then the
 backend manifest is pointed at it on Railway: `RELEASE_TAG_NAME=v<version>` and
 `RELEASE_ASSETS_BASE_URL=…/releases/download/v<version>` — note the base URL must
@@ -638,12 +638,12 @@ Until then the launcher runs on `FALLBACK_CONFIG` and deliberately looks inert.
 - **Microsoft login smoke test.** The plan's Phase 0 gate — confirming XMCL's
   bundled client ID still authenticates — has not been run, because it needs a
   running launcher and a real account. It is the one risk the fork does not control.
-- **GitHub repo for releases.** Done: both repos exist under `FredyGraces20` —
-  `MineLatino-Launcher` (public, so GitHub Releases downloads work without auth)
-  and `MineLatino-Backend` (private). `ML_GITHUB_OWNER`/`ML_GITHUB_REPO` now default
-  to them in `build/electron-builder.config.ts`. **v0.68.1 is published** (seven
+- **GitHub repo for releases.** The canonical public launcher and release repository is
+  `GatinoMC/minecraft-launcher`; the backend remains separately deployed.
+  `ML_GITHUB_OWNER`/`ML_GITHUB_REPO` default to the GatinoMC repository in
+  `build/electron-builder.config.ts`. **v0.68.1 was published** (seven
   assets) and the Railway manifest is live: `RELEASE_TAG_NAME=v0.68.1` and
-  `RELEASE_ASSETS_BASE_URL=…/MineLatino-Launcher/releases/download/v0.68.1`
+  `RELEASE_ASSETS_BASE_URL=…/api/release-assets/v0.68.1`
   (the base must carry the tag — see the Phase 5 publish note). `/health` now
   reports `releaseManifest: true` and the installer download URL returns HTTP 200
   from GitHub's CDN without auth. To ship the next version, rebuild, `gh release

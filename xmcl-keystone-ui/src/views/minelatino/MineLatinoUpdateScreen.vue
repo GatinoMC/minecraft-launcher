@@ -132,7 +132,7 @@ const {
 } = useUpdateSettings()
 
 /** MineLatino's own releases, never the upstream XMCL repository. */
-const RELEASES_URL = 'https://github.com/FredyGraces20/MineLatino-Launcher/releases'
+const RELEASES_URL = 'https://github.com/GatinoMC/minecraft-launcher/releases'
 
 const hasNewUpdate = computed(() => updateStatus.value !== 'none' && !!updateInfo.value?.newUpdate)
 // A `manual` operation has no in-place asar to swap, so download/install are

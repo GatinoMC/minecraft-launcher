@@ -32,6 +32,7 @@ import { checksum } from '~/util/fs'
 import ElectronLauncherApp from '../ElectronLauncherApp'
 import { probeUpdateDirectory } from './updateDirectory'
 import { isNewerRelease } from './updateVersion'
+import { verifyAsarChecksumSignature } from './updateSignature'
 
 /**
  * The `app-<version>-<platform>[-<arch>].asar` name `build.ts` writes in its
@@ -101,6 +102,17 @@ async function downloadAsarUpdate(
       `The release ${updateInfo.name} publishes an invalid SHA-256 checksum`,
       {},
       { url: sha256Url },
+    )
+  }
+
+  const signatureUrl = `${sha256Url}.sig`
+  const signatureResponse = await app.fetch(signatureUrl, { signal: options?.abortSignal })
+  if (!signatureResponse.ok || !verifyAsarChecksumSignature(expectedSha256, await signatureResponse.text())) {
+    throw new AnyError(
+      'UpdateAsarError',
+      `The release ${updateInfo.name} does not publish a valid MineLatino ASAR signature`,
+      {},
+      { url: signatureUrl, status: signatureResponse.status },
     )
   }
 
@@ -186,7 +198,7 @@ function trustedUpdateUrl(raw: string): string {
   if (url.protocol !== 'https:') throw new Error('Update URL must use HTTPS')
   const backend = new URL(resolveBackendUrl())
   const ownGithubRelease = url.hostname === 'github.com'
-    && url.pathname.startsWith('/FredyGraces20/MineLatino-Launcher/releases/download/')
+    && url.pathname.startsWith('/GatinoMC/minecraft-launcher/releases/download/')
   if (!ownGithubRelease && url.origin !== backend.origin) {
     throw new Error(`Untrusted update origin: ${url.origin}`)
   }

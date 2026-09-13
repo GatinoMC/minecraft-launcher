@@ -2,7 +2,7 @@
 
 MineLatino Launcher is the public MineLatino distribution of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher), maintained under the MIT license with its own account, cosmetics, server and update integrations.
 
-- [Download official MineLatino releases](https://github.com/FredyGraces20/MineLatino-Launcher/releases)
+- [Download official MineLatino releases](https://github.com/GatinoMC/minecraft-launcher/releases)
 - [MineLatino code signing policy](CODE_SIGNING_POLICY.md)
 - [Privacy policy](PRIVACY.md)
 - [Upstream attribution](NOTICE)

@@ -12,4 +12,4 @@ When the optional MineLatino AI assistant is used, the Cosmetics service associa
 
 When AFK Farm is used, the MineLatino service associates the assigned time balance and server-calculated usage sessions with the same internal account identifier. The mod sends periodic authenticated heartbeats while automation is active so the service can update the remaining time; it does not send account passwords or provider credentials.
 
-Users can change their password and request account deletion through the launcher. Administrators can assist with recovery, suspension and deletion through the MineLatino panel. Security or privacy questions can be reported through [GitHub Security Advisories](https://github.com/FredyGraces20/MineLatino-Launcher/security/advisories/new).
+Users can change their password and request account deletion through the launcher. Administrators can assist with recovery, suspension and deletion through the MineLatino panel. Security or privacy questions can be reported through [GitHub Security Advisories](https://github.com/GatinoMC/minecraft-launcher/security/advisories/new).
