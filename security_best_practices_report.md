@@ -41,7 +41,7 @@ Conteo de hallazgos:
 | SEC-008 | Resuelto | Sandbox, aislamiento, navegación exacta y preload mínimo para OptiFine |
 | SEC-009 | Resuelto y desplegado | Límite 20/min por IP Railway y body máximo de 1 KiB |
 | SEC-010 | Resuelto y desplegado | Node corre sin privilegios mediante `su-exec`; sólo `/data` se repara como root |
-| SEC-011 | Resuelto | Alertas y actualizaciones de seguridad activadas; Dependabot npm/actions semanal |
+| SEC-011 | Resuelto | Alertas/updates de Dependabot, secret scanning y push protection activados; actualizaciones npm/actions semanales |
 | SEC-012 | Resuelto y desplegado | CSP con hashes exactos y `unsafe-hashes`, sin `unsafe-inline` |
 
 ## Alcance y método
@@ -237,7 +237,7 @@ Se hizo revisión estática enfocada en fronteras Electron (renderer/preload/mai
 ### SEC-011 — Dependabot está deshabilitado
 
 **Severidad:** Baja  
-**Estado:** Resuelto en GitHub y `aa0ac19e`
+**Estado:** Resuelto en GitHub y `aa0ac19e`; secret scanning y push protection activos
 
 **Evidencia:** la API responde `403: Dependabot alerts are disabled for this repository`.
 
