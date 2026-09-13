@@ -370,12 +370,12 @@ export function useMineLatino() {
   /** Products of the selected mode; empty until one is chosen. */
   const selectedStoreProducts = computed(() => {
     const id = selectedStoreCategory.value
-    return id == null ? [] : storeProducts.value[id]?.items ?? []
+    return id === null || id === undefined ? [] : storeProducts.value[id]?.items ?? []
   })
   /** The selected mode's full result (total/stale/error) for its header. */
   const selectedStoreProductsResult = computed(() => {
     const id = selectedStoreCategory.value
-    return id == null ? undefined : storeProducts.value[id]
+    return id === null || id === undefined ? undefined : storeProducts.value[id]
   })
 
   /**

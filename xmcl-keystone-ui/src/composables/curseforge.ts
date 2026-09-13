@@ -9,6 +9,7 @@ import { kSWRVConfig, useOverrideSWRVConfig } from './swrvConfig'
 import { UpstreamHeaderProps } from '@/views/HomeUpstreamHeader.vue'
 import { getExpectedSize } from '@/util/size'
 import { mergeCurseforgeFilePage } from '@/util/curseforge'
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 import { useDateString } from './date'
 
 export interface CurseforgeProps {
@@ -276,19 +277,7 @@ export function getCurseforgeProjectDescriptionModel(projectId: Ref<number>) {
     key: computed(() => `/curseforge/${projectId.value}/description`),
     fetcher: async () => {
       const text = await clientCurseforgeV1.getModDescription(projectId.value)
-      const root = document.createElement('div')
-      root.innerHTML = text
-      const allLinks = root.getElementsByTagName('a')
-      for (const link of allLinks) {
-        if (link.href) {
-          const parsed = new URL(link.href)
-          const remoteUrl = parsed.searchParams.get('remoteUrl')
-          if (remoteUrl) {
-            link.href = decodeURIComponent(remoteUrl)
-          }
-        }
-      }
-      return root.innerHTML
+      return sanitizeExternalHtml(text)
     },
   }
 }

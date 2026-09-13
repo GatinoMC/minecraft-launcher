@@ -2,10 +2,13 @@ import MarkdownIt from 'markdown-it'
 // @ts-ignore
 import attr from 'markdown-it-link-attributes'
 import Token from 'markdown-it/lib/token'
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 
 export function useMarkdown() {
   const md = new MarkdownIt({
-    html: true,
+    // Markdown can originate in release notes, assistants and remote stores.
+    // Raw HTML is never required for those sources and would bypass escaping.
+    html: false,
     typographer: true,
     linkify: true,
   })
@@ -120,7 +123,7 @@ export function useMarkdown() {
     return root.innerHTML
   }
 
-  const render = (t: string) => groupBadgeParagraphs(md.render(t))
+  const render = (t: string) => sanitizeExternalHtml(groupBadgeParagraphs(md.render(t)))
 
   return {
     render,

@@ -263,7 +263,7 @@ const {
 const storeName = computed(
   () => server.value?.name || branding.value?.name || t('MineLatinoNav.tienda'),
 )
-const hasSelection = computed(() => selectedStoreCategory.value != null)
+const hasSelection = computed(() => selectedStoreCategory.value !== null && selectedStoreCategory.value !== undefined)
 const selectedCategoryName = computed(
   () => storeCategories.value.find(c => c.id === selectedStoreCategory.value)?.name ?? '',
 )

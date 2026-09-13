@@ -428,7 +428,7 @@
             class="markdown-body select-text whitespace-normal"
             :class="{ 'project-description': curseforge }"
             @click="onDescriptionDivClicked"
-            v-html="(isEnabled && detail.localizedHtmlContent) || detail.htmlContent"
+            v-html="sanitizeExternalHtml((isEnabled && detail.localizedHtmlContent) || detail.htmlContent)"
           />
           <template v-else-if="detail.description.includes('§')">
             <TextComponent :source="detail.description" />
@@ -581,7 +581,7 @@
               @click="emit('select:category', item.id)"
             >
               <template #prepend>
-                <v-avatar v-if="item.iconHTML" start v-html="item.iconHTML" />
+                <v-avatar v-if="item.iconHTML" start v-html="sanitizeSvgIcon(item.iconHTML)" />
                 <v-icon v-else-if="item.icon" start>{{ item.icon }}</v-icon>
                 <v-avatar v-else-if="item.iconUrl" start>
                   <v-img :src="item.iconUrl" />
@@ -672,6 +672,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { sanitizeExternalHtml, sanitizeSvgIcon } from '@/util/sanitizeHtml'
 import Hint from '@/components/Hint.vue'
 import { injection } from '@/util/inject'
 import { getExpectedSize } from '@/util/size'

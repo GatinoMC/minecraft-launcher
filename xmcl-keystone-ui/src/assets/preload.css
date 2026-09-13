@@ -2,11 +2,33 @@ body {
   background: transparent;
 }
 
+.unloaded {
+  background-color: rgb(18, 18, 18);
+  height: 100vh;
+  width: 100vw;
+  min-width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  overflow: hidden;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* only apply on dark theme by media query */
 @media (prefers-color-scheme: dark) {
   body {
     /* background: #121212; */
   }
 }
-
 

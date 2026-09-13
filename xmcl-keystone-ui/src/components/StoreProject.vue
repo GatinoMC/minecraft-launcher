@@ -57,7 +57,7 @@
       <div
         v-if="project.htmlDescription"
         class="markdown-body p-4"
-        v-html="project.htmlDescription"
+        v-html="sanitizeExternalHtml(project.htmlDescription)"
       />
     </div>
     <StoreProjectInstallVersionDialog
@@ -70,6 +70,7 @@
   </div>
 </template>
 <script lang="ts"  setup>
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 import ErrorView from '@/components/ErrorView.vue'
 import StoreProjectExternal from './StoreProjectExternal.vue'
 import StoreProjectGallery from './StoreProjectGallery.vue'

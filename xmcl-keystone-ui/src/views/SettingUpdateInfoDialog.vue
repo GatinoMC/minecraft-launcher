@@ -95,7 +95,7 @@
       hover
 
       style="width: 100%"
-      to="https://github.com/FredyGraces20/MineLatino-Launcher/releases"
+      to="https://github.com/GatinoMC/minecraft-launcher/releases"
       target="browser"
       push
     >
@@ -118,6 +118,7 @@ import { useMarkdown } from '@/composables/markdown'
 import { kSettingsState, kUpdateSettings } from '@/composables/setting'
 import { getLocalDateString } from '@/util/date'
 import { injection } from '@/util/inject'
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 import { useDialog } from '../composables/dialog'
 
 const { isShown } = useDialog('update-info')
@@ -134,7 +135,9 @@ function renderUpdate() {
   const transformed = body.replace(/## \[(.+)\]\(#.+\)/g, (str, v) => `## ${v}`)
   return render(transformed)
 }
-const body = computed(() => state.value?.updateInfo?.operation === 'autoupdater' ? state.value?.updateInfo.body : renderUpdate())
+const body = computed(() => sanitizeExternalHtml(
+  state.value?.updateInfo?.operation === 'autoupdater' ? state.value?.updateInfo.body ?? '' : renderUpdate(),
+))
 const env = injection(kEnvironment)
 const isAppX = computed(() => env.value?.env === 'appx')
 const isAppImage = computed(() => env.value?.env === 'appimage')
@@ -146,7 +149,7 @@ const openOfficialWebsite = () => {
   window.open('https://minelatino.com', 'browser')
 }
 const openGithub = () => {
-  window.open('https://github.com/FredyGraces20/MineLatino-Launcher/releases', 'browser')
+  window.open('https://github.com/GatinoMC/minecraft-launcher/releases', 'browser')
 }
 </script>
 

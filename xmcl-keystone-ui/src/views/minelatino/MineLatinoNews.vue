@@ -189,6 +189,7 @@
 import { kMineLatino, useRelativeTime } from '@/composables/minelatino'
 import { injection } from '@/util/inject'
 import { renderDiscordMarkdown } from '@/util/minelatinoMarkdown'
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 import type { MineLatinoNewsEmbed } from '@xmcl/runtime-api'
 
 const { t, locale } = useI18n()
@@ -212,12 +213,12 @@ function embedColor(color?: number) {
 }
 
 const render = (source: string) =>
-  renderDiscordMarkdown(source, {
+  sanitizeExternalHtml(renderDiscordMarkdown(source, {
     locale: locale.value,
     userMention: t('MineLatinoHome.mentionUser'),
     roleMention: t('MineLatinoHome.mentionRole'),
     channelMention: t('MineLatinoHome.mentionChannel'),
-  })
+  }))
 </script>
 
 <style scoped>
