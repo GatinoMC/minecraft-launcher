@@ -31,6 +31,7 @@ import { kSettings } from '~/settings'
 import { checksum } from '~/util/fs'
 import ElectronLauncherApp from '../ElectronLauncherApp'
 import { probeUpdateDirectory } from './updateDirectory'
+import { isNewerRelease } from './updateVersion'
 
 /**
  * The `app-<version>-<platform>[-<arch>].asar` name `build.ts` writes in its
@@ -322,16 +323,6 @@ async function downloadFullUpdate(
   await appUpdater.downloadUpdate(cancellationToken)
 }
 
-function isSameVersion(a: string, b: string) {
-  if (a.startsWith('v')) {
-    a = a.substring(1)
-  }
-  if (b.startsWith('v')) {
-    b = b.substring(1)
-  }
-  return a === b
-}
-
 export class ElectronUpdater implements LauncherAppUpdater {
   private logger: Logger
 
@@ -394,7 +385,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
       body: result.body ?? '',
       date: result.published_at ?? '',
       files,
-      newUpdate: !isSameVersion(app.version, result.tag_name),
+      newUpdate: isNewerRelease(app.version, result.tag_name),
       operation: ElectronUpdateOperation.Manual,
     }
 
@@ -430,7 +421,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
       body: info.updateInfo.releaseNotes as string,
       date: info.updateInfo.releaseDate,
       files,
-      newUpdate: !isSameVersion(info.updateInfo.version, this.app.version),
+      newUpdate: isNewerRelease(this.app.version, info.updateInfo.version),
       operation: ElectronUpdateOperation.AutoUpdater,
     }
 
