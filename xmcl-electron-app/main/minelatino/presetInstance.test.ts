@@ -1,6 +1,6 @@
 import type { MineLatinoPreset } from '@xmcl/runtime-api'
 import { describe, expect, it } from 'vitest'
-import { findPresetInstanceCandidate, selectAutoCreatePresets } from './presetInstance'
+import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles } from './presetInstance'
 
 const preset: MineLatinoPreset = {
   id: 'minelatino-1-21-11',
@@ -57,5 +57,26 @@ describe('selectAutoCreatePresets', () => {
     ]
 
     expect(selectAutoCreatePresets(profiles).map(profile => profile.id)).toEqual(['recommended'])
+  })
+})
+
+describe('selectSupersededPresetModFiles', () => {
+  it('removes only replaced legacy starter mods on the first catalog migration', () => {
+    expect(selectSupersededPresetModFiles([
+      'sodium-fabric-old.jar',
+      'fabric-api-old.jar',
+      'player-added-mod.jar',
+      'sodium-fabric-current.jar',
+    ], ['sodium-fabric-current.jar', 'fabric-api-current.jar'], []))
+      .toEqual(['sodium-fabric-old.jar', 'fabric-api-old.jar'])
+  })
+
+  it('uses recorded ownership for later migrations', () => {
+    expect(selectSupersededPresetModFiles([
+      'almanac-old.jar',
+      'player-added-mod.jar',
+      'almanac-current.jar',
+    ], ['almanac-current.jar'], ['almanac-old.jar']))
+      .toEqual(['almanac-old.jar'])
   })
 })

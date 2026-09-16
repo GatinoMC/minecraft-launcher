@@ -1,6 +1,6 @@
 <!--
   MineLatino home: a carousel that rotates through the three things the
-  community publishes — the latest 3 announcements, the latest 6 server
+  community publishes — the latest 6 announcements, the latest 6 server
   updates and 6 random products from the shop — changing page every few
   seconds (paused while the pointer is over it), with dots and arrows for
   manual navigation.
@@ -35,7 +35,7 @@
             </v-btn>
           </div>
 
-          <!-- Cards per page (3 news, 6 updates, 6 products), whatever the feed holds. -->
+          <!-- Six cards per page (news, updates and products), whenever available. -->
           <div class="ml-carousel-grid min-h-0 flex-1">
             <template v-if="page === 0">
               <template v-if="latestNews.length > 0">
@@ -65,9 +65,10 @@
                       <span class="ml-card-title">{{ item.author }}</span>
                       <span class="ml-card-time" :title="absoluteTime(item.timestamp)">{{ relativeTime(item.timestamp) }}</span>
                     </div>
-                    <div class="ml-card-text ml-clamp">
-                      {{ plain(item.content) || item.embeds[0]?.title || '' }}
-                    </div>
+                    <div
+                      class="ml-card-text ml-card-news-preview ml-clamp"
+                      v-html="renderNewsPreview(item.content || item.embeds[0]?.title || '')"
+                    />
                   </div>
                 </article>
               </template>
@@ -202,8 +203,10 @@
 <script lang="ts" setup>
 import { kMineLatino, useRelativeTime } from '@/composables/minelatino'
 import { injection } from '@/util/inject'
+import { renderDiscordMarkdown } from '@/util/minelatinoMarkdown'
+import { sanitizeExternalHtml } from '@/util/sanitizeHtml'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const {
   news,
@@ -217,7 +220,7 @@ const {
 } = injection(kMineLatino)
 const { from: relativeTime, absolute: absoluteTime } = useRelativeTime()
 
-const latestNews = computed(() => news.value.items.slice(0, 3))
+const latestNews = computed(() => news.value.items.slice(0, 6))
 const latestUpdates = computed(() => updates.value.items.slice(0, 6))
 
 const pages = computed(() => [
@@ -255,20 +258,13 @@ onUnmounted(() => {
   if (timer) clearInterval(timer)
 })
 
-/**
- * Discord markup stripped down to readable text for the card preview. The
- * full message (embeds, images, mentions) lives in the Anuncios screen; here
- * a clean plain-text teaser is what fits.
- */
-function plain(source: string) {
-  return source
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/<[@#!][^>]*>/g, ' ')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_~`#>|]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const renderNewsPreview = (source: string) =>
+  sanitizeExternalHtml(renderDiscordMarkdown(source, {
+    locale: locale.value,
+    userMention: t('MineLatinoHome.mentionUser'),
+    roleMention: t('MineLatinoHome.mentionRole'),
+    channelMention: t('MineLatinoHome.mentionChannel'),
+  }))
 </script>
 
 <style scoped>
@@ -364,6 +360,30 @@ function plain(source: string) {
   line-height: 1.45;
   color: var(--ml-dim);
   overflow-wrap: anywhere;
+}
+
+/* Discord previews reuse the safe renderer from the full News screen. */
+.ml-card-news-preview :deep(.ml-md-emoji) {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: -5px;
+  object-fit: contain;
+}
+
+.ml-card-news-preview :deep(a) {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: none;
+}
+
+.ml-card-news-preview :deep(.ml-md-heading),
+.ml-card-news-preview :deep(.ml-md-quote),
+.ml-card-news-preview :deep(.ml-md-list),
+.ml-card-news-preview :deep(.ml-md-pre) {
+  display: inline;
+  margin: 0;
+  padding: 0;
 }
 
 .ml-card-price {

@@ -1,5 +1,5 @@
-import { readFile, outputJson, readdir, remove } from 'fs-extra'
-import { join } from 'path'
+import { readFile, outputFile, outputJson, readdir, remove } from 'fs-extra'
+import { basename, join } from 'path'
 import { rcompare, valid } from 'semver'
 import {
   AUTHORITY_MICROSOFT,
@@ -31,12 +31,13 @@ import {
 import { Inject, LauncherAppKey, type LauncherApp } from '@xmcl/runtime/app'
 import { AbstractService, ExposeServiceKey } from '@xmcl/runtime/service'
 import { LaunchService } from '~/launch'
-import { InstanceModsService, InstanceOptionsService, InstanceService } from '~/instance'
+import { InstanceModsService, InstanceService } from '~/instance'
 import { InstanceInstallService } from '~/instanceIO'
 import { VersionInstallService, VersionMetadataService } from '@xmcl/runtime/install'
 import { kUserTokenStorage } from '~/user'
 import { FALLBACK_CONFIG, normalizeConfig, resolveBackendUrl } from './config'
-import { findPresetInstanceCandidate, selectAutoCreatePresets } from './presetInstance'
+import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles } from './presetInstance'
+import { getPresetDefaults } from './presetDefaults'
 import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
 
@@ -192,6 +193,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #refreshing: Promise<void> | undefined
   #defaultInstanceSync: Promise<void> | undefined
   #autoModsSync: Promise<void> | undefined
+  #autoModInstanceSyncs = new Map<string, Promise<void>>()
   #instancePreparations = new Map<string, Promise<void>>()
   #preparedInstances = new Map<string, { fingerprint: string, preparedAt: number }>()
   #timer: NodeJS.Timeout | undefined
@@ -226,6 +228,11 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         this.#playtimeSessions.delete(options.launchId)
         if (pending) void pending.then(token => token ? this.#closePlaytimeSession(token) : undefined)
       })
+      // A first launch without a reachable backend still uses the bundled
+      // GatinoLauncher catalog. Start the same one-shot profile sync after
+      // setup has selected the data root; a simultaneous backend refresh is
+      // deduplicated by #defaultInstanceSync.
+      void this.#ensureDefaultInstanceThenSync()
     })
     this.#windows = new MineLatinoWebWindows(
       message => this.log(message),
@@ -929,16 +936,25 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   }
 
   #presetSignature(preset: MineLatinoPreset) {
+    const defaults = getPresetDefaults(preset.id)
     return JSON.stringify({
       minecraftVersion: preset.minecraftVersion,
       loader: preset.loader,
-      mods: preset.mods.map(mod => ({ projectId: mod.projectId, version: mod.version ?? '' })),
+      mods: preset.mods.map(mod => ({
+        projectId: mod.projectId ?? '',
+        version: mod.version ?? '',
+        downloadUrl: mod.downloadUrl ?? '',
+        sha1: mod.sha1 ?? '',
+        fileName: mod.fileName ?? '',
+        fileSize: mod.fileSize ?? 0,
+      })),
+      defaults: defaults?.signature ?? '',
     })
   }
 
   async #hasAppliedPreset(instancePath: string, preset: MineLatinoPreset) {
     try {
-      const state = asObject(JSON.parse(await readFile(join(instancePath, PRESET_STATE_FILE), 'utf8')))
+      const state = await this.#readPresetState(instancePath)
       return asString(state.id) === preset.id
         && asString(state.signature) === this.#presetSignature(preset)
     } catch {
@@ -946,12 +962,30 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     }
   }
 
-  async #markPresetApplied(instancePath: string, preset: MineLatinoPreset) {
+  async #readPresetState(instancePath: string) {
+    return asObject(JSON.parse(await readFile(join(instancePath, PRESET_STATE_FILE), 'utf8')))
+  }
+
+  async #markPresetApplied(instancePath: string, preset: MineLatinoPreset, managedFiles: string[]) {
     await outputJson(join(instancePath, PRESET_STATE_FILE), {
       id: preset.id,
       signature: this.#presetSignature(preset),
+      managedFiles,
       appliedAt: new Date().toISOString(),
     }, { spaces: 2 })
+  }
+
+  async #applyPresetDefaults(preset: MineLatinoPreset, instancePath: string): Promise<boolean> {
+    const defaults = getPresetDefaults(preset.id)
+    if (!defaults) return true
+    try {
+      await Promise.all(defaults.files.map(file => outputFile(join(instancePath, file.path), file.content)))
+      this.log(`[autoInstance] Applied ${defaults.files.length} GatinoLauncher defaults to ${instancePath}`)
+      return true
+    } catch (error) {
+      this.warn(`[autoInstance] Failed to apply GatinoLauncher defaults: ${(error as Error).message}`)
+      return false
+    }
   }
 
   async #findPresetInstance(preset: MineLatinoPreset, instanceService: InstanceService) {
@@ -970,11 +1004,34 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     )
   }
 
-  /** Resolve and install the Modrinth starter set declared by a preset. */
-  async #installPresetMods(preset: MineLatinoPreset, instancePath: string): Promise<boolean> {
-    if (preset.mods.length === 0) return true
+  async #cleanupSupersededPresetMods(instancePath: string, managedFiles: string[]) {
+    const previous = await this.#readPresetState(instancePath)
+      .then(state => asStringArray(state.managedFiles))
+      .catch(() => [])
+    const existing = [...(await this.#instanceModFiles(instancePath)).values()]
+    for (const file of selectSupersededPresetModFiles(existing, managedFiles, previous)) {
+      await remove(join(instancePath, 'mods', file))
+      this.log(`[autoInstance] Removed superseded preset mod ${file}`)
+    }
+  }
+
+  /** Resolve and install the starter set declared by a preset. */
+  async #installPresetMods(preset: MineLatinoPreset, instancePath: string): Promise<string[] | undefined> {
+    if (preset.mods.length === 0) return []
 
     const resolved = await Promise.all(preset.mods.map(async (mod) => {
+      if (mod.downloadUrl && mod.sha1 && mod.fileName) {
+        return {
+          source: 'direct' as const,
+          file: {
+            path: `mods/${mod.fileName}`,
+            hashes: { sha1: mod.sha1 },
+            downloads: [mod.downloadUrl],
+            size: mod.fileSize,
+          },
+        }
+      }
+      if (!mod.projectId) return undefined
       try {
         const params = new URLSearchParams({
           game_versions: JSON.stringify([preset.minecraftVersion]),
@@ -999,33 +1056,53 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
             ?? versions[0]
         const versionId = asString(selected?.id)
         if (!versionId) throw new Error('no compatible release')
-        return { projectId: mod.projectId, versionId }
+        return { source: 'modrinth' as const, projectId: mod.projectId, versionId }
       } catch (error) {
         this.warn(`[autoInstance] Could not resolve starter mod ${mod.projectId}: ${(error as Error).message}`)
         return undefined
       }
     }))
 
-    const versions = resolved.filter((entry): entry is { projectId: string, versionId: string } => !!entry)
+    const versions = resolved.filter((entry): entry is NonNullable<typeof entry> => !!entry)
     if (versions.length !== preset.mods.length) {
       this.warn(`[autoInstance] Resolved only ${versions.length}/${preset.mods.length} starter mods; retrying on the next refresh.`)
-      return false
+      return undefined
     }
 
     try {
-      const modsService = await this.app.registry.get(InstanceModsService)
-      await modsService.installFromMarket({
-        market: MarketType.Modrinth,
-        version: versions.map(({ versionId }) => ({ versionId })),
-        instancePath,
-      })
+      const modrinthVersions = versions.filter(
+        (entry): entry is Extract<typeof entry, { source: 'modrinth' }> => entry.source === 'modrinth',
+      )
+      const directFiles = versions.filter(
+        (entry): entry is Extract<typeof entry, { source: 'direct' }> => entry.source === 'direct',
+      )
+      const managedFiles: string[] = []
+      if (modrinthVersions.length > 0) {
+        const modsService = await this.app.registry.get(InstanceModsService)
+        const paths = await modsService.installFromMarket({
+          market: MarketType.Modrinth,
+          version: modrinthVersions.map(({ versionId }) => ({ versionId })),
+          instancePath,
+        })
+        managedFiles.push(...paths.map(path => basename(path)))
+      }
+      if (directFiles.length > 0) {
+        const installService = await this.app.registry.get(InstanceInstallService)
+        await installService.installInstanceFiles({
+          path: instancePath,
+          oldFiles: [],
+          files: directFiles.map(entry => entry.file),
+        })
+        managedFiles.push(...directFiles.map(entry => basename(entry.file.path)))
+      }
+      await this.#cleanupSupersededPresetMods(instancePath, managedFiles)
       this.log(`[autoInstance] Installed ${versions.length}/${preset.mods.length} starter mods into ${instancePath}`)
-      return true
+      return managedFiles
     } catch (error) {
       // The instance and the cosmetics auto-mod are still useful if Modrinth is
       // temporarily unavailable. The catalog lets the player retry later.
       this.warn(`[autoInstance] Failed to install starter mods: ${(error as Error).message}`)
-      return false
+      return undefined
     }
   }
 
@@ -1046,6 +1123,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   async #ensureDefaultInstanceThenSyncInternal() {
     try {
       const instanceService = await this.app.registry.get(InstanceService)
+      await instanceService.initialize()
       const presets = selectAutoCreatePresets(this.#config.presets)
       if (presets.length === 0) {
         this.warn('[autoInstance] No presets configured; skipping auto-creation.')
@@ -1070,9 +1148,10 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     const existing = await this.#findPresetInstance(preset, instanceService)
     if (existing) {
       if (!(await this.#hasAppliedPreset(existing.path, preset))) {
-        this.log(`[autoInstance] Applying starter mods to existing profile at ${existing.path}`)
-        if (await this.#installPresetMods(preset, existing.path)) {
-          await this.#markPresetApplied(existing.path, preset)
+        this.log(`[autoInstance] Applying GatinoLauncher preset to existing profile at ${existing.path}`)
+        const managedFiles = await this.#installPresetMods(preset, existing.path)
+        if (managedFiles && await this.#applyPresetDefaults(preset, existing.path)) {
+          await this.#markPresetApplied(existing.path, preset, managedFiles)
         }
       }
       return
@@ -1125,12 +1204,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       shaderpacks: true,
     })
     this.log(`[autoInstance] Created instance at ${path}`)
-    // Minecraft stores Quake Pro (110°) as fov:1. Apply it only when this
-    // managed profile is first created; later player changes are preserved.
-    const optionsService = await this.app.registry.get(InstanceOptionsService)
-    await optionsService.editGameSetting({ instancePath: path, fov: 1 })
-    if (await this.#installPresetMods(preset, path)) {
-      await this.#markPresetApplied(path, preset)
+    const managedFiles = await this.#installPresetMods(preset, path)
+    if (managedFiles && await this.#applyPresetDefaults(preset, path)) {
+      await this.#markPresetApplied(path, preset, managedFiles)
     }
   }
 
@@ -1160,6 +1236,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     if (!autoMods || autoMods.length === 0) return
 
     const instanceService = await this.app.registry.get(InstanceService)
+    await instanceService.initialize()
     const installService = await this.app.registry.get(InstanceInstallService)
     await this.#syncAutoModsForInstances(
       Object.entries(instanceService.state.all),
@@ -1175,66 +1252,95 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     if (!autoMods || autoMods.length === 0) return
 
     for (const [instancePath, rawInstance] of instances) {
-      const instance = asObject(rawInstance)
-      const runtime = asObject(instance.runtime)
-      if (!runtime) continue
-      const minecraft = asString(runtime.minecraft)
-      const loader = this.#instanceLoader(runtime)
-      if (!minecraft || !loader) continue
+      await this.#syncAutoModsForInstance(instancePath, rawInstance, installService)
+    }
+  }
 
-      const existingMods = await this.#instanceModFiles(instancePath)
+  /**
+   * Serialize auto-mod work per profile, without making a foreground launch
+   * wait for the unrelated profiles in the periodic all-profile sweep.
+   */
+  #syncAutoModsForInstance(
+    instancePath: string,
+    rawInstance: unknown,
+    installService: InstanceInstallService,
+  ): Promise<void> {
+    const active = this.#autoModInstanceSyncs.get(instancePath)
+    if (active) return active
 
-      for (const mod of autoMods) {
-        const match = this.#findMatchingVersion(mod, minecraft, loader)
-        if (!match) continue
+    const synchronization = this.#syncAutoModsForInstanceInternal(instancePath, rawInstance, installService)
+      .finally(() => { this.#autoModInstanceSyncs.delete(instancePath) })
+    this.#autoModInstanceSyncs.set(instancePath, synchronization)
+    return synchronization
+  }
 
-        const expectedFile = match.fileName.toLowerCase()
-        const prefix = `${mod.id}-${loader}-${minecraft}-`
-        const oldFiles = [...existingMods.entries()].filter(([file]) =>
-          file !== expectedFile && file.startsWith(prefix) && file.endsWith('.jar'))
-          .map(([, originalName]) => originalName)
+  async #syncAutoModsForInstanceInternal(
+    instancePath: string,
+    rawInstance: unknown,
+    installService: InstanceInstallService,
+  ): Promise<void> {
+    const autoMods = this.#config.autoMods
+    if (!autoMods || autoMods.length === 0) return
 
-        // Build an InstanceFile for the transactional download pipeline. It uses
-        // a separate workspace and validates SHA-1 before committing this path.
-        const instanceFile = {
-          path: `mods/${match.fileName}`,
-          hashes: { sha1: match.sha1 },
-          downloads: [match.downloadUrl],
-          size: match.fileSize || undefined,
+    const instance = asObject(rawInstance)
+    const runtime = asObject(instance.runtime)
+    if (!runtime) return
+    const minecraft = asString(runtime.minecraft)
+    const loader = this.#instanceLoader(runtime)
+    if (!minecraft || !loader) return
+
+    const existingMods = await this.#instanceModFiles(instancePath)
+
+    for (const mod of autoMods) {
+      const match = this.#findMatchingVersion(mod, minecraft, loader)
+      if (!match) continue
+
+      const expectedFile = match.fileName.toLowerCase()
+      const prefix = `${mod.id}-${loader}-${minecraft}-`
+      const oldFiles = [...existingMods.entries()].filter(([file]) =>
+        file !== expectedFile && file.startsWith(prefix) && file.endsWith('.jar'))
+        .map(([, originalName]) => originalName)
+
+      // Build an InstanceFile for the transactional download pipeline. It uses
+      // a separate workspace and validates SHA-1 before committing this path.
+      const instanceFile = {
+        path: `mods/${match.fileName}`,
+        hashes: { sha1: match.sha1 },
+        downloads: [match.downloadUrl],
+        size: match.fileSize || undefined,
+      }
+
+      const existingName = existingMods.get(expectedFile)
+      const existingValid = existingName
+        ? (await checksum(join(instancePath, 'mods', existingName), 'sha1').catch(() => '')).toLowerCase() === match.sha1.toLowerCase()
+        : false
+      if (!existingValid) {
+        try {
+          this.log(`[autoMods] Downloading and verifying ${mod.name} ${match.modVersion} for ${asString(instance.name) || instancePath}`)
+          await installService.installInstanceFiles({
+            path: instancePath,
+            oldFiles: [],
+            files: [instanceFile],
+          })
+          existingMods.set(expectedFile, match.fileName)
+          this.log(`[autoMods] Installed ${match.fileName}; old versions can now be removed`)
+        } catch (err) {
+          // Keep every old JAR untouched when download, size/hash validation,
+          // or the final transactional commit fails.
+          this.warn(`[autoMods] Failed to install ${mod.name}; keeping the previous version: ${(err as Error).message}`)
+          continue
         }
+      }
 
-        const existingName = existingMods.get(expectedFile)
-        const existingValid = existingName
-          ? (await checksum(join(instancePath, 'mods', existingName), 'sha1').catch(() => '')).toLowerCase() === match.sha1.toLowerCase()
-          : false
-        if (!existingValid) {
-          try {
-            this.log(`[autoMods] Downloading and verifying ${mod.name} ${match.modVersion} for ${asString(instance.name) || instancePath}`)
-            await installService.installInstanceFiles({
-              path: instancePath,
-              oldFiles: [],
-              files: [instanceFile],
-            })
-            existingMods.set(expectedFile, match.fileName)
-            this.log(`[autoMods] Installed ${match.fileName}; old versions can now be removed`)
-          } catch (err) {
-            // Keep every old JAR untouched when download, size/hash validation,
-            // or the final transactional commit fails.
-            this.warn(`[autoMods] Failed to install ${mod.name}; keeping the previous version: ${(err as Error).message}`)
-            continue
-          }
-        }
-
-        // The expected JAR is now present. Cleanup happens afterwards, and a
-        // failed cleanup is retried on the next sync instead of risking no mod.
-        for (const file of oldFiles) {
-          try {
-            await remove(join(instancePath, 'mods', file))
-            existingMods.delete(file.toLowerCase())
-            this.log(`[autoMods] Removed old ${file} from ${asString(instance.name) || instancePath}`)
-          } catch (err) {
-            this.warn(`[autoMods] Failed to remove old ${file}: ${(err as Error).message}`)
-          }
+      // The expected JAR is now present. Cleanup happens afterwards, and a
+      // failed cleanup is retried on the next sync instead of risking no mod.
+      for (const file of oldFiles) {
+        try {
+          await remove(join(instancePath, 'mods', file))
+          existingMods.delete(file.toLowerCase())
+          this.log(`[autoMods] Removed old ${file} from ${asString(instance.name) || instancePath}`)
+        } catch (err) {
+          this.warn(`[autoMods] Failed to remove old ${file}: ${(err as Error).message}`)
         }
       }
     }
@@ -1323,14 +1429,10 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       await instanceService.editInstance({ instancePath, version: installed.version })
     }
 
-    // A periodic all-profile synchronization may already own this work. Await
-    // it rather than starting a second checksum/download pass for the same JAR.
-    if (this.#autoModsSync) {
-      await this.#autoModsSync
-    } else {
-      const installService = await this.app.registry.get(InstanceInstallService)
-      await this.#syncAutoModsForInstances([[instancePath, instanceService.state.all[instancePath]]], installService)
-    }
+    // Only await this profile. A periodic all-profile sweep can continue in the
+    // background, while the per-profile lock still prevents duplicate writes.
+    const installService = await this.app.registry.get(InstanceInstallService)
+    await this.#syncAutoModsForInstance(instancePath, instanceService.state.all[instancePath], installService)
 
     const prepared = instanceService.state.all[instancePath]
     if (prepared) {

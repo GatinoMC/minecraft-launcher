@@ -133,6 +133,15 @@ async function resolveModFile(
   loader: MineLatinoLoader,
   minecraft: string,
 ): Promise<InstanceFile | undefined> {
+  if (mod.downloadUrl && mod.sha1 && mod.fileName) {
+    return {
+      path: `mods/${mod.fileName}`,
+      hashes: { sha1: mod.sha1 },
+      downloads: [mod.downloadUrl],
+      size: mod.fileSize,
+    }
+  }
+  if (!mod.projectId) return undefined
   const loaders = loader === 'vanilla' ? undefined : [loader]
   let versions = await clientModrinthV2.getProjectVersions(mod.projectId, {
     loaders,
@@ -172,13 +181,13 @@ async function resolvePresetFiles(preset: MineLatinoPreset) {
     try {
       return { mod, file: await resolveModFile(mod, preset.loader, preset.minecraftVersion) }
     } catch (e) {
-      console.warn(`[minelatino] failed to resolve preset mod ${mod.projectId}`, e)
+      console.warn(`[minelatino] failed to resolve preset mod ${mod.projectId ?? mod.fileName ?? 'unknown'}`, e)
       return { mod, file: undefined }
     }
   }))
   return {
     files: results.flatMap(r => (r.file ? [r.file] : [])),
-    skipped: results.filter(r => !r.file).map(r => r.mod.projectId),
+    skipped: results.filter(r => !r.file).map(r => r.mod.projectId ?? r.mod.fileName ?? 'unknown'),
   }
 }
 

@@ -82,51 +82,121 @@ export const FALLBACK_CONFIG: MineLatinoConfig = {
   },
   presets: [{
     id: 'minelatino-1-21-4',
-    name: 'MineLatino 1.21.4',
-    description: 'Perfil Fabric 1.21.4 listo para jugar, con mods MineLatino y optimizaciones de rendimiento.',
+    name: 'GatinoLauncher 1.21.4',
+    description: 'Perfil Fabric 1.21.4 optimizado con 22 mods y configuración GatinoLauncher.',
     minecraftVersion: '1.21.4',
     loader: 'fabric',
     mods: [
-      { projectId: 'P7dR8mSH' }, // Fabric API
-      { projectId: 'AANobbMI' }, // Sodium
-      { projectId: 'gvQqBUqZ' }, // Lithium
-      { projectId: 'uXXizFIs' }, // FerriteCore
-      { projectId: '5ZwdcRci' }, // ImmediatelyFast
-      { projectId: 'NNAgCjsB' }, // Entity Culling
+      { projectId: 'Gi02250Z', version: '37UVvafP' }, // Almanac
+      { projectId: 'VSNURh3q', version: 'WfGkrMP6' }, // C2ME
+      { projectId: '9s6osm5g', version: 'TJ6o2sr4' }, // Cloth Config
+      { projectId: 'Wnxd13zP', version: '1ZHtT6Xo' }, // Clumps
+      { projectId: 'LQ3K71Q1', version: 'chAeqYaB' }, // Dynamic FPS
+      { projectId: 'NNAgCjsB', version: 'hLb4spl6' }, // Entity Culling
+      { projectId: 'P7dR8mSH', version: 'p96k10UR' }, // Fabric API
+      { projectId: 'x1hIzbuY', version: 'HdbAWjaF' }, // FastQuit
+      { projectId: 'uXXizFIs', version: '7KqeXPRS' }, // FerriteCore
+      { projectId: 'DIlqwRFH', version: 'ZiNw8Tlt' }, // FPS Display
+      { projectId: '5ZwdcRci', version: 'CFJfGS8F' }, // ImmediatelyFast
+      { projectId: 'YL57xq9U', version: 'Ca054sTe' }, // Iris
+      { projectId: 'vE2FN5qn', version: 'Wb7jqi55' }, // Let Me Despawn
+      { projectId: 'gvQqBUqZ', version: 'u8pHPXJl' }, // Lithium
+      { projectId: 'nmDcB62a', version: 'ZGxQddYr' }, // ModernFix
+      { projectId: 'mOgUt4GM', version: '7iGb2ltH' }, // Mod Menu
+      { projectId: '51shyZVL', version: 'gWgOJqk8' }, // More Culling
+      { projectId: 'eXts2L7r', version: 'eeN3FuMY' }, // Placeholder API
+      { projectId: 'Bh37bMuy', version: 'KoUrx3jJ' }, // Reese's Sodium Options
+      { projectId: 'Ps1zyz6x', version: 'brerLvPf' }, // ScalableLux
+      { projectId: 'PtjYWJkn', version: 'f4TfteNb' }, // Sodium Extra
+      { projectId: 'AANobbMI', version: 'c3YkZvne' }, // Sodium
     ],
     icon: 'star',
     recommended: false,
     autoCreate: true,
   }, {
     id: 'minelatino-1-21-11',
-    name: 'MineLatino 1.21.11',
-    description: 'Perfil Fabric 1.21.11 listo para jugar, con cosméticos y optimizaciones de rendimiento.',
+    name: 'GatinoLauncher 1.21.11',
+    description: 'Perfil Fabric 1.21.11 optimizado con 32 mods y configuración GatinoLauncher.',
     minecraftVersion: '1.21.11',
     loader: 'fabric',
     mods: [
-      { projectId: 'P7dR8mSH' }, // Fabric API
-      { projectId: 'AANobbMI' }, // Sodium
-      { projectId: 'gvQqBUqZ' }, // Lithium
-      { projectId: 'uXXizFIs' }, // FerriteCore
-      { projectId: '5ZwdcRci' }, // ImmediatelyFast
-      { projectId: 'NNAgCjsB' }, // Entity Culling
+      { projectId: 'Gi02250Z', version: 'Tcl38ycb' }, // Almanac
+      { projectId: 'ONZm0H7Y', version: '6wjGquEh' }, // Better Block Entities
+      { projectId: 'iRXmuz7a', version: 'CJeMP0KK' }, // Better Render Distance
+      { projectId: 'VSNURh3q', version: 'QdLiMUjx' }, // C2ME
+      { projectId: 'fALzjamp', version: '1CpEkmcD' }, // Chunky
+      { projectId: '9s6osm5g', version: 'xuX40TN5' }, // Cloth Config
+      { projectId: 'Wnxd13zP', version: 'OgBE8Rz4' }, // Clumps
+      { projectId: 'NNAgCjsB', version: 'Dx3xsUER' }, // Entity Culling
+      { projectId: 'P7dR8mSH', version: 'i5tSkVBH' }, // Fabric API
+      { projectId: 'Ha28R6CL', version: 'ViT4gucI' }, // Fabric Language Kotlin
+      { projectId: 'x1hIzbuY', version: 'ip2tVKLp' }, // FastQuit
+      { projectId: 'uXXizFIs', version: 'Ii0gP3D8' }, // FerriteCore
+      { projectId: 'DIlqwRFH', version: 'Tiz1VFDa' }, // FPS Display
+      { projectId: 'hYykXjDp', version: 'nSB6xGOS' }, // Fzzy Config
+      { projectId: '5ZwdcRci', version: 'QwkfUKSj' }, // ImmediatelyFast
+      { projectId: 'YL57xq9U', version: 'ZQx4ktUs' }, // Iris
+      { projectId: 'fQEb0iXm', version: 'O9LmWYR7' }, // Krypton
+      { projectId: 'vE2FN5qn', version: '7gmpSYHk' }, // Let Me Despawn
+      { projectId: 'gvQqBUqZ', version: 'qvNsoO3l' }, // Lithium
+      { projectId: 'TjSm1wrD', version: 'JwSO8JCN' }, // ModernFix
+      { projectId: 'mOgUt4GM', version: 'JWQVh32x' }, // Mod Menu
+      { projectId: '51shyZVL', version: 'kWU8mVq5' }, // More Culling
+      { projectId: 'hasdd01q', version: 'VyMvRQKq' }, // Noisium
+      { projectId: 'RSeLon5O', version: 'kIlv5noY' }, // Particle Core
+      { projectId: 'eXts2L7r', version: 'qxjzQ9xY' }, // Placeholder API
+      { projectId: 'Bh37bMuy', version: 'yIgAFMna' }, // Reese's Sodium Options
+      { projectId: 'Va8PJBFX', version: '1BDIVv7c' }, // RenderScale
+      { projectId: 'Ps1zyz6x', version: 'PV9KcrYQ' }, // ScalableLux
+      { projectId: 'gk3B4zrk', version: 'gqFyBDHt' }, // Smooth Boot
+      { projectId: 'PtjYWJkn', version: 'yqY1efrC' }, // Sodium Extra
+      { projectId: 'AANobbMI', version: '1OWNgWVR' }, // Sodium
+      { projectId: 'fxxUqruK', version: 'w33aHXHj' }, // Voxy
     ],
     icon: 'star',
     recommended: true,
     autoCreate: true,
   }, {
     id: 'minelatino-26-2',
-    name: 'MineLatino 26.2',
-    description: 'Perfil Fabric 26.2 listo para jugar, con mods MineLatino y optimizaciones de rendimiento.',
+    name: 'GatinoLauncher 26.2',
+    description: 'Perfil Fabric 26.2 optimizado con 29 mods y configuración GatinoLauncher.',
     minecraftVersion: '26.2',
     loader: 'fabric',
     mods: [
-      { projectId: 'P7dR8mSH' }, // Fabric API
-      { projectId: 'AANobbMI' }, // Sodium
-      { projectId: 'gvQqBUqZ' }, // Lithium
-      { projectId: 'uXXizFIs' }, // FerriteCore
-      { projectId: '5ZwdcRci' }, // ImmediatelyFast
-      { projectId: 'NNAgCjsB' }, // Entity Culling
+      { projectId: 'zvNzKfGF', version: 'MCoxIcu9' }, // Async Logger
+      { projectId: 'g96Z4WVZ', version: 'JmPs4Wie' }, // BadOptimizations
+      { projectId: 'ONZm0H7Y', version: 'IDqHHWrF' }, // Better Block Entities
+      {
+        downloadUrl: 'https://mediafilez.forgecdn.net/files/8422/187/boosters-1.3.0%2B26.2-fabric.jar',
+        sha1: 'a32087f22cac539fb5b307a53b37e27a3ee2b0f6',
+        fileName: 'boosters-1.3.0+26.2-fabric.jar',
+        fileSize: 50149,
+      }, // Boosters (CurseForge)
+      { projectId: '9s6osm5g', version: 'Nv3xnWXd' }, // Cloth Config
+      { projectId: 'Wnxd13zP', version: 'dEMopoOJ' }, // Clumps
+      { projectId: 'NNAgCjsB', version: 'iiF6U3Ne' }, // Entity Culling
+      { projectId: 'P7dR8mSH', version: 'Kr4WG5mG' }, // Fabric API
+      { projectId: 'Ha28R6CL', version: 'Pd0xrHCw' }, // Fabric Language Kotlin
+      { projectId: 'uXXizFIs', version: 'd5ddUdiB' }, // FerriteCore
+      { projectId: 'nSRLvOHG', version: '4HgtdJ7f' }, // FISM
+      { projectId: 'ohNO6lps', version: 'rSd3GiG8' }, // Forge Config API Port
+      { projectId: 'hYykXjDp', version: 'EQSFgLYw' }, // Fzzy Config
+      { projectId: 'T0OUgf8P', version: 'BOGqc3kp' }, // Get It Together, Drops!
+      { projectId: '7MoE34WK', version: 'ES5Xkk9W' }, // Gnetum
+      { projectId: '5ZwdcRci', version: 'uJHxuQxy' }, // ImmediatelyFast
+      { projectId: 'YL57xq9U', version: 'oaD6KQls' }, // Iris
+      { projectId: 'p8RJPJIC', version: '6Tdp16jL' }, // Ixeris
+      { projectId: 'gvQqBUqZ', version: 'UPNexAfy' }, // Lithium
+      { projectId: 'TjSm1wrD', version: 'TUWH6NZu' }, // ModernFix
+      { projectId: 'mOgUt4GM', version: 'njXb639R' }, // Mod Menu
+      { projectId: '51shyZVL', version: 'SYFaYeMK' }, // More Culling
+      { projectId: 'Kw7Sm3Xf', version: 'Qx0oq0L0' }, // Noxesium
+      { projectId: 'RSeLon5O', version: 'VFv6uQKM' }, // Particle Core
+      { projectId: 'Bh37bMuy', version: 'PH4SPorH' }, // Reese's Sodium Options
+      { projectId: 'Ps1zyz6x', version: 'EKLUURiy' }, // ScalableLux
+      { projectId: 'PtjYWJkn', version: 'Fu02wj4x' }, // Sodium Extra
+      { projectId: 'AANobbMI', version: '2Yom1N68' }, // Sodium
+      { projectId: 'OnlVIpq5', version: 'GJk7sVtP' }, // ZFastNoise
     ],
     icon: 'star',
     recommended: false,
@@ -210,11 +280,19 @@ function asPreset(value: unknown): MineLatinoPreset | undefined {
     loaderVersion: asString(source.loaderVersion).trim() || undefined,
     mods: asArray(source.mods).map((mod) => {
       const source = asObject(mod)
+      const projectId = asString(source.projectId).trim()
+      const downloadUrl = asString(source.downloadUrl).trim()
+      const sha1 = asString(source.sha1).trim().toLowerCase()
+      const fileName = asString(source.fileName).trim()
       return {
-        projectId: asString(source.projectId).trim(),
+        projectId: projectId || undefined,
         version: asString(source.version).trim() || undefined,
+        downloadUrl: /^https:\/\//i.test(downloadUrl) ? downloadUrl : undefined,
+        sha1: /^[a-f0-9]{40}$/.test(sha1) ? sha1 : undefined,
+        fileName: /^[a-z0-9._+ -]+\.jar$/i.test(fileName) ? fileName : undefined,
+        fileSize: Math.max(asNumber(source.fileSize, 0), 0) || undefined,
       }
-    }).filter(mod => mod.projectId),
+    }).filter(mod => mod.projectId || (mod.downloadUrl && mod.sha1 && mod.fileName)),
     icon: asString(source.icon) || undefined,
     recommended: asBoolean(source.recommended, false),
     autoCreate: asBoolean(source.autoCreate, false),

@@ -149,7 +149,7 @@ function loaderLabel(loader: MineLatinoLoader) {
 
 /** Tooltip listing the starter mods behind the "N mods" tag. */
 function modList(preset: MineLatinoPreset) {
-  return preset.mods.map(m => m.projectId).join(', ')
+  return preset.mods.map(m => m.projectId ?? m.fileName ?? 'mod').join(', ')
 }
 </script>
 

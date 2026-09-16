@@ -56,9 +56,16 @@ export interface MineLatinoServerConfig {
 
 export interface MineLatinoPresetMod {
   /** Modrinth project id or slug, e.g. `sodium`. */
-  projectId: string
+  projectId?: string
   /** Pin a version; omit to take the newest one compatible with the loader. */
   version?: string
+  /** Direct HTTPS source for mods that are not published on Modrinth. */
+  downloadUrl?: string
+  /** SHA-1 used to verify a directly downloaded JAR before installation. */
+  sha1?: string
+  /** Safe destination filename for a directly downloaded JAR. */
+  fileName?: string
+  fileSize?: number
 }
 
 export interface MineLatinoPreset {
