@@ -1,4 +1,4 @@
-name: Publish signed in-app update
+name: Publish Windows release
 
 on:
   workflow_dispatch:
@@ -82,7 +82,7 @@ jobs:
           pnpm build:all
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Sign and verify updater assets
+      - name: Sign and verify release assets
         shell: pwsh
         env:
           ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
@@ -103,7 +103,19 @@ jobs:
           $missing = $required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $output $_) -PathType Leaf) }
           if ($missing.Count -gt 0) { throw "Missing updater assets: $($missing -join ', ')" }
 
-      - name: Publish signed updater assets without an installer
+          $installers = @(Get-ChildItem $output -Filter "minelatino-$version-win32-x64.exe")
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one Windows installer, found $($installers.Count)"
+          }
+          $installer = $installers[0]
+          $installerHash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText("$($installer.FullName).sha256", $installerHash)
+          $authenticode = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+          if ($authenticode.Status -ne 'Valid') {
+            Write-Warning "Publishing owner-requested installer without Authenticode (status: $($authenticode.Status))."
+          }
+
+      - name: Publish signed updater and Windows installer
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -117,6 +129,8 @@ jobs:
             Get-Item (Join-Path $output "app-$version-win.asar.sha256")
             Get-Item (Join-Path $output "app-$version-win.asar.sha256.sig")
             Get-Item (Join-Path $output 'manifest.json')
+            Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe")
+            Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe.sha256")
           ) | Select-Object -ExpandProperty FullName
           & gh release create $env:RELEASE_TAG @assets `
             --title "GatinoLauncher $version" `

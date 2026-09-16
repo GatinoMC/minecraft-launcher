@@ -14,7 +14,7 @@ import {
 import { DownloadUpdateOptions, LauncherAppUpdater } from '@xmcl/runtime/app'
 import { AnyError, isSystemError } from '@xmcl/utils'
 import { spawn } from 'child_process'
-import { shell } from 'electron'
+import { app as electronApp, shell } from 'electron'
 import * as updater from 'electron-updater'
 import { AppUpdater, CancellationToken, UpdaterSignal } from 'electron-updater'
 import { createReadStream, createWriteStream } from 'fs'
@@ -242,12 +242,21 @@ function isRunning(pid) {
   }
 }
 
-async function waitForParent(pid) {
-  for (let attempt = 0; attempt < 240; attempt += 1) {
-    if (!isRunning(pid)) return
+async function waitForLauncherProcesses(config) {
+  const processPids = Array.from(new Set(
+    (Array.isArray(config.processPids) ? config.processPids : [config.parentPid])
+      .filter(pid => Number.isInteger(pid) && pid > 0 && pid !== process.pid),
+  ))
+  for (let attempt = 0; attempt < 480; attempt += 1) {
+    const running = processPids.filter(isRunning)
+    if (running.length === 0) return
+    if (attempt === 0 || attempt % 40 === 39) {
+      await log(config, 'waiting-for-exit', 'Still running: ' + running.join(','))
+    }
     await sleep(250)
   }
-  throw new Error('Parent process did not exit within 60 seconds (pid=' + pid + ')')
+  const running = processPids.filter(isRunning)
+  throw new Error('Launcher processes did not exit within 120 seconds (pids=' + running.join(',') + ')')
 }
 
 async function hashFile(path) {
@@ -318,8 +327,8 @@ async function main() {
   const config = JSON.parse(await readFile(configPath, 'utf8'))
   let backupAsarPath
   try {
-    await setStatus(config, 'prepared', 'Waiting for launcher process to exit')
-    await waitForParent(config.parentPid)
+    await setStatus(config, 'prepared', 'Waiting for all launcher processes to exit')
+    await waitForLauncherProcesses(config)
     const actualSha256 = await hashFile(config.updateAsarPath)
     if (actualSha256 !== config.expectedSha256) {
       throw new Error('Pending ASAR checksum mismatch')
@@ -337,7 +346,8 @@ async function main() {
   } catch (error) {
     await rollbackToBackup(config.appAsarPath, backupAsarPath || config.appAsarPath + '.bk').catch(() => {})
     await setStatus(config, 'failed', (error && error.stack) || String(error))
-    if (!isRunning(config.parentPid)) {
+    const trackedPids = Array.isArray(config.processPids) ? config.processPids : [config.parentPid]
+    if (!trackedPids.some(isRunning)) {
       await relaunch(config).catch(relaunchError => log(config, 'relaunch-failed', relaunchError.message))
     }
     throw error
@@ -366,6 +376,9 @@ async function prepareWindowsUpdateHelper(
     configPath,
     JSON.stringify({
       parentPid: process.pid,
+      processPids: Array.from(
+        new Set([process.pid, ...electronApp.getAppMetrics().map((metric) => metric.pid)]),
+      ),
       appAsarPath,
       updateAsarPath,
       checksumPath: updateAsarPath + '.sha256',
