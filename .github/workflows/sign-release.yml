@@ -67,7 +67,6 @@ jobs:
           if ($tagVersion -ne $packageVersion) {
             throw "Tag ${{ inputs.tag }} does not match package version $packageVersion"
           }
-          gh release view '${{ inputs.tag }}' | Out-Null
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -152,11 +151,13 @@ jobs:
           [System.IO.File]::WriteAllText((Join-Path signed 'latest.yml'), $latest)
           Write-Host "Verified $($signature.SignerCertificate.Subject)"
 
-      - name: Replace release installer with signed build
+      - name: Publish only the signed Windows release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          $tag = '${{ inputs.tag }}'
+          $version = $tag -replace '^v', ''
           $installer = Get-ChildItem signed -Recurse -Filter 'minelatino-*-win32-x64.exe' | Select-Object -First 1
           $releaseAssets = @(
             $installer.FullName,
@@ -164,4 +165,13 @@ jobs:
             (Join-Path signed 'latest.yml')
           )
           $releaseAssets += Get-ChildItem xmcl-electron-app/build/output -Filter 'app-*.asar*' | ForEach-Object FullName
-          & gh release upload '${{ inputs.tag }}' @releaseAssets --clobber
+          $releaseAssets += Get-Item xmcl-electron-app/build/output/manifest.json | ForEach-Object FullName
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            & gh release upload $tag @releaseAssets --clobber
+          } else {
+            & gh release create $tag @releaseAssets `
+              --title "GatinoLauncher $version" `
+              --notes-file "RELEASE-$version.md" `
+              --latest
+          }

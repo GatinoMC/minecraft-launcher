@@ -66,12 +66,19 @@ describe('pluginModrinthAccess', () => {
     const response = {} as Record<string, unknown>
     handlers.get(LAUNCHER_PROTOCOL)!({
       request: {
-        url: new URL(`${LAUNCHER_PROTOCOL}://launcher/modrinth-auth?code=abc`),
+        url: new URL(`${LAUNCHER_PROTOCOL}://launcher/modrinth-auth?code=abc&state=expected-state`),
       },
       response,
     })
 
-    await vi.waitFor(() => expect(userService.emit).toHaveBeenCalledWith('modrinth-authorize-code', undefined, 'abc'))
+    await vi.waitFor(() =>
+      expect(userService.emit).toHaveBeenCalledWith(
+        'modrinth-authorize-code',
+        undefined,
+        'abc',
+        'expected-state',
+      ),
+    )
     expect(registry.get).toHaveBeenCalledWith(UserService)
     expect(response.status).toBe(200)
   })

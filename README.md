@@ -98,7 +98,7 @@ flatpak install flathub app.xmcl.voxelum
 - 📦 **Support import/export** CurseForge & Modrinth modpacks with compliance!
 - 🔒 **Support multiple account systems**. Built-in Microsoft login and Mojang Yggdrasil API. It also has builtin support of [ely.by](https://ely.by/) and [littleskin.cn](https://littleskin.cn). You can also add third-party authentication servers!
 - 🔗 **Peer to peer connection between users**. You can play multiplayer over LAN even you are not in same physical LAN!
-- 🔑 **Windows release integrity**. MineLatino publishes checksums for every release and is prepared for SignPath signing. Until its own application is approved, Windows may still show a SmartScreen warning for unsigned installers.
+- 🔑 **Windows release integrity**. GatinoLauncher publishes checksums for every release and only permits new Windows releases through the SignPath signing workflow. Publishing an intentionally unsigned Windows release is disabled.
 
 ## Core Libraries
 

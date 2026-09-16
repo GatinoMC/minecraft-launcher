@@ -13,14 +13,16 @@ export const pluginModrinthAccess: LauncherAppPlugin = (app) => {
       let error: Error | undefined
       if (parsed.searchParams.get('error')) {
         const err = parsed.searchParams.get('error')!
-        const errDescription = parsed.searchParams.get('error')!
+        const errDescription = parsed.searchParams.get('error_description') ?? err
         error = new Error(unescape(errDescription))
         ;(error as any).error = err
       }
       const code = parsed.searchParams.get('code') as string
-      void app.registry.get(UserService)
+      const state = parsed.searchParams.get('state')
+      void app.registry
+        .get(UserService)
         .then((userService) => {
-          userService.emit('modrinth-authorize-code', error, code)
+          userService.emit('modrinth-authorize-code', error, code, state)
         })
         .catch(() => {
           logger.warn('Unable to emit Modrinth authorization code.')

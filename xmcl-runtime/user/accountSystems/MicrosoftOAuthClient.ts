@@ -89,14 +89,18 @@ export class MicrosoftOAuthClient {
     private fetch: typeof global.fetch,
     private logger: Logger,
     readonly clientId: string,
-    private getCode: (url: string, redirectUri: string, signal?: AbortSignal, authAttemptId?: string) => Promise<string>,
+    private getCode: (
+      url: string,
+      redirectUri: string,
+      signal?: AbortSignal,
+      authAttemptId?: string,
+    ) => Promise<string>,
     private getRedirectUrl: (preferLocalHost: boolean) => Promise<string>,
     private deviceCodeCallback: (deviceCodeResponse: DeviceCodeResponse) => void,
     private storage: SecretStorage,
     private getWindowHandle?: () => Buffer | undefined,
     private emitTelemetry?: (event: MicrosoftAuthTelemetryEvent) => void,
-  ) {
-  }
+  ) {}
 
   private async getNativeBrokerPlugin() {
     if (process.platform !== 'win32') {
@@ -184,30 +188,42 @@ export class MicrosoftOAuthClient {
     extraScopes: string[] | undefined,
   ): Promise<SilentAuthentication> {
     const accounts = await app.getAllAccounts().catch((error) => {
-      this.logger.warn(`Microsoft account lookup failed: ${JSON.stringify(getSafeErrorProperties(error))}`)
+      this.logger.warn(
+        `Microsoft account lookup failed: ${JSON.stringify(getSafeErrorProperties(error))}`,
+      )
       return []
     })
-    const account = accounts.find(value => value.username.toLowerCase() === username.toLowerCase())
+    const account = accounts.find(
+      (value) => value.username.toLowerCase() === username.toLowerCase(),
+    )
     if (!account) {
-      this.logger.warn(`Microsoft silent token acquisition missed: no matching account (accountCount=${accounts.length}).`)
+      this.logger.warn(
+        `Microsoft silent token acquisition missed: no matching account (accountCount=${accounts.length}).`,
+      )
       return {}
     }
 
-    const result = await app.acquireTokenSilent({
-      scopes,
-      account,
-      forceRefresh: false,
-    }).catch((error) => {
-      this.logger.warn(`Microsoft silent token acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`)
-      return null
-    })
+    const result = await app
+      .acquireTokenSilent({
+        scopes,
+        account,
+        forceRefresh: false,
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `Microsoft silent token acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`,
+        )
+        return null
+      })
     if (!result) return { account }
 
     const extra = extraScopes
-      ? await app.acquireTokenSilent({ scopes: extraScopes, account }).catch((error) => {
-        this.logger.warn(`Microsoft silent extra-scope acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`)
-        return undefined
-      }) ?? undefined
+      ? ((await app.acquireTokenSilent({ scopes: extraScopes, account }).catch((error) => {
+          this.logger.warn(
+            `Microsoft silent extra-scope acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`,
+          )
+          return undefined
+        })) ?? undefined)
       : undefined
     return { account, authentication: { result, extra } }
   }
@@ -257,29 +273,49 @@ export class MicrosoftOAuthClient {
             windowHandle,
           })
           if (account && result.account?.homeAccountId !== account.homeAccountId) {
-            track('microsoft-auth-broker-result', {
-              outcome: 'account_mismatch',
-              fallbackReason: 'different_account',
-              ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
-              ...(brokerDiagnostic.errorCode ? { msalInternalErrorCode: brokerDiagnostic.errorCode } : {}),
-            }, { durationMs: Date.now() - brokerStartedAt })
-            this.logger.warn('Microsoft broker returned a different account; falling back to WebView.')
+            track(
+              'microsoft-auth-broker-result',
+              {
+                outcome: 'account_mismatch',
+                fallbackReason: 'different_account',
+                ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
+                ...(brokerDiagnostic.errorCode
+                  ? { msalInternalErrorCode: brokerDiagnostic.errorCode }
+                  : {}),
+              },
+              { durationMs: Date.now() - brokerStartedAt },
+            )
+            this.logger.warn(
+              'Microsoft broker returned a different account; falling back to WebView.',
+            )
             result = null
           } else {
-            track('microsoft-auth-broker-result', {
-              outcome: 'success',
-              ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
-              ...(brokerDiagnostic.errorCode ? { msalInternalErrorCode: brokerDiagnostic.errorCode } : {}),
-            }, { durationMs: Date.now() - brokerStartedAt })
+            track(
+              'microsoft-auth-broker-result',
+              {
+                outcome: 'success',
+                ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
+                ...(brokerDiagnostic.errorCode
+                  ? { msalInternalErrorCode: brokerDiagnostic.errorCode }
+                  : {}),
+              },
+              { durationMs: Date.now() - brokerStartedAt },
+            )
           }
         } catch (error) {
           const canceled = isUserCanceledError(error)
-          track('microsoft-auth-broker-result', {
-            outcome: canceled ? 'user_cancelled' : 'error',
-            ...getSafeErrorProperties(error),
-            ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
-            ...(brokerDiagnostic.errorCode ? { msalInternalErrorCode: brokerDiagnostic.errorCode } : {}),
-          }, { durationMs: Date.now() - brokerStartedAt })
+          track(
+            'microsoft-auth-broker-result',
+            {
+              outcome: canceled ? 'user_cancelled' : 'error',
+              ...getSafeErrorProperties(error),
+              ...(brokerDiagnostic.status ? { msalStatus: brokerDiagnostic.status } : {}),
+              ...(brokerDiagnostic.errorCode
+                ? { msalInternalErrorCode: brokerDiagnostic.errorCode }
+                : {}),
+            },
+            { durationMs: Date.now() - brokerStartedAt },
+          )
           if (canceled) throw error
           this.logger.warn('Microsoft broker authentication failed; falling back to WebView.')
         }
@@ -291,12 +327,14 @@ export class MicrosoftOAuthClient {
         const redirectUri = await this.getRedirectUrl(options.directRedirectToLauncher ?? false)
         let code = options.code
         if (!code) {
+          const state = randomUUID()
           const url = await app.getAuthCodeUrl({
             redirectUri,
             scopes,
             extraScopesToConsent: options.extraScopes,
             loginHint: username,
             prompt: 'select_account',
+            state,
           })
           code = await this.getCode(url, redirectUri, options.signal, authAttemptId)
         }
@@ -305,7 +343,10 @@ export class MicrosoftOAuthClient {
     }
 
     if (!result) {
-      throw new AnyError('MicrosoftOAuthEmptyResult', 'Microsoft authentication returned no result.')
+      throw new AnyError(
+        'MicrosoftOAuthEmptyResult',
+        'Microsoft authentication returned no result.',
+      )
     }
     if (account && result.account?.homeAccountId !== account.homeAccountId) {
       throw new AnyError(
@@ -315,13 +356,18 @@ export class MicrosoftOAuthClient {
     }
     let extra: AuthenticationResult | undefined
     if (options.extraScopes && result.account) {
-      extra = await app.acquireTokenSilent({
-        account: result.account,
-        scopes: options.extraScopes,
-      }).catch((error) => {
-        this.logger.warn(`Microsoft silent extra-scope acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`)
-        return undefined
-      }) ?? undefined
+      extra =
+        (await app
+          .acquireTokenSilent({
+            account: result.account,
+            scopes: options.extraScopes,
+          })
+          .catch((error) => {
+            this.logger.warn(
+              `Microsoft silent extra-scope acquisition missed: ${JSON.stringify(getSafeErrorProperties(error))}`,
+            )
+            return undefined
+          })) ?? undefined
     }
     return { result, extra, routeUsed, fallbackUsed }
   }
@@ -348,24 +394,35 @@ export class MicrosoftOAuthClient {
     const complete = (outcome: string, error?: unknown) => {
       if (telemetry.completed) return
       telemetry.completed = true
-      track('microsoft-auth-complete', {
-        outcome,
-        routeUsed: telemetry.routeUsed,
-        fallbackUsed: telemetry.fallbackUsed,
-        cachedAccount: telemetry.cachedAccount,
-        ...getSafeErrorProperties(error),
-      }, {
-        durationMs: Date.now() - telemetry.startedAt,
-      })
+      track(
+        'microsoft-auth-complete',
+        {
+          outcome,
+          routeUsed: telemetry.routeUsed,
+          fallbackUsed: telemetry.fallbackUsed,
+          cachedAccount: telemetry.cachedAccount,
+          ...getSafeErrorProperties(error),
+        },
+        {
+          durationMs: Date.now() - telemetry.startedAt,
+        },
+      )
     }
 
     try {
       const nativeBrokerPlugin = options.useNativeBroker
         ? await this.getNativeBrokerPlugin()
         : undefined
-      const windowHandle = nativeBrokerPlugin && !options.slientOnly ? this.getWindowHandle?.() : undefined
+      const windowHandle =
+        nativeBrokerPlugin && !options.slientOnly ? this.getWindowHandle?.() : undefined
       track('microsoft-auth-start', {
-        preferredFlow: options.slientOnly ? 'silent' : options.useDeviceCode ? 'device_code' : options.useNativeBroker ? 'wam' : 'webview',
+        preferredFlow: options.slientOnly
+          ? 'silent'
+          : options.useDeviceCode
+            ? 'device_code'
+            : options.useNativeBroker
+              ? 'wam'
+              : 'webview',
         brokerRequested: Boolean(options.useNativeBroker),
         brokerAvailable: Boolean(nativeBrokerPlugin),
         windowHandleAvailable: Boolean(windowHandle),
@@ -376,17 +433,14 @@ export class MicrosoftOAuthClient {
       const app = await this.getOAuthApp(
         options.signal,
         options.useDeviceCode ? undefined : nativeBrokerPlugin,
-        diagnostic => { brokerDiagnostic = diagnostic },
+        (diagnostic) => {
+          brokerDiagnostic = diagnostic
+        },
       )
       let account: AccountInfo | undefined
       const allowSilentReuse = options.slientOnly || !options.useDeviceCode
       if (username && !options.code && allowSilentReuse) {
-        const silent = await this.acquireSilently(
-          app,
-          username,
-          scopes,
-          options.extraScopes,
-        )
+        const silent = await this.acquireSilently(app, username, scopes, options.extraScopes)
         account = silent.account
         telemetry.cachedAccount = Boolean(account)
         telemetry.routeUsed = nativeBrokerPlugin && account?.nativeAccountId ? 'wam' : 'silent'
@@ -397,7 +451,10 @@ export class MicrosoftOAuthClient {
       }
 
       if (options.slientOnly) {
-        throw new AnyError('MicrosoftOAuthSlientFailed', 'Fail to acquire Microsoft token silently.')
+        throw new AnyError(
+          'MicrosoftOAuthSlientFailed',
+          'Fail to acquire Microsoft token silently.',
+        )
       }
 
       telemetry.routeUsed = options.useDeviceCode
@@ -433,11 +490,11 @@ export class MicrosoftOAuthClient {
           ? 'aborted'
           : (e as Error | undefined)?.name === 'MicrosoftOAuthSlientFailed'
             ? 'silent_miss'
-          : isUserCanceledError(e)
-            ? 'user_cancelled'
-            : isNetworkError(e)
-              ? 'network_error'
-              : 'error',
+            : isUserCanceledError(e)
+              ? 'user_cancelled'
+              : isNetworkError(e)
+                ? 'network_error'
+                : 'error',
         e,
       )
       throw e

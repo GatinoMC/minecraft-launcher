@@ -74,13 +74,13 @@ async function downloadAsarUpdate(
 ): Promise<void> {
   const version = updateInfo.name.startsWith('v') ? updateInfo.name.substring(1) : updateInfo.name
   const file = asarAssetName(version)
-  const publishedUrl = updateInfo.files.find(f => f.name === file)?.url
+  const publishedUrl = updateInfo.files.find((f) => f.name === file)?.url
   if (!publishedUrl) {
     throw new AnyError(
       'UpdateAsarError',
       `The release ${updateInfo.name} does not publish ${file}`,
       {},
-      { published: updateInfo.files.map(f => f.name).join(', ') },
+      { published: updateInfo.files.map((f) => f.name).join(', ') },
     )
   }
   const url = trustedUpdateUrl(publishedUrl)
@@ -107,7 +107,8 @@ async function downloadAsarUpdate(
 
   const signatureUrl = `${sha256Url}.sig`
   const signatureResponse = await app.fetch(signatureUrl, { signal: options?.abortSignal })
-  if (!signatureResponse.ok || !verifyAsarChecksumSignature(expectedSha256, await signatureResponse.text())) {
+  const checksumSignature = signatureResponse.ok ? (await signatureResponse.text()).trim() : ''
+  if (!signatureResponse.ok || !verifyAsarChecksumSignature(expectedSha256, checksumSignature)) {
     throw new AnyError(
       'UpdateAsarError',
       `The release ${updateInfo.name} does not publish a valid MineLatino ASAR signature`,
@@ -123,6 +124,8 @@ async function downloadAsarUpdate(
   // undefined before downloading a single byte.
   const pendingSha256 = (await checksum(destination, 'sha256').catch(() => undefined)) ?? ''
   if (pendingSha256.toLowerCase() === expectedSha256) {
+    await writeFile(destination + '.sha256', expectedSha256, 'utf8')
+    await writeFile(destination + '.sha256.sig', checksumSignature, 'utf8')
     return
   }
 
@@ -139,6 +142,8 @@ async function downloadAsarUpdate(
         { expected: expectedSha256, actual: downloadedSha256 || 'unreadable' },
       )
     }
+    await writeFile(destination + '.sha256', expectedSha256, 'utf8')
+    await writeFile(destination + '.sha256.sig', checksumSignature, 'utf8')
   } catch (e) {
     if (e instanceof Error && e.name === 'AbortError') return
     throw Object.assign(e as Error, { name: 'UpdateAsarError', url })
@@ -187,7 +192,9 @@ async function downloadGzAsar(
  * manifest published, and falls back to the MineLatino backend.
  */
 async function hintUserDownload(updateInfo: ReleaseInfo): Promise<void> {
-  const installer = updateInfo.files.find(f => /\.(exe|msi|dmg|zip|AppImage|deb|rpm|tar\.xz)$/i.test(f.name))
+  const installer = updateInfo.files.find((f) =>
+    /\.(exe|msi|dmg|zip|AppImage|deb|rpm|tar\.xz)$/i.test(f.name),
+  )
   const url = trustedUpdateUrl(installer?.url || resolveBackendUrl())
   if (!url) return
   await shell.openExternal(url)
@@ -197,8 +204,9 @@ function trustedUpdateUrl(raw: string): string {
   const url = new URL(raw)
   if (url.protocol !== 'https:') throw new Error('Update URL must use HTTPS')
   const backend = new URL(resolveBackendUrl())
-  const ownGithubRelease = url.hostname === 'github.com'
-    && url.pathname.startsWith('/GatinoMC/minecraft-launcher/releases/download/')
+  const ownGithubRelease =
+    url.hostname === 'github.com' &&
+    url.pathname.startsWith('/GatinoMC/minecraft-launcher/releases/download/')
   if (!ownGithubRelease && url.origin !== backend.origin) {
     throw new Error(`Untrusted update origin: ${url.origin}`)
   }
@@ -207,21 +215,49 @@ function trustedUpdateUrl(raw: string): string {
 
 const WINDOWS_UPDATE_HELPER = String.raw`
 'use strict'
-const { existsSync } = require('fs')
-const { readFile, rename, unlink } = require('fs/promises')
+const { createReadStream, existsSync } = require('fs')
+const { appendFile, readFile, rename, unlink, writeFile } = require('fs/promises')
 const { spawn } = require('child_process')
+const { createHash } = require('crypto')
 
 const sleep = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
 
+async function log(config, phase, message) {
+  const line = JSON.stringify({ time: new Date().toISOString(), phase, message }) + '\n'
+  await appendFile(config.logPath, line, 'utf8').catch(() => {})
+}
+
+async function setStatus(config, state, detail) {
+  await writeFile(config.statusPath, JSON.stringify({ state, detail, updatedAt: new Date().toISOString() }), 'utf8')
+    .catch(() => {})
+  await log(config, state, detail)
+}
+
+function isRunning(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function waitForParent(pid) {
   for (let attempt = 0; attempt < 240; attempt += 1) {
-    try {
-      process.kill(pid, 0)
-      await sleep(250)
-    } catch {
-      return
-    }
+    if (!isRunning(pid)) return
+    await sleep(250)
   }
+  throw new Error('Parent process did not exit within 60 seconds (pid=' + pid + ')')
+}
+
+async function hashFile(path) {
+  return await new Promise((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(path)
+    stream.on('data', chunk => hash.update(chunk))
+    stream.on('error', reject)
+    stream.on('end', () => resolve(hash.digest('hex')))
+  })
 }
 
 async function restoreBackup(appAsarPath, backupAsarPath) {
@@ -230,30 +266,33 @@ async function restoreBackup(appAsarPath, backupAsarPath) {
   }
 }
 
+async function rollbackToBackup(appAsarPath, backupAsarPath) {
+  if (!existsSync(backupAsarPath)) return
+  await unlink(appAsarPath).catch(() => {})
+  await rename(backupAsarPath, appAsarPath)
+}
+
 async function replaceAsar(config) {
   const backupAsarPath = config.appAsarPath + '.bk'
+  let lastError
   for (let attempt = 0; attempt < 120; attempt += 1) {
     await restoreBackup(config.appAsarPath, backupAsarPath)
     await unlink(backupAsarPath).catch(() => {})
     try {
       await rename(config.appAsarPath, backupAsarPath)
       await rename(config.updateAsarPath, config.appAsarPath)
-      await unlink(backupAsarPath).catch(() => {})
-      return true
-    } catch {
+      return backupAsarPath
+    } catch (error) {
+      lastError = error
+      await log(config, 'swap-retry', 'attempt=' + (attempt + 1) + ' code=' + (error.code || 'unknown') + ' message=' + error.message)
       await restoreBackup(config.appAsarPath, backupAsarPath)
       await sleep(250)
     }
   }
-  return false
+  throw new Error('Unable to replace app.asar after 120 attempts: ' + (lastError?.message || 'unknown error'))
 }
 
-async function main() {
-  const configPath = process.argv[2]
-  const config = JSON.parse(await readFile(configPath, 'utf8'))
-  await waitForParent(config.parentPid)
-  await replaceAsar(config)
-
+async function relaunch(config) {
   const environment = { ...process.env }
   delete environment.ELECTRON_RUN_AS_NODE
   const child = spawn(config.executable, config.arguments, {
@@ -263,13 +302,49 @@ async function main() {
     windowsHide: true,
     env: environment,
   })
+  await new Promise((resolve, reject) => {
+    child.once('spawn', resolve)
+    child.once('error', reject)
+  })
+  await Promise.race([
+    sleep(2000),
+    new Promise((_, reject) => child.once('exit', code => reject(new Error('Relaunched process exited early with code ' + code)))),
+  ])
   child.unref()
-
-  await unlink(configPath).catch(() => {})
-  await unlink(__filename).catch(() => {})
 }
 
-main().catch(() => process.exitCode = 1)
+async function main() {
+  const configPath = process.argv[2]
+  const config = JSON.parse(await readFile(configPath, 'utf8'))
+  let backupAsarPath
+  try {
+    await setStatus(config, 'prepared', 'Waiting for launcher process to exit')
+    await waitForParent(config.parentPid)
+    const actualSha256 = await hashFile(config.updateAsarPath)
+    if (actualSha256 !== config.expectedSha256) {
+      throw new Error('Pending ASAR checksum mismatch')
+    }
+    await setStatus(config, 'verified', 'Pending ASAR checksum verified')
+    backupAsarPath = await replaceAsar(config)
+    await setStatus(config, 'swapped', 'app.asar replaced successfully')
+    await relaunch(config)
+    await setStatus(config, 'relaunched', 'Launcher process started successfully')
+    await unlink(backupAsarPath).catch(() => {})
+    await unlink(config.checksumPath).catch(() => {})
+    await unlink(config.signaturePath).catch(() => {})
+    await unlink(configPath).catch(() => {})
+    await unlink(__filename).catch(() => {})
+  } catch (error) {
+    await rollbackToBackup(config.appAsarPath, backupAsarPath || config.appAsarPath + '.bk').catch(() => {})
+    await setStatus(config, 'failed', (error && error.stack) || String(error))
+    if (!isRunning(config.parentPid)) {
+      await relaunch(config).catch(relaunchError => log(config, 'relaunch-failed', relaunchError.message))
+    }
+    throw error
+  }
+}
+
+main().catch(() => { process.exitCode = 1 })
 `
 
 /**
@@ -282,18 +357,28 @@ async function prepareWindowsUpdateHelper(
   appAsarPath: string,
   updateAsarPath: string,
   appDataPath: string,
+  expectedSha256: string,
 ): Promise<string[]> {
   const helperPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.cjs`)
   const configPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.json`)
   await writeFile(helperPath, WINDOWS_UPDATE_HELPER, 'utf8')
-  await writeFile(configPath, JSON.stringify({
-    parentPid: process.pid,
-    appAsarPath,
-    updateAsarPath,
-    executable: process.execPath,
-    arguments: process.argv.slice(1),
-    cwd: process.cwd(),
-  }), 'utf8')
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      parentPid: process.pid,
+      appAsarPath,
+      updateAsarPath,
+      checksumPath: updateAsarPath + '.sha256',
+      signaturePath: updateAsarPath + '.sha256.sig',
+      expectedSha256,
+      executable: process.execPath,
+      arguments: process.argv.slice(1),
+      cwd: process.cwd(),
+      logPath: join(appDataPath, 'MineLatinoAutoUpdate.log'),
+      statusPath: join(appDataPath, 'MineLatinoAutoUpdate-status.json'),
+    }),
+    'utf8',
+  )
   // Clean up the legacy helper so older upgrades do not leave
   // an alarming AutoUpdate.bat behind in the application-data directory.
   await unlinkAsync(join(appDataPath, 'AutoUpdate.bat')).catch(() => {})
@@ -340,6 +425,16 @@ export class ElectronUpdater implements LauncherAppUpdater {
 
   constructor(private app: ElectronLauncherApp) {
     this.logger = app.getLogger('ElectronUpdater')
+    void readFile(join(app.appDataPath, 'MineLatinoAutoUpdate-status.json'), 'utf8')
+      .then((raw) => {
+        const status = JSON.parse(raw) as { state?: string; detail?: string }
+        if (status.state === 'failed') {
+          this.logger.warn(
+            `Previous launcher update failed. See ${join(app.appDataPath, 'MineLatinoAutoUpdate.log')}`,
+          )
+        }
+      })
+      .catch(() => undefined)
   }
 
   /**
@@ -410,9 +505,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
       // running copy is not how it is updated.
       updateInfo.operation = ElectronUpdateOperation.Manual
     } else {
-      updateInfo.operation = hasAsar
-        ? ElectronUpdateOperation.Asar
-        : ElectronUpdateOperation.Manual
+      updateInfo.operation = hasAsar ? ElectronUpdateOperation.Asar : ElectronUpdateOperation.Manual
     }
 
     this.logger.log(`Got operation=${updateInfo.operation} update from ${backend}/api/release`)
@@ -453,6 +546,35 @@ export class ElectronUpdater implements LauncherAppUpdater {
         throw new Error(`No update found: ${updateAsarPath}`)
       }
 
+      const checksumPath = updateAsarPath + '.sha256'
+      const signaturePath = updateAsarPath + '.sha256.sig'
+      const expectedSha256 = (await readFile(checksumPath, 'utf8').catch(() => ''))
+        .trim()
+        .toLowerCase()
+      const checksumSignature = (await readFile(signaturePath, 'utf8').catch(() => '')).trim()
+      if (
+        !/^[a-f0-9]{64}$/.test(expectedSha256) ||
+        !verifyAsarChecksumSignature(expectedSha256, checksumSignature)
+      ) {
+        throw new AnyError(
+          'UpdateError',
+          'La actualización pendiente no tiene una firma válida. Vuelve a descargarla.',
+          {},
+          { checksumPath, signaturePath },
+        )
+      }
+      const actualSha256 = (
+        (await checksum(updateAsarPath, 'sha256').catch(() => undefined)) ?? ''
+      ).toLowerCase()
+      if (actualSha256 !== expectedSha256) {
+        throw new AnyError(
+          'UpdateError',
+          'La actualización pendiente está dañada o fue modificada. Vuelve a descargarla.',
+          {},
+          { expectedSha256, actualSha256: actualSha256 || 'unreadable' },
+        )
+      }
+
       try {
         await probeUpdateDirectory(appAsarPath)
       } catch (cause) {
@@ -463,12 +585,15 @@ export class ElectronUpdater implements LauncherAppUpdater {
           { appAsarPath },
         )
       }
-      this.logger.log(`Process has write access to ${dirname(appAsarPath)}; install without elevation`)
+      this.logger.log(
+        `Process has write access to ${dirname(appAsarPath)}; install without elevation`,
+      )
 
       const args = await prepareWindowsUpdateHelper(
         appAsarPath,
         updateAsarPath,
         this.app.appDataPath,
+        expectedSha256,
       )
       this.logger.log(`Install from windows: ${args.join(' ')}`)
       const x = spawn(args[0], args.slice(1), {
@@ -553,7 +678,9 @@ export class ElectronUpdater implements LauncherAppUpdater {
 
   async installUpdateAndQuit(updateInfo: ReleaseInfo): Promise<void> {
     if (HAS_DEV_SERVER) {
-      throw new Error('Las actualizaciones se instalan desde el launcher instalado. No se puede reiniciar y actualizar una sesión de desarrollo.')
+      throw new Error(
+        'Las actualizaciones se instalan desde el launcher instalado. No se puede reiniciar y actualizar una sesión de desarrollo.',
+      )
     }
     if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       await this.quitAndInstallAsar()

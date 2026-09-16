@@ -17,11 +17,22 @@ describe('pluginYggdrasilHandler', () => {
     const profile = {
       id: '12345678-1234-1234-1234-123456789abc',
       name: 'reter',
-      textures: {},
+      textures: {
+        SKIN: { url: 'http://launcher/media?path=C%3A%5Cskin.png' },
+      },
     }
+    const storedSecrets = new Map<string, string>()
     const app = {
       getLogger: vi.fn(() => ({ log: vi.fn() })),
       serverPort: Promise.resolve(25555),
+      secretStorage: {
+        get: vi.fn(async (service: string, account: string) =>
+          storedSecrets.get(`${service}/${account}`),
+        ),
+        put: vi.fn(async (service: string, account: string, value: string) => {
+          storedSecrets.set(`${service}/${account}`, value)
+        }),
+      },
       registry: {
         get: vi.fn(async () => ({
           state: {
@@ -43,7 +54,9 @@ describe('pluginYggdrasilHandler', () => {
     await handler({
       request: {
         method: 'GET',
-        url: new URL('minelatino://launcher/yggdrasil/sessionserver/session/minecraft/hasJoined?username=reter'),
+        url: new URL(
+          'minelatino://launcher/yggdrasil/sessionserver/session/minecraft/hasJoined?username=reter',
+        ),
         headers: {},
       },
       response,
@@ -56,15 +69,52 @@ describe('pluginYggdrasilHandler', () => {
       id: '12345678123412341234123456789abc',
       name: profile.name,
     })
-    const textureProperty = payload.properties.find((property: { name: string }) => property.name === 'textures')
+    const textureProperty = payload.properties.find(
+      (property: { name: string }) => property.name === 'textures',
+    )
     const textureInfo = JSON.parse(Buffer.from(textureProperty.value, 'base64').toString())
     expect(textureInfo.profileId).toBe('12345678123412341234123456789abc')
+    const proxiedSkin = new URL(textureInfo.textures.SKIN.url)
+    expect(proxiedSkin.hostname).toBe('127.0.0.1')
+    expect(proxiedSkin.searchParams.get('signature')).toBeTruthy()
+
+    const deniedTextureResponse: Record<string, any> = { headers: {} }
+    const textureHandle = vi.fn()
+    await handler({
+      request: {
+        method: 'GET',
+        url: new URL(
+          'minelatino://launcher/yggdrasil/textures?href=http%3A%2F%2Flauncher%2Fmedia%3Fpath%3DC%253A%255Csecret.png',
+        ),
+        headers: {},
+      },
+      response: deniedTextureResponse,
+      handle: textureHandle,
+    })
+    expect(deniedTextureResponse.status).toBe(403)
+    expect(textureHandle).not.toHaveBeenCalled()
+
+    const allowedTextureResponse: Record<string, any> = { headers: {} }
+    await handler({
+      request: {
+        method: 'GET',
+        url: new URL(
+          proxiedSkin.toString().replace('http://127.0.0.1:25555', 'minelatino://launcher'),
+        ),
+        headers: {},
+      },
+      response: allowedTextureResponse,
+      handle: textureHandle,
+    })
+    expect(textureHandle).toHaveBeenCalledTimes(1)
 
     const profileResponse: Record<string, any> = { headers: {} }
     await handler({
       request: {
         method: 'GET',
-        url: new URL('minelatino://launcher/yggdrasil/sessionserver/session/minecraft/profile/12345678123412341234123456789abc?unsigned=false'),
+        url: new URL(
+          'minelatino://launcher/yggdrasil/sessionserver/session/minecraft/profile/12345678123412341234123456789abc?unsigned=false',
+        ),
         headers: {},
       },
       response: profileResponse,

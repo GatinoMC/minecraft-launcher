@@ -46,9 +46,10 @@ describe('loginModrinth', () => {
     const changes: unknown[] = []
     credentials.onCredentialChange((change) => changes.push(change))
     const userService = new EventEmitter()
-    vi.mocked(app.shell.openInBrowser).mockImplementation(() => {
+    vi.mocked(app.shell.openInBrowser).mockImplementation((authorizationUrl) => {
+      const state = new URL(String(authorizationUrl)).searchParams.get('state')
       queueMicrotask(() =>
-        userService.emit('modrinth-authorize-code', undefined, 'authorization-code'),
+        userService.emit('modrinth-authorize-code', undefined, 'authorization-code', state),
       )
       return Promise.resolve(true)
     })
@@ -86,12 +87,13 @@ describe('formatModrinthAuthorization', () => {
     let requestHeaders: Headers | undefined
     const app = {
       secretStorage: {
-        get: async () => JSON.stringify({
-          access_token: 'mrp_oauth_token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-          issued_at: Date.now(),
-        }),
+        get: async () =>
+          JSON.stringify({
+            access_token: 'mrp_oauth_token',
+            token_type: 'Bearer',
+            expires_in: 3600,
+            issued_at: Date.now(),
+          }),
       },
       registry: {
         getOrCreate: async () => ({

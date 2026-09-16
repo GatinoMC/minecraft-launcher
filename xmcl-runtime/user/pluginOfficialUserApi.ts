@@ -15,8 +15,7 @@ const XBOX_DEVICE_STORAGE_SERVICE = 'xmcl/xbox-device'
 const XBOX_DEVICE_STORAGE_ACCOUNT = 'XMCL_XBOX_DEVICE'
 
 export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
-  app.registry.get(kNetworkInterface).then((networkInterface) => {
-  })
+  app.registry.get(kNetworkInterface).then((networkInterface) => {})
 
   // @ts-ignore
   const mojangApi = new MojangClient({ fetch: (...args) => app.fetch(...args) })
@@ -27,7 +26,8 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
   const userService = await app.registry.getOrCreate(UserService)
   const headers = {}
 
-  const system = new MicrosoftAccountSystem(logger,
+  const system = new MicrosoftAccountSystem(
+    logger,
     // app.fetch resolves to Electron's net.fetch (with an undici fallback)
     // -- neither path applies retry interceptors. Compose retry on top via
     // withRetry() so that 408/425/429/5xx from Microsoft endpoints are
@@ -37,7 +37,10 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
       fetch: withRetry((...args) => app.fetch(...args)),
       xboxDeviceTokenStorage: {
         get: async () => {
-          const value = await app.secretStorage.get(XBOX_DEVICE_STORAGE_SERVICE, XBOX_DEVICE_STORAGE_ACCOUNT)
+          const value = await app.secretStorage.get(
+            XBOX_DEVICE_STORAGE_SERVICE,
+            XBOX_DEVICE_STORAGE_ACCOUNT,
+          )
           if (!value) return undefined
           try {
             return JSON.parse(value)
@@ -45,11 +48,12 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
             return undefined
           }
         },
-        put: state => app.secretStorage.put(
-          XBOX_DEVICE_STORAGE_SERVICE,
-          XBOX_DEVICE_STORAGE_ACCOUNT,
-          JSON.stringify(state),
-        ),
+        put: (state) =>
+          app.secretStorage.put(
+            XBOX_DEVICE_STORAGE_SERVICE,
+            XBOX_DEVICE_STORAGE_ACCOUNT,
+            JSON.stringify(state),
+          ),
       },
     }),
     mojangApi,
@@ -66,13 +70,25 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
         userService.emit('microsoft-authorize-url', url)
         return await new Promise<string>((resolve, reject) => {
           const abort = () => {
-            reject(new AnyError('AuthCodeTimeoutError', 'Timeout to wait the auth code! Please try again later!'))
+            reject(
+              new AnyError(
+                'AuthCodeTimeoutError',
+                'Timeout to wait the auth code! Please try again later!',
+              ),
+            )
           }
-          (signal as any)?.addEventListener('abort', abort)
-          userService.once('microsoft-authorize-code', (err, code) => {
+          ;(signal as any)?.addEventListener('abort', abort)
+          userService.once('microsoft-authorize-code', (err, code, returnedState) => {
             app.controller.requireFocus()
             if (err) {
               reject(err)
+            } else if (new URL(url).searchParams.get('state') !== returnedState) {
+              reject(
+                new AnyError(
+                  'MicrosoftAuthStateMismatch',
+                  'The Microsoft authorization response could not be verified.',
+                ),
+              )
             } else {
               resolve(code!)
             }
@@ -80,9 +96,11 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
         })
       },
       async (directRedirectToLauncher) => {
-        const port = await app.serverPort ?? 25555
+        const port = (await app.serverPort) ?? 25555
         directRedirectToLauncher = true // force to use localhost before the website is fixed
-        return (directRedirectToLauncher ? `http://localhost:${port}/auth` : `https://xmcl.app/auth?port=${port}`)
+        return directRedirectToLauncher
+          ? `http://localhost:${port}/auth`
+          : `https://xmcl.app/auth?port=${port}`
       },
       (response) => {
         userService.emit('device-code', response)
@@ -90,8 +108,10 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
       },
       app.secretStorage,
       () => app.controller.getNativeWindowHandle?.(),
-      event => app.emit('microsoft-auth-telemetry', event),
-    ), app)
+      (event) => app.emit('microsoft-auth-telemetry', event),
+    ),
+    app,
+  )
 
   userService.registerAccountSystem(AUTHORITY_MICROSOFT, system)
   await userService.initialize()
@@ -102,12 +122,13 @@ export const pluginOfficialUserApi: LauncherAppPlugin = async (app) => {
       let error: Error | undefined
       if (parsed.searchParams.get('error')) {
         const err = parsed.searchParams.get('error')!
-        const errDescription = parsed.searchParams.get('error')!
-        error = new Error(unescape(errDescription));
-        (error as any).error = err
+        const errDescription = parsed.searchParams.get('error_description') ?? err
+        error = new Error(unescape(errDescription))
+        ;(error as any).error = err
       }
       const code = parsed.searchParams.get('code') as string
-      userService.emit('microsoft-authorize-code', error, code)
+      const state = parsed.searchParams.get('state')
+      userService.emit('microsoft-authorize-code', error, code, state)
       response.status = 200
       try {
         response.body = app.controller.getLoginSuccessHTML()

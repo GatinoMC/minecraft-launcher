@@ -12,7 +12,10 @@ export async function listen(server: Server, port: number, nextPort: (cur: numbe
         }
       }
       server.addListener('error', handleError)
-      server.listen(port, () => {
+      // This server exposes privileged launcher protocol handlers. It is an
+      // implementation detail for local OAuth/game callbacks and must never
+      // be reachable from the LAN.
+      server.listen(port, '127.0.0.1', () => {
         server.removeListener('error', handleError)
         resolve(true)
       })

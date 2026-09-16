@@ -4,7 +4,7 @@ Free code signing provided by [SignPath.io](https://signpath.io/), certificate b
 
 ## Signed artifacts
 
-Only the official Windows installer named `minelatino-<version>-win32-x64.exe` is submitted for signing. It is rebuilt from the matching public Git tag by [the signing workflow](.github/workflows/sign-release.yml). Local builds, pull-request builds, dependencies, portable archives and binaries belonging to upstream projects are not signed with the MineLatino subscription.
+Only the official Windows installer named `minelatino-<version>-win32-x64.exe` is submitted for signing. It is rebuilt from the matching public Git tag by [the signing workflow](.github/workflows/sign-release.yml). That workflow verifies Authenticode before creating or updating the public release; the repository no longer contains a workflow that can publish an intentionally unsigned Windows installer. Local builds, pull-request builds, dependencies, portable archives and binaries belonging to upstream projects are not signed with the MineLatino subscription.
 
 MineLatino Launcher is a maintained derivative of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher). Its origin and retained MIT attribution are documented in [NOTICE](NOTICE). Release binaries are published only through [MineLatino Launcher GitHub Releases](https://github.com/GatinoMC/minecraft-launcher/releases).
 

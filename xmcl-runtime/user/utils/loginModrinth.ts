@@ -4,6 +4,7 @@ import { UserService } from '../UserService'
 import { ExternalCredentialService } from '~/credential/ExternalCredentialService'
 import { resolveXmclApiEndpoints } from '~/app/xmclApiBaseUrl'
 import { kFlights } from '~/infra'
+import { randomUUID } from 'crypto'
 
 interface ModrinthOAuthResponse {
   access_token: string
@@ -54,10 +55,12 @@ export async function loginModrinth(
   if (!token) {
     const redirect_uri = `http://127.0.0.1:${await app.serverPort}/modrinth-auth`
     const scopesString = scopes.join(' ')
+    const state = randomUUID()
     const url = new URL('https://modrinth.com/auth/authorize')
     url.searchParams.set('client_id', 'GFz0B21y')
     url.searchParams.set('redirect_uri', redirect_uri)
     url.searchParams.set('scope', scopesString)
+    url.searchParams.set('state', state)
     app.shell.openInBrowser(url.toString())
     userService.emit('modrinth-authorize-url', url)
     const code = await new Promise<string>((resolve, reject) => {
@@ -70,10 +73,17 @@ export async function loginModrinth(
         )
       }
       signal?.addEventListener('abort', abort)
-      userService.once('modrinth-authorize-code', (err, code) => {
+      userService.once('modrinth-authorize-code', (err, code, returnedState) => {
         app.controller.requireFocus()
         if (err) {
           reject(err)
+        } else if (returnedState !== state) {
+          reject(
+            new AnyError(
+              'ModrinthAuthStateMismatch',
+              'The Modrinth authorization response could not be verified.',
+            ),
+          )
         } else {
           resolve(code!)
         }

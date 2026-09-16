@@ -1,10 +1,17 @@
 import { Exception } from '@xmcl/runtime-api'
 import { isSystemError } from '@xmcl/utils'
 import filenamify from 'filenamify'
-import { WriteStream, createWriteStream, ensureDir, readFile, readdir, stat, unlink } from 'fs-extra'
+import {
+  WriteStream,
+  createWriteStream,
+  ensureDir,
+  readFile,
+  readdir,
+  stat,
+  unlink,
+} from 'fs-extra'
 import { basename, join, resolve } from 'path'
 import { PassThrough, Transform } from 'stream'
-import { errors } from 'undici'
 import { format } from 'util'
 import { ZipFile } from 'yazl'
 import { LauncherAppPlugin } from '~/app'
@@ -12,7 +19,52 @@ import { IS_DEV } from '~/constant'
 import { writeZipFile } from '~/util/zip'
 import { kLogRoot } from '../log_consumer'
 
-export function formatLogMessage(message: any, options: any[]) { return options.length !== 0 ? format(message, ...options.map(filterSensitiveData)) : format(message) }
+const SENSITIVE_KEY =
+  /^(?:access_?token|refresh_?token|authorization|proxy-authorization|cookie|set-cookie|(?:client_?)?secret|password|discord_?token|api_?key|private_?key|session|env)$/i
+const DISCORD_TOKEN = /\b[A-Za-z0-9_-]{20,30}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{20,}\b/g
+
+function redactSensitiveString(value: string): string {
+  return value
+    .replace(
+      /((?:authorization|proxy-authorization)\s*[=:]\s*)(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi,
+      '$1***',
+    )
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, '$1 ***')
+    .replace(DISCORD_TOKEN, '***')
+    .replace(
+      /((?:access_?token|refresh_?token|cookie|secret|password)\s*[=:]\s*)[^\s,;]+/gi,
+      '$1***',
+    )
+}
+
+function redactSensitiveData(value: any, seen = new WeakSet<object>()): any {
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (parsed && typeof parsed === 'object') return JSON.stringify(redactSensitiveData(parsed))
+    } catch {
+      // Ordinary log string, not JSON.
+    }
+    return redactSensitiveString(value)
+  }
+  if (!value || typeof value !== 'object') return value
+  if (seen.has(value)) return '[circular]'
+  seen.add(value)
+
+  if (Array.isArray(value)) return value.map((item) => redactSensitiveData(item, seen))
+  const result: Record<string, any> = {}
+  for (const [key, item] of Object.entries(value)) {
+    result[key] = SENSITIVE_KEY.test(key) ? '***' : redactSensitiveData(item, seen)
+  }
+  return result
+}
+
+export function formatLogMessage(message: any, options: any[]) {
+  const safeMessage = redactSensitiveData(message)
+  return options.length !== 0
+    ? format(safeMessage, ...options.map((option) => redactSensitiveData(option)))
+    : format(safeMessage)
+}
 
 export function getMessageFromError(e: Error): string {
   if (!e.message && e instanceof Exception) {
@@ -23,45 +75,36 @@ export function getMessageFromError(e: Error): string {
     message = e.errors.map(getMessageFromError).join('\n')
   }
   if (e.cause && e.cause instanceof Error) {
-    return `${message}\nCaused by: ${getMessageFromError(e.cause)}`
+    return redactSensitiveString(`${message}\nCaused by: ${getMessageFromError(e.cause)}`)
   }
-  return message
+  return redactSensitiveString(message)
 }
 
-function filterSensitiveData(object: any) {
-  const filterOptions = (o: object) => {
-    if ('headers' in o && o && typeof o.headers === 'object' && o.headers && 'Authorization' in o.headers) {
-      o.headers.Authorization = '***'
-    }
-    if ('body' in o && typeof o.body === 'string') {
-      if (o.body.indexOf('accessToken') !== -1) {
-        o.body = JSON.stringify(JSON.parse(o.body), (k, v) => {
-          if (v === 'accessToken') return '***'
-          return v
-        })
-      }
-    }
-  }
-  if (object instanceof errors.UndiciError) {
-    filterOptions(object)
-    if ('options' in object && object.options) {
-      filterOptions(object.options)
-    }
-  }
-  return object
+function baseTransform(tag: string) {
+  return new Transform({
+    transform(c, e, cb) {
+      cb(undefined, `[${tag}] [${new Date().toLocaleString()}] ${c}`)
+    },
+  })
 }
-
-function baseTransform(tag: string) { return new Transform({ transform(c, e, cb) { cb(undefined, `[${tag}] [${new Date().toLocaleString()}] ${c}`) } }) }
 
 class LogSink {
-  readonly entries = { log: baseTransform('INFO'), warn: baseTransform('WARN'), error: baseTransform('ERROR') }
+  readonly entries = {
+    log: baseTransform('INFO'),
+    warn: baseTransform('WARN'),
+    error: baseTransform('ERROR'),
+  }
 
   private stream: WriteStream | undefined
   private passthrough: PassThrough
   path: string | undefined
 
   constructor(readonly name: string) {
-    this.passthrough = new PassThrough({ transform(chunk, encode, cb) { cb(undefined, chunk + '\n') } })
+    this.passthrough = new PassThrough({
+      transform(chunk, encode, cb) {
+        cb(undefined, chunk + '\n')
+      },
+    })
     this.entries.log.pipe(this.passthrough)
     this.entries.warn.pipe(this.passthrough)
     this.entries.error.pipe(this.passthrough)
@@ -75,9 +118,13 @@ class LogSink {
 
   dispose() {
     this.passthrough.end()
-    this.passthrough.on('error', () => { /* ignore */ })
+    this.passthrough.on('error', () => {
+      /* ignore */
+    })
     this.stream?.close()
-    this.stream?.on('error', () => { /* ignore */ })
+    this.stream?.on('error', () => {
+      /* ignore */
+    })
   }
 }
 
@@ -122,36 +169,53 @@ export const pluginLogConsumer: LauncherAppPlugin = (app) => {
 
   if (IS_DEV) {
     let pipeIsBroken = false
-    const capturePipeError = (f: (...args: any[]) => void) => (...args: any[]) => {
-      try {
-        f(...args)
-      } catch (e) {
-        if (isSystemError(e)) {
-          if (e.code === 'EPIPE') {
-            pipeIsBroken = true
+    const capturePipeError =
+      (f: (...args: any[]) => void) =>
+      (...args: any[]) => {
+        try {
+          f(...args)
+        } catch (e) {
+          if (isSystemError(e)) {
+            if (e.code === 'EPIPE') {
+              pipeIsBroken = true
+            }
           }
         }
       }
-    }
-    main.entries.log.on('data', capturePipeError((b) => {
-      if (pipeIsBroken) { return }
-      console.log(b.toString())
-    }))
-    main.entries.warn.on('data', capturePipeError((b) => {
-      if (pipeIsBroken) { return }
-      console.warn(b.toString())
-    }))
-    main.entries.error.on('data', capturePipeError((b) => {
-      if (pipeIsBroken) { return }
-      console.error(b.toString())
-    }))
+    main.entries.log.on(
+      'data',
+      capturePipeError((b) => {
+        if (pipeIsBroken) {
+          return
+        }
+        console.log(b.toString())
+      }),
+    )
+    main.entries.warn.on(
+      'data',
+      capturePipeError((b) => {
+        if (pipeIsBroken) {
+          return
+        }
+        console.warn(b.toString())
+      }),
+    )
+    main.entries.error.on(
+      'data',
+      capturePipeError((b) => {
+        if (pipeIsBroken) {
+          return
+        }
+        console.error(b.toString())
+      }),
+    )
   }
 
   setTimeout(async () => {
     // remove the zips older than a week
     const root = logRoot!
     const files = await readdir(root)
-    const zips = files.filter(f => f.endsWith('.zip'))
+    const zips = files.filter((f) => f.endsWith('.zip'))
     const check = async (path: string) => {
       const fstat = await stat(path)
       if (Date.now() - fstat.mtime.getTime() > 7 * 24 * 60 * 60 * 1000) {
