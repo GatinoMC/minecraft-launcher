@@ -15,6 +15,29 @@ const LEGACY_PRESET_MOD_PREFIXES = [
   'sodium-fabric-',
 ]
 
+const LEGACY_PRESET_VERSIONS: Record<string, string> = {
+  'MineLatino 1.21.4': '1.21.4',
+  'MineLatino 1.21.11': '1.21.11',
+  'MineLatino 26.2': '26.2',
+}
+
+/**
+ * Identifies only profiles created by the old bundled catalog. A matching
+ * preset state is required so a player's coincidentally named custom profile
+ * is never retired.
+ */
+export function shouldRetireLegacyPresetInstance(
+  instance: PresetInstanceCandidate,
+  presetStateId: string,
+  activePresetIds: ReadonlySet<string>,
+): boolean {
+  const legacyVersion = LEGACY_PRESET_VERSIONS[instance.name]
+  const runtime = instance.runtime as Record<string, unknown> | undefined
+  return !!legacyVersion
+    && runtime?.minecraft === legacyVersion
+    && activePresetIds.has(presetStateId)
+}
+
 /**
  * Select only files previously owned by the preset. The first migration comes
  * from a state file that predates `managedFiles`, so it recognizes the six

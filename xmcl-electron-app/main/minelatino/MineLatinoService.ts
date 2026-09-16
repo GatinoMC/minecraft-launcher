@@ -36,7 +36,7 @@ import { InstanceInstallService } from '~/instanceIO'
 import { VersionInstallService, VersionMetadataService } from '@xmcl/runtime/install'
 import { kUserTokenStorage } from '~/user'
 import { FALLBACK_CONFIG, normalizeConfig, resolveBackendUrl } from './config'
-import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles } from './presetInstance'
+import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles, shouldRetireLegacyPresetInstance } from './presetInstance'
 import { getPresetDefaults } from './presetDefaults'
 import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
@@ -1130,6 +1130,8 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         return
       }
 
+      await this.#retireLegacyPresetInstances(presets, instanceService)
+
       for (const preset of presets) {
         try {
           await this.#ensurePresetInstance(preset, instanceService)
@@ -1141,6 +1143,26 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     } catch (error) {
       this.warn(`[autoInstance] Failed to auto-create profiles: ${(error as Error).message}`)
       void this.syncAutoMods()
+    }
+  }
+
+  /**
+   * Remove the three obsolete MineLatino defaults from the visible catalog.
+   * `deleteData=false` makes InstanceService rename each directory with a dot,
+   * so worlds, options and player-added mods remain recoverable on disk.
+   */
+  async #retireLegacyPresetInstances(presets: MineLatinoPreset[], instanceService: InstanceService) {
+    const activePresetIds = new Set(presets.map(preset => preset.id))
+    const managed = Object.values(instanceService.state.all)
+      .filter(instance => instanceService.isUnderManaged(instance.path))
+
+    for (const instance of managed) {
+      const presetStateId = await this.#readPresetState(instance.path)
+        .then(state => asString(state.id))
+        .catch(() => '')
+      if (!shouldRetireLegacyPresetInstance(instance, presetStateId, activePresetIds)) continue
+      await instanceService.deleteInstance(instance.path, false)
+      this.log(`[autoInstance] Retired obsolete default profile ${instance.name}; data kept in a hidden directory.`)
     }
   }
 

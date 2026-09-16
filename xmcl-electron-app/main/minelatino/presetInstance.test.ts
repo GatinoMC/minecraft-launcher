@@ -1,6 +1,6 @@
 import type { MineLatinoPreset } from '@xmcl/runtime-api'
 import { describe, expect, it } from 'vitest'
-import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles } from './presetInstance'
+import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededPresetModFiles, shouldRetireLegacyPresetInstance } from './presetInstance'
 
 const preset: MineLatinoPreset = {
   id: 'minelatino-1-21-11',
@@ -78,5 +78,30 @@ describe('selectSupersededPresetModFiles', () => {
       'almanac-current.jar',
     ], ['almanac-current.jar'], ['almanac-old.jar']))
       .toEqual(['almanac-old.jar'])
+  })
+})
+
+describe('shouldRetireLegacyPresetInstance', () => {
+  const activePresetIds = new Set(['minelatino-1-21-4', 'minelatino-1-21-11', 'minelatino-26-2'])
+
+  it('retires a launcher-managed profile from the old default catalog', () => {
+    expect(shouldRetireLegacyPresetInstance({
+      path: 'managed/legacy',
+      name: 'MineLatino 1.21.11',
+      runtime: { minecraft: '1.21.11', fabricLoader: '0.19.5' },
+    }, 'minelatino-1-21-11', activePresetIds)).toBe(true)
+  })
+
+  it('preserves custom and current GatinoLauncher profiles', () => {
+    expect(shouldRetireLegacyPresetInstance({
+      path: 'managed/custom',
+      name: 'MineLatino 1.21.11',
+      runtime: { minecraft: '1.21.11', fabricLoader: '0.19.5' },
+    }, '', activePresetIds)).toBe(false)
+    expect(shouldRetireLegacyPresetInstance({
+      path: 'managed/current',
+      name: 'GatinoLauncher 1.21.11',
+      runtime: { minecraft: '1.21.11', fabricLoader: '0.19.5' },
+    }, 'minelatino-1-21-11', activePresetIds)).toBe(false)
   })
 })

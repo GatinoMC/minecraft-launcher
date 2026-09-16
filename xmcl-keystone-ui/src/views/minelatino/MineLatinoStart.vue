@@ -66,7 +66,7 @@
                       <span class="ml-card-time" :title="absoluteTime(item.timestamp)">{{ relativeTime(item.timestamp) }}</span>
                     </div>
                     <div
-                      class="ml-card-text ml-card-news-preview ml-clamp"
+                      class="ml-card-text ml-card-news-preview"
                       v-html="renderNewsPreview(item.content || item.embeds[0]?.title || '')"
                     />
                   </div>
@@ -386,6 +386,16 @@ const renderNewsPreview = (source: string) =>
   padding: 0;
 }
 
+/* Announcements have no thumbnail in the current Discord feed, so use the
+   card's available body space for the message instead of the generic
+   three-line product/update teaser. */
+.ml-card-news-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .ml-card-price {
   font-size: 0.95rem;
   font-weight: 800;
@@ -500,6 +510,12 @@ const renderNewsPreview = (source: string) =>
 
   .ml-card {
     min-height: 120px;
+  }
+}
+
+@media (max-height: 550px) {
+  .ml-card-news-preview {
+    -webkit-line-clamp: 5;
   }
 }
 </style>
