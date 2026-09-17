@@ -303,6 +303,8 @@ export class UserService extends StatefulService<UserState> implements IUserServ
   @Singleton(p => p.id)
   async removeUser(userProfile: UserProfile) {
     requireObject(userProfile)
+    const accountSystem = await this.resolveAccountSystem(userProfile.authority)
+    await accountSystem?.logout?.(userProfile)
     if (Object.keys(this.state.users).length === 1 && this.state.users[userProfile.id]) {
       this.explicitEmptyUserPersistence = true
     }

@@ -47,6 +47,8 @@ interface AuthenticateOptions {
   extraScopes?: string[]
   directRedirectToLauncher?: boolean
   useNativeBroker?: boolean
+  /** Stable MSAL account id persisted with the launcher profile. */
+  homeAccountId?: string
 }
 
 type TrackAuthentication = (
@@ -101,6 +103,18 @@ export class MicrosoftOAuthClient {
     private getWindowHandle?: () => Buffer | undefined,
     private emitTelemetry?: (event: MicrosoftAuthTelemetryEvent) => void,
   ) {}
+
+  async forgetAccount(username: string, homeAccountId?: string): Promise<void> {
+    const app = await this.getOAuthApp()
+    const accounts = await app.getAllAccounts()
+    const matches = accounts.filter((account) =>
+      homeAccountId
+        ? account.homeAccountId === homeAccountId
+        : account.username.toLowerCase() === username.toLowerCase(),
+    )
+    const tokenCache = app.getTokenCache()
+    await Promise.all(matches.map((account) => tokenCache.removeAccount(account)))
+  }
 
   private async getNativeBrokerPlugin() {
     if (process.platform !== 'win32') {
@@ -184,6 +198,7 @@ export class MicrosoftOAuthClient {
   private async acquireSilently(
     app: PublicClientApplication,
     username: string,
+    homeAccountId: string | undefined,
     scopes: string[],
     extraScopes: string[] | undefined,
   ): Promise<SilentAuthentication> {
@@ -193,7 +208,9 @@ export class MicrosoftOAuthClient {
       )
       return []
     })
-    const account = accounts.find(
+    const account = (homeAccountId
+      ? accounts.find((value) => value.homeAccountId === homeAccountId)
+      : undefined) ?? accounts.find(
       (value) => value.username.toLowerCase() === username.toLowerCase(),
     )
     if (!account) {
@@ -268,7 +285,9 @@ export class MicrosoftOAuthClient {
             extraScopesToConsent: options.extraScopes,
             account,
             loginHint: username || undefined,
-            prompt: 'select_account',
+            // A known account should remain selected until the player logs
+            // out. The picker is only useful while adding a new account.
+            ...(account ? {} : { prompt: 'select_account' as const }),
             openBrowser: async () => {},
             windowHandle,
           })
@@ -333,7 +352,7 @@ export class MicrosoftOAuthClient {
             scopes,
             extraScopesToConsent: options.extraScopes,
             loginHint: username,
-            prompt: 'select_account',
+            ...(account ? {} : { prompt: 'select_account' as const }),
             state,
           })
           code = await this.getCode(url, redirectUri, options.signal, authAttemptId)
@@ -439,8 +458,14 @@ export class MicrosoftOAuthClient {
       )
       let account: AccountInfo | undefined
       const allowSilentReuse = options.slientOnly || !options.useDeviceCode
-      if (username && !options.code && allowSilentReuse) {
-        const silent = await this.acquireSilently(app, username, scopes, options.extraScopes)
+      if ((username || options.homeAccountId) && !options.code && allowSilentReuse) {
+        const silent = await this.acquireSilently(
+          app,
+          username,
+          options.homeAccountId,
+          scopes,
+          options.extraScopes,
+        )
         account = silent.account
         telemetry.cachedAccount = Boolean(account)
         telemetry.routeUsed = nativeBrokerPlugin && account?.nativeAccountId ? 'wam' : 'silent'

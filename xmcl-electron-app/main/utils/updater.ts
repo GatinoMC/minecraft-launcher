@@ -14,6 +14,7 @@ import {
 import { DownloadUpdateOptions, LauncherAppUpdater } from '@xmcl/runtime/app'
 import { AnyError, isSystemError } from '@xmcl/utils'
 import { spawn } from 'child_process'
+import { randomUUID } from 'crypto'
 import { app as electronApp, shell } from 'electron'
 import * as updater from 'electron-updater'
 import { AppUpdater, CancellationToken, UpdaterSignal } from 'electron-updater'
@@ -145,7 +146,6 @@ async function downloadAsarUpdate(
     await writeFile(destination + '.sha256', expectedSha256, 'utf8')
     await writeFile(destination + '.sha256.sig', checksumSignature, 'utf8')
   } catch (e) {
-    if (e instanceof Error && e.name === 'AbortError') return
     throw Object.assign(e as Error, { name: 'UpdateAsarError', url })
   }
 }
@@ -228,7 +228,7 @@ async function log(config, phase, message) {
 }
 
 async function setStatus(config, state, detail) {
-  await writeFile(config.statusPath, JSON.stringify({ state, detail, updatedAt: new Date().toISOString() }), 'utf8')
+  await writeFile(config.statusPath, JSON.stringify({ transactionId: config.transactionId, state, detail, updatedAt: new Date().toISOString() }), 'utf8')
     .catch(() => {})
   await log(config, state, detail)
 }
@@ -277,8 +277,18 @@ async function restoreBackup(appAsarPath, backupAsarPath) {
 
 async function rollbackToBackup(appAsarPath, backupAsarPath) {
   if (!existsSync(backupAsarPath)) return
-  await unlink(appAsarPath).catch(() => {})
-  await rename(backupAsarPath, appAsarPath)
+  let lastError
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      await unlink(appAsarPath).catch(() => {})
+      await rename(backupAsarPath, appAsarPath)
+      return
+    } catch (error) {
+      lastError = error
+      await sleep(250)
+    }
+  }
+  throw new Error('Unable to restore app.asar backup: ' + (lastError?.message || 'unknown error'))
 }
 
 async function replaceAsar(config) {
@@ -301,9 +311,11 @@ async function replaceAsar(config) {
   throw new Error('Unable to replace app.asar after 120 attempts: ' + (lastError?.message || 'unknown error'))
 }
 
-async function relaunch(config) {
+async function relaunch(config, transactionId = config.transactionId) {
   const environment = { ...process.env }
   delete environment.ELECTRON_RUN_AS_NODE
+  if (transactionId) environment.MINELATINO_UPDATE_TRANSACTION_ID = transactionId
+  else delete environment.MINELATINO_UPDATE_TRANSACTION_ID
   const child = spawn(config.executable, config.arguments, {
     cwd: config.cwd,
     detached: true,
@@ -315,17 +327,28 @@ async function relaunch(config) {
     child.once('spawn', resolve)
     child.once('error', reject)
   })
-  await Promise.race([
-    sleep(2000),
-    new Promise((_, reject) => child.once('exit', code => reject(new Error('Relaunched process exited early with code ' + code)))),
-  ])
   child.unref()
+  return child.pid
+}
+
+async function waitForBootConfirmation(config, pid) {
+  const attempts = Math.max(1, Math.ceil((config.bootConfirmationTimeoutMs || 30000) / 250))
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const status = await readFile(config.statusPath, 'utf8')
+      .then(raw => JSON.parse(raw))
+      .catch(() => ({}))
+    if (status.transactionId === config.transactionId && status.state === 'booted') return
+    if (!isRunning(pid)) throw new Error('Relaunched process exited before confirming startup')
+    await sleep(250)
+  }
+  throw new Error('Relaunched process did not confirm startup within 30 seconds')
 }
 
 async function main() {
   const configPath = process.argv[2]
   const config = JSON.parse(await readFile(configPath, 'utf8'))
   let backupAsarPath
+  let relaunchedPid
   try {
     await setStatus(config, 'prepared', 'Waiting for all launcher processes to exit')
     await waitForLauncherProcesses(config)
@@ -336,19 +359,25 @@ async function main() {
     await setStatus(config, 'verified', 'Pending ASAR checksum verified')
     backupAsarPath = await replaceAsar(config)
     await setStatus(config, 'swapped', 'app.asar replaced successfully')
-    await relaunch(config)
-    await setStatus(config, 'relaunched', 'Launcher process started successfully')
+    await setStatus(config, 'awaiting-relaunch', 'Waiting for the updated launcher to finish booting')
+    relaunchedPid = await relaunch(config)
+    await waitForBootConfirmation(config, relaunchedPid)
+    await setStatus(config, 'relaunched', 'Updated launcher confirmed successful startup')
     await unlink(backupAsarPath).catch(() => {})
     await unlink(config.checksumPath).catch(() => {})
     await unlink(config.signaturePath).catch(() => {})
     await unlink(configPath).catch(() => {})
     await unlink(__filename).catch(() => {})
   } catch (error) {
+    if (relaunchedPid && isRunning(relaunchedPid)) {
+      try { process.kill(relaunchedPid) } catch {}
+      await sleep(1000)
+    }
     await rollbackToBackup(config.appAsarPath, backupAsarPath || config.appAsarPath + '.bk').catch(() => {})
     await setStatus(config, 'failed', (error && error.stack) || String(error))
     const trackedPids = Array.isArray(config.processPids) ? config.processPids : [config.parentPid]
     if (!trackedPids.some(isRunning)) {
-      await relaunch(config).catch(relaunchError => log(config, 'relaunch-failed', relaunchError.message))
+      await relaunch(config, '').catch(relaunchError => log(config, 'relaunch-failed', relaunchError.message))
     }
     throw error
   }
@@ -368,14 +397,18 @@ async function prepareWindowsUpdateHelper(
   updateAsarPath: string,
   appDataPath: string,
   expectedSha256: string,
-): Promise<string[]> {
+): Promise<{ args: string[]; statusPath: string; transactionId: string }> {
   const helperPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.cjs`)
   const configPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.json`)
+  const statusPath = join(appDataPath, 'MineLatinoAutoUpdate-status.json')
+  const transactionId = randomUUID()
+  await unlinkAsync(statusPath).catch(() => {})
   await writeFile(helperPath, WINDOWS_UPDATE_HELPER, 'utf8')
   await writeFile(
     configPath,
     JSON.stringify({
       parentPid: process.pid,
+      transactionId,
       processPids: Array.from(
         new Set([process.pid, ...electronApp.getAppMetrics().map((metric) => metric.pid)]),
       ),
@@ -385,10 +418,10 @@ async function prepareWindowsUpdateHelper(
       signaturePath: updateAsarPath + '.sha256.sig',
       expectedSha256,
       executable: process.execPath,
-      arguments: process.argv.slice(1),
-      cwd: process.cwd(),
+      arguments: [],
+      cwd: dirname(process.execPath),
       logPath: join(appDataPath, 'MineLatinoAutoUpdate.log'),
-      statusPath: join(appDataPath, 'MineLatinoAutoUpdate-status.json'),
+      statusPath,
     }),
     'utf8',
   )
@@ -396,7 +429,29 @@ async function prepareWindowsUpdateHelper(
   // an alarming AutoUpdate.bat behind in the application-data directory.
   await unlinkAsync(join(appDataPath, 'AutoUpdate.bat')).catch(() => {})
 
-  return [process.execPath, helperPath, configPath]
+  return { args: [process.execPath, helperPath, configPath], statusPath, transactionId }
+}
+
+async function waitForWindowsUpdateHelper(
+  statusPath: string,
+  transactionId: string,
+  child: ReturnType<typeof spawn>,
+): Promise<void> {
+  let exited = child.exitCode !== null
+  let exitCode: number | null = child.exitCode
+  child.once('exit', (code) => {
+    exited = true
+    exitCode = code
+  })
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const status = await readFile(statusPath, 'utf8')
+      .then((raw) => JSON.parse(raw) as { transactionId?: string; state?: string })
+      .catch(() => undefined)
+    if (status?.transactionId === transactionId && status.state === 'prepared') return
+    if (exited) throw new Error(`El proceso auxiliar de actualización terminó antes de estar listo (código ${exitCode ?? 'desconocido'}).`)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  throw new Error('El proceso auxiliar de actualización no confirmó que estaba listo.')
 }
 /**
  * Download the full update. This size can be larger as it carry the whole electron thing...
@@ -438,7 +493,26 @@ export class ElectronUpdater implements LauncherAppUpdater {
 
   constructor(private app: ElectronLauncherApp) {
     this.logger = app.getLogger('ElectronUpdater')
-    void readFile(join(app.appDataPath, 'MineLatinoAutoUpdate-status.json'), 'utf8')
+    const statusPath = join(app.appDataPath, 'MineLatinoAutoUpdate-status.json')
+    const bootTransactionId = process.env.MINELATINO_UPDATE_TRANSACTION_ID
+    if (bootTransactionId) {
+      delete process.env.MINELATINO_UPDATE_TRANSACTION_ID
+      void readFile(statusPath, 'utf8')
+        .then(async (raw) => {
+          const status = JSON.parse(raw) as { transactionId?: string; state?: string }
+          if (status.transactionId === bootTransactionId &&
+            (status.state === 'swapped' || status.state === 'awaiting-relaunch')) {
+            await writeFile(statusPath, JSON.stringify({
+              transactionId: bootTransactionId,
+              state: 'booted',
+              detail: 'Updated launcher main process initialized',
+              updatedAt: new Date().toISOString(),
+            }), 'utf8')
+          }
+        })
+        .catch(() => undefined)
+    }
+    void readFile(statusPath, 'utf8')
       .then((raw) => {
         const status = JSON.parse(raw) as { state?: string; detail?: string }
         if (status.state === 'failed') {
@@ -602,12 +676,13 @@ export class ElectronUpdater implements LauncherAppUpdater {
         `Process has write access to ${dirname(appAsarPath)}; install without elevation`,
       )
 
-      const args = await prepareWindowsUpdateHelper(
+      const prepared = await prepareWindowsUpdateHelper(
         appAsarPath,
         updateAsarPath,
         this.app.appDataPath,
         expectedSha256,
       )
+      const { args } = prepared
       this.logger.log(`Install from windows: ${args.join(' ')}`)
       const x = spawn(args[0], args.slice(1), {
         cwd: this.app.appDataPath,
@@ -620,6 +695,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
         x.once('spawn', resolve)
         x.once('error', reject)
       })
+      await waitForWindowsUpdateHelper(prepared.statusPath, prepared.transactionId, x)
       x.unref()
       this.app.quit()
     } else {
@@ -649,18 +725,31 @@ export class ElectronUpdater implements LauncherAppUpdater {
   }
 
   async checkUpdateTask(): Promise<ReleaseInfo> {
+    let result: ReleaseInfo
     if (this.app.platform.os === 'windows' || this.app.platform.os === 'osx') {
-      return this.#getUpdateFromSelfHost()
-    }
-    try {
-      return await this.#getUpdateFromAutoUpdater()
-    } catch (e) {
-      if (isSystemError(e) && e.code === 'ENOENT') {
-        return this.#getUpdateFromSelfHost()
+      result = await this.#getUpdateFromSelfHost()
+    } else {
+      try {
+        result = await this.#getUpdateFromAutoUpdater()
+      } catch (e) {
+        if (isSystemError(e) && e.code === 'ENOENT') {
+          result = await this.#getUpdateFromSelfHost()
+        } else {
+          this.logger.warn(e as Error)
+          throw e
+        }
       }
-      this.logger.warn(e as Error)
-      throw e
     }
+    if (!result.newUpdate) {
+      const pending = join(this.app.appDataPath, 'pending_update')
+      await Promise.all([
+        unlinkAsync(pending).catch(() => {}),
+        unlinkAsync(pending + '.sha256').catch(() => {}),
+        unlinkAsync(pending + '.sha256.sig').catch(() => {}),
+        unlinkAsync(pending + '.tmp').catch(() => {}),
+      ])
+    }
+    return result
   }
 
   async downloadUpdate(updateInfo: ReleaseInfo, options?: DownloadUpdateOptions): Promise<void> {
@@ -697,8 +786,10 @@ export class ElectronUpdater implements LauncherAppUpdater {
     }
     if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       await this.quitAndInstallAsar()
-    } else {
+    } else if (updateInfo.operation === ElectronUpdateOperation.AutoUpdater) {
       updater.autoUpdater.quitAndInstall()
+    } else {
+      throw new Error('Esta actualización requiere descargar el instalador y no puede aplicarse al reiniciar.')
     }
   }
 }

@@ -7,7 +7,7 @@ import { toRecord } from '~/util/object'
 import { XBoxResponse, normalizeSkinData } from '../user'
 import { UserTokenStorage } from '../userTokenStore'
 import { UserAccountSystem } from './AccountSystem'
-import { isAccountSuspendedError, isNetworkError, isUserCanceledError } from './MicrosoftAuthErrors'
+import { isAccountSuspendedError, isNetworkError, isTransientMicrosoftRefreshError, isUserCanceledError } from './MicrosoftAuthErrors'
 import {
   MICROSOFT_GRAPH_USER_READ_SCOPE,
   MicrosoftOAuthClient,
@@ -16,6 +16,8 @@ import {
 import { toSkinUploadException } from './SkinUploadErrors'
 
 export class MicrosoftAccountSystem implements UserAccountSystem {
+  private readonly successfulValidationAt = new Map<string, number>()
+
   constructor(
     private logger: Logger,
     private authenticator: MicrosoftAuthenticator,
@@ -36,6 +38,15 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
     ]
   }
 
+  async logout(user: UserProfile): Promise<void> {
+    this.successfulValidationAt.delete(user.id)
+    const userTokenStorage = await this.getUserTokenStorage()
+    await userTokenStorage.put(user, '')
+    await this.oauthClient.forgetAccount(user.username, user.homeAccountId).catch((error) => {
+      this.logger.warn(error as Error)
+    })
+  }
+
   async login(options: LoginOptions, signal: AbortSignal): Promise<UserProfile> {
     const properties = options.properties || {}
     const useDeviceCode = properties.mode === 'device'
@@ -52,6 +63,7 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
       profiles: toRecord(authentication.gameProfiles, p => p.id),
       selectedProfile: authentication.selectedProfile?.id ?? '',
       avatar: authentication.avatar,
+      homeAccountId: authentication.homeAccountId,
     }
     const userTokenStorage = await this.getUserTokenStorage()
     await userTokenStorage.put(profile, authentication.accessToken)
@@ -63,33 +75,51 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
     this.logger.log(`Try to refresh Microsoft account ${user.username}(${user.id}) token. Expired at ${user.expiredAt}, validate: ${validate}, force: ${force}, diff: ${diff}, silent: ${silent}`)
     const isExpired = async () => {
       if (!validate) return false
+      const lastValidation = this.successfulValidationAt.get(user.id) ?? 0
+      if (Date.now() - lastValidation < 5 * 60 * 1000) return false
       const userTokenStorage = await this.getUserTokenStorage()
       const accessToken = await userTokenStorage.get(user)
-      const response = await this.app.fetch('https://sessionserver.mojang.com/session/minecraft/join', {
-        signal,
-        method: 'POST',
-        body: JSON.stringify({
-          accessToken,
-          selectedProfile: user.selectedProfile,
-          serverId: randomUUID(),
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      let response: Response
+      try {
+        response = await this.app.fetch('https://sessionserver.mojang.com/session/minecraft/join', {
+          signal,
+          method: 'POST',
+          body: JSON.stringify({
+            accessToken,
+            selectedProfile: user.selectedProfile,
+            serverId: randomUUID(),
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      } catch (error) {
+        if (signal.aborted) throw error
+        if (!isTransientMicrosoftRefreshError(error, signal)) throw error
+        this.logger.warn(error as Error)
+        return false
+      }
       this.logger.log(`Validate Microsoft account ${user.username}(${user.id}) token. Response: ${response.status}`)
-      return !response.ok
+      if (response.ok) {
+        this.successfulValidationAt.set(user.id, Date.now())
+        return false
+      }
+      // Only an explicit credential rejection invalidates the session. A
+      // timeout, rate limit or Mojang 5xx must not turn into an account picker
+      // the next time the player presses Start.
+      return response.status === 401 || response.status === 403
     }
     if (force || !user.expiredAt || diff > 0 || (diff / 1000 / 3600 / 24) > 14 || user.invalidated || await isExpired()) {
       // expired
       this.logger.log('Microsoft accessToken expired. Refresh a new one.')
       try {
-        const { accessToken, expiredAt, gameProfiles, selectedProfile, username } = await this.loginMicrosoft(user.username, undefined, false, true, signal, silent)
+        const { accessToken, expiredAt, gameProfiles, selectedProfile, username, homeAccountId } = await this.loginMicrosoft(user.username, undefined, false, true, signal, silent, user.homeAccountId)
 
         user.username = username || user.username
         user.expiredAt = expiredAt
         user.selectedProfile = selectedProfile?.id ?? ''
         user.profiles = toRecord(gameProfiles, v => v.id)
+        user.homeAccountId = homeAccountId ?? user.homeAccountId
         user.invalidated = false
         const userTokenStorage = await this.getUserTokenStorage()
         await userTokenStorage.put(user, accessToken)
@@ -104,7 +134,9 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
         // confirms the credential is gone, the storage will be
         // overwritten with a fresh one (or the user re-logs in via the
         // login flow, which calls userTokenStorage.put as well).
-        user.invalidated = true
+        if (!isTransientMicrosoftRefreshError(e, signal)) {
+          user.invalidated = true
+        }
       }
     }
 
@@ -185,7 +217,7 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
     return userProfile
   }
 
-  protected async loginMicrosoft(microsoftEmailAddress: string, oauthCode: string | undefined, useDeviceCode: boolean, directRedirectToLauncher: boolean, signal: AbortSignal, slientOnly = false) {
+  protected async loginMicrosoft(microsoftEmailAddress: string, oauthCode: string | undefined, useDeviceCode: boolean, directRedirectToLauncher: boolean, signal: AbortSignal, slientOnly = false, homeAccountId?: string) {
     // XErr codes from XSTS /authorize that are "user state, not a bug" --
     // child account, missing Xbox profile, age/region issues, banned, etc.
     // See issue #1445. We still throw a UserException so the UI can deep-link
@@ -262,6 +294,7 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
       useNativeBroker: this.app.platform.os === 'windows',
       signal,
       slientOnly,
+      homeAccountId,
     }).catch((e) => {
       logError(e)
       throw new UserException({
@@ -374,6 +407,7 @@ export class MicrosoftAccountSystem implements UserAccountSystem {
       }]
       return {
         username: result.account?.username,
+        homeAccountId: result.account?.homeAccountId,
         userId: mcResponse.username,
         accessToken: mcResponse.access_token,
         gameProfiles,

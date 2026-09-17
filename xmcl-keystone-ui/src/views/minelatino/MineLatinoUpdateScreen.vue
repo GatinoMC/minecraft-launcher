@@ -86,7 +86,7 @@
           {{ t('MineLatinoUpdate.installRestart') }}
         </v-btn>
         <v-btn
-          v-else-if="hasNewUpdate && !isManual"
+          v-else-if="hasNewUpdate"
           color="primary"
           :loading="downloadingUpdate"
           :disabled="checkingUpdate"
@@ -94,7 +94,11 @@
           @click="downloadUpdate()"
         >
           <v-icon start aria-hidden="true">cloud_download</v-icon>
-          {{ downloadingUpdate ? t('MineLatinoUpdate.downloading') : t('MineLatinoUpdate.downloadUpdate') }}
+          {{ downloadingUpdate
+            ? t('MineLatinoUpdate.downloading')
+            : isManual
+              ? t('MineLatinoUpdate.downloadInstaller')
+              : t('MineLatinoUpdate.downloadUpdate') }}
         </v-btn>
         <v-btn
           v-else
@@ -135,8 +139,8 @@ const {
 const RELEASES_URL = 'https://github.com/GatinoMC/minecraft-launcher/releases'
 
 const hasNewUpdate = computed(() => updateStatus.value !== 'none' && !!updateInfo.value?.newUpdate)
-// A `manual` operation has no in-place asar to swap, so download/install are
-// hidden and the player is pointed at the GitHub release instead.
+// A manual operation opens the exact installer published in the manifest; it
+// must never transition to the restart/install state.
 const isManual = computed(() => updateInfo.value?.operation === 'manual')
 
 const releaseNotes = computed(() => {

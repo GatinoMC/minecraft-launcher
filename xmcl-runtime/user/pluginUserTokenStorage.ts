@@ -17,7 +17,9 @@ export const pluginUserTokenStorage: LauncherAppPlugin = (app) => {
   }
   const storage: UserTokenStorage = {
     put: async (user, token) => {
-      cache[`xmcl/${getStorageKey(user.authority)}/${user.id}`] = token
+      const cacheKey = `xmcl/${getStorageKey(user.authority)}/${user.id}`
+      if (token) cache[cacheKey] = token
+      else delete cache[cacheKey]
       await app.secretStorage.put(`xmcl/${getStorageKey(user.authority)}`, user.id, token)
     },
     get: async (user) => {

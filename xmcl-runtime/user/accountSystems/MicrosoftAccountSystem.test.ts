@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MicrosoftMinecraftXboxLoginError, SetSkinError } from '@xmcl/user'
-import { isAccountSuspendedError, isNetworkError, isUserCanceledError } from './MicrosoftAuthErrors'
+import { isAccountSuspendedError, isNetworkError, isTransientMicrosoftRefreshError, isUserCanceledError } from './MicrosoftAuthErrors'
 import { toSkinUploadException } from './SkinUploadErrors'
 
 describe('isAccountSuspendedError', () => {
@@ -39,6 +39,20 @@ describe('isNetworkError', () => {
 
   it('does not classify user cancellation as a network error', () => {
     expect(isNetworkError(new Error('user_canceled: account picker closed'))).toBe(false)
+  })
+
+  it('recognizes a wrapped network error', () => {
+    expect(isNetworkError(new Error('wrapped', { cause: { errorCode: 'network_error' } }))).toBe(true)
+  })
+})
+
+describe('isTransientMicrosoftRefreshError', () => {
+  it.each([408, 425, 429, 500, 503])('keeps the saved account valid after HTTP %s', (status) => {
+    expect(isTransientMicrosoftRefreshError({ status })).toBe(true)
+  })
+
+  it('does not hide a permanent credential rejection', () => {
+    expect(isTransientMicrosoftRefreshError({ status: 403 })).toBe(false)
   })
 })
 

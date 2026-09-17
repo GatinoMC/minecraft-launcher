@@ -102,9 +102,9 @@ describe('MicrosoftOAuthClient', () => {
     expect(brokerApp.acquireTokenInteractive).toHaveBeenCalledWith(expect.objectContaining({
       account: requestedAccount,
       loginHint: 'account-a@example.com',
-      prompt: 'select_account',
     }))
-    expect(brokerApp.getAuthCodeUrl).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'select_account' }))
+    expect(brokerApp.acquireTokenInteractive.mock.calls[0][0]).not.toHaveProperty('prompt')
+    expect(brokerApp.getAuthCodeUrl.mock.calls[0][0]).not.toHaveProperty('prompt')
     expect(brokerApp.acquireTokenByCode).toHaveBeenCalledWith(expect.objectContaining({ code: 'web-code' }))
     expect(authentication.result.accessToken).toBe('web-token')
     expect(getOAuthApp).toHaveBeenCalledOnce()
@@ -307,6 +307,34 @@ describe('MicrosoftOAuthClient', () => {
       cachedAccount: true,
     })
     expect(getOAuthApp).toHaveBeenCalledOnce()
+  })
+
+  it('uses the stable home account id before a changed email alias', async () => {
+    const account = createAccount('new-alias@example.com', 'stable-home-id')
+    const result = { accessToken: 'silent-token', account }
+    const app = {
+      acquireTokenSilent: vi.fn().mockResolvedValue(result),
+      getAllAccounts: vi.fn().mockResolvedValue([account]),
+    }
+    const client = new MicrosoftOAuthClient(
+      fetch,
+      { log: vi.fn(), warn: vi.fn(), error: vi.fn() } as any,
+      'client-id',
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      { get: vi.fn(), put: vi.fn() },
+    )
+    vi.spyOn(client as any, 'getNativeBrokerPlugin').mockResolvedValue(undefined)
+    vi.spyOn(client as any, 'getOAuthApp').mockResolvedValue(app)
+
+    const authentication = await client.authenticate('old-alias@example.com', ['XboxLive.signin'], {
+      homeAccountId: 'stable-home-id',
+      slientOnly: true,
+    })
+
+    expect(authentication.result).toBe(result)
+    expect(app.acquireTokenSilent).toHaveBeenCalledWith(expect.objectContaining({ account }))
   })
 
   it('does not persist a separate WAM account record', async () => {

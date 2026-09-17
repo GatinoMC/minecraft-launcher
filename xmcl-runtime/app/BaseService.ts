@@ -249,6 +249,8 @@ export class BaseService extends AbstractService implements IBaseService {
       settings.updateInfoSet(info)
       if (info.newUpdate) {
         settings.updateStatusSet('pending')
+      } else {
+        settings.updateStatusSet('none')
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'Error') {
@@ -271,6 +273,10 @@ export class BaseService extends AbstractService implements IBaseService {
       throw new Error("Cannot download update if we don't check the version update!")
     }
     const updateInfo = settings.updateInfo
+    if (!updateInfo.newUpdate) {
+      settings.updateStatusSet('none')
+      throw new Error('No hay una versión nueva para descargar.')
+    }
     setActiveSpanAttributes({
       'update.operation': updateInfo.operation,
       'update.phase': 'download',
@@ -288,7 +294,13 @@ export class BaseService extends AbstractService implements IBaseService {
         tracker: getTracker(task),
       }),
     )
-    settings.updateStatusSet('ready')
+    if (updateInfo.operation === 'asar' || updateInfo.operation === 'autoupdater') {
+      settings.updateStatusSet('ready')
+    } else {
+      // Manual/AppX updates open their installer or store page. They are never
+      // safe to send through the in-place "restart and install" path.
+      settings.updateStatusSet('pending')
+    }
   }
 
   quit() {

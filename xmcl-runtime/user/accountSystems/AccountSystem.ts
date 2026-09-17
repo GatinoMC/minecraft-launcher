@@ -9,6 +9,8 @@ export interface UserAccountSystem {
    * Refresh the user profile
    */
   refresh(userProfile: UserProfile, signal: AbortSignal, options: RefreshUserOptions): Promise<UserProfile>
+  /** Forget locally cached credentials when the player explicitly logs out. */
+  logout?(userProfile: UserProfile): Promise<void>
   /**
    * Set skin to the game profile. This should also update the game profile skin data and return the new user profile.
    */

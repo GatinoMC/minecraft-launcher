@@ -207,6 +207,7 @@ MineLatinoUpdate:
   check: Check for updates
   checking: Checking…
   currentVersion: Current version
+  downloadInstaller: Download installer
   downloadUpdate: Download and update
   downloading: Downloading update…
   installRestart: Restart to install

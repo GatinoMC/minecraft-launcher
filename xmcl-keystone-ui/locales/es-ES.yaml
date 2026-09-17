@@ -208,6 +208,7 @@ MineLatinoUpdate:
   check: Buscar actualizaciones
   checking: Buscando…
   currentVersion: Versión actual
+  downloadInstaller: Descargar instalador
   downloadUpdate: Descargar y actualizar
   downloading: Descargando actualización…
   installRestart: Reiniciar para instalar

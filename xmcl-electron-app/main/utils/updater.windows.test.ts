@@ -39,6 +39,7 @@ describe('Windows ASAR update helper', () => {
       const logPath = join(root, 'update.log')
       const markerPath = join(root, 'relaunched.txt')
       const completedPath = join(root, 'relaunch-complete.txt')
+      const transactionId = 'transaction-success'
       const nextContents = Buffer.from('new signed application')
       const expectedSha256 = createHash('sha256').update(nextContents).digest('hex')
 
@@ -51,6 +52,7 @@ describe('Windows ASAR update helper', () => {
         configPath,
         JSON.stringify({
           parentPid: 2147483647,
+          transactionId,
           processPids: [2147483647],
           appAsarPath,
           updateAsarPath,
@@ -60,7 +62,7 @@ describe('Windows ASAR update helper', () => {
           executable: process.execPath,
           arguments: [
             '-e',
-            `const fs=require('fs'); fs.writeFileSync(${JSON.stringify(markerPath)}, 'ok'); setTimeout(() => fs.writeFileSync(${JSON.stringify(completedPath)}, 'ok'), 2200)`,
+            `const fs=require('fs'); fs.writeFileSync(${JSON.stringify(markerPath)}, 'ok'); fs.writeFileSync(${JSON.stringify(statusPath)}, JSON.stringify({transactionId:${JSON.stringify(transactionId)},state:'booted'})); setTimeout(() => fs.writeFileSync(${JSON.stringify(completedPath)}, 'ok'), 2200)`,
           ],
           cwd: root,
           logPath,
@@ -97,6 +99,7 @@ describe('Windows ASAR update helper', () => {
       const statusPath = join(root, 'status.json')
       const logPath = join(root, 'update.log')
       const markerPath = join(root, 'relaunched.txt')
+      const transactionId = 'transaction-process-wait'
       const nextContents = Buffer.from('new application after every process exits')
       const expectedSha256 = createHash('sha256').update(nextContents).digest('hex')
 
@@ -109,6 +112,7 @@ describe('Windows ASAR update helper', () => {
         configPath,
         JSON.stringify({
           parentPid: 2147483647,
+          transactionId,
           processPids: [2147483647, blocker.pid],
           appAsarPath,
           updateAsarPath,
@@ -118,7 +122,7 @@ describe('Windows ASAR update helper', () => {
           executable: process.execPath,
           arguments: [
             '-e',
-            `require('fs').writeFileSync(${JSON.stringify(markerPath)}, 'ok'); setTimeout(() => {}, 2200)`,
+            `const fs=require('fs'); fs.writeFileSync(${JSON.stringify(markerPath)}, 'ok'); fs.writeFileSync(${JSON.stringify(statusPath)}, JSON.stringify({transactionId:${JSON.stringify(transactionId)},state:'booted'}))`,
           ],
           cwd: root,
           logPath,
@@ -141,6 +145,64 @@ describe('Windows ASAR update helper', () => {
     } finally {
       blocker.kill()
       await new Promise((resolve) => setTimeout(resolve, 500))
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('restores the previous archive when the updated launcher never confirms boot', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'gatinolauncher-updater-rollback-'))
+    try {
+      const appAsarPath = join(root, 'app.asar')
+      const updateAsarPath = join(root, 'pending_update')
+      const helperPath = join(root, 'helper.cjs')
+      const configPath = join(root, 'helper.json')
+      const statusPath = join(root, 'status.json')
+      const logPath = join(root, 'update.log')
+      const recoveryMarkerPath = join(root, 'recovery-relaunched.txt')
+      const transactionId = 'transaction-rollback'
+      const nextContents = Buffer.from('update that cannot boot')
+      const expectedSha256 = createHash('sha256').update(nextContents).digest('hex')
+
+      await writeFile(appAsarPath, 'known good application')
+      await writeFile(updateAsarPath, nextContents)
+      await writeFile(updateAsarPath + '.sha256', expectedSha256)
+      await writeFile(updateAsarPath + '.sha256.sig', 'test-signature')
+      await writeFile(helperPath, await getWindowsUpdateHelper())
+      await writeFile(configPath, JSON.stringify({
+        parentPid: 2147483647,
+        processPids: [2147483647],
+        transactionId,
+        bootConfirmationTimeoutMs: 300,
+        appAsarPath,
+        updateAsarPath,
+        checksumPath: updateAsarPath + '.sha256',
+        signaturePath: updateAsarPath + '.sha256.sig',
+        expectedSha256,
+        executable: process.execPath,
+        arguments: [
+          '-e',
+          `if(process.env.MINELATINO_UPDATE_TRANSACTION_ID){setTimeout(()=>{},5000)}else{require('fs').writeFileSync(${JSON.stringify(recoveryMarkerPath)},'ok')}`,
+        ],
+        cwd: root,
+        logPath,
+        statusPath,
+      }))
+
+      const helper = spawn(process.execPath, [helperPath, configPath], { stdio: 'pipe' })
+      const exitCode = await new Promise<number | null>((resolve, reject) => {
+        helper.once('error', reject)
+        helper.once('exit', resolve)
+      })
+
+      expect(exitCode).toBe(1)
+      await waitForFile(recoveryMarkerPath)
+      expect(await readFile(appAsarPath, 'utf8')).toBe('known good application')
+      expect(JSON.parse(await readFile(statusPath, 'utf8'))).toMatchObject({
+        transactionId,
+        state: 'failed',
+      })
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve, 300))
       await rm(root, { recursive: true, force: true })
     }
   })
