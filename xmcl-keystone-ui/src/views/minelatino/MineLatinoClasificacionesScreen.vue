@@ -240,6 +240,7 @@ let webview: WebviewElement | undefined
 const playtimeEntries = ref<MineLatinoPlaytimeLeaderboardEntry[]>([])
 const playtimeLoading = ref(false)
 const playtimeErrorState = ref(false)
+let playtimeRefreshTimer: ReturnType<typeof setInterval> | undefined
 
 function formatHours(ms: number): string {
   const hours = ms / 3_600_000
@@ -259,9 +260,10 @@ async function fetchPlaytimeLeaderboard() {
   }
 }
 
-// Fetch leaderboard when switching to the playtime tab
+// Refresh whenever the tab is opened; checkpoints can change totals while the
+// player keeps this screen mounted.
 watch(activeTab, (tab) => {
-  if (tab === 'playtime' && playtimeEntries.value.length === 0 && !playtimeLoading.value) {
+  if (tab === 'playtime' && !playtimeLoading.value) {
     void fetchPlaytimeLeaderboard()
   }
 })
@@ -278,6 +280,11 @@ function openExternal() {
 }
 
 onMounted(() => {
+  playtimeRefreshTimer = setInterval(() => {
+    if (activeTab.value === 'playtime' && !playtimeLoading.value) {
+      void fetchPlaytimeLeaderboard()
+    }
+  }, 60_000)
   if (!host.value) return
 
   const el = document.createElement('webview') as unknown as WebviewElement
@@ -313,6 +320,10 @@ onMounted(() => {
 
   host.value.appendChild(el)
   webview = el
+})
+
+onUnmounted(() => {
+  if (playtimeRefreshTimer) clearInterval(playtimeRefreshTimer)
 })
 </script>
 

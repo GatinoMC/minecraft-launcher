@@ -2,6 +2,7 @@ import { readFile, outputFile, outputJson, readdir, remove } from 'fs-extra'
 import { basename, join } from 'path'
 import { rcompare, valid } from 'semver'
 import {
+  AUTHORITY_DEV,
   AUTHORITY_MICROSOFT,
   MineLatinoServiceKey,
   MarketType,
@@ -28,7 +29,7 @@ import {
   type MineLatinoWebWindowOptions,
   type UserProfile,
 } from '@xmcl/runtime-api'
-import { Inject, LauncherAppKey, type LauncherApp } from '@xmcl/runtime/app'
+import { Inject, kGameDataPath, LauncherAppKey, type LauncherApp } from '@xmcl/runtime/app'
 import { AbstractService, ExposeServiceKey } from '@xmcl/runtime/service'
 import { LaunchService } from '~/launch'
 import { InstanceModsService, InstanceService } from '~/instance'
@@ -40,6 +41,7 @@ import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededP
 import { getPresetDefaults } from './presetDefaults'
 import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
+import { sumInstancePlaytime } from './playtime'
 
 /**
  * Feeds the MineLatino home screen.
@@ -64,6 +66,7 @@ const STORE_PRODUCTS_TTL_MS = 5 * 60_000
 /** Periodic refresh while the launcher stays open. */
 const REFRESH_INTERVAL_MS = 5 * 60_000
 const REQUEST_TIMEOUT_MS = 15_000
+const PLAYTIME_CHECKPOINT_INTERVAL_MS = 60_000
 /** Avoid repeating a full version diagnosis while the selected profile is unchanged. */
 const PREPARED_INSTANCE_TTL_MS = 10 * 60_000
 const COSMETICS_API = (process.env.MINELATINO_COSMETICS_API || 'https://minelatino-cosmetics-production.up.railway.app').replace(/\/$/, '')
@@ -74,6 +77,13 @@ function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {}
+}
+
+interface TrackedPlaytimeSession {
+  user: UserProfile
+  token?: string
+  opening?: Promise<string | undefined>
+  timer?: NodeJS.Timeout
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -198,7 +208,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #preparedInstances = new Map<string, { fingerprint: string, preparedAt: number }>()
   #timer: NodeJS.Timeout | undefined
   #windows: MineLatinoWebWindows
-  #playtimeSessions = new Map<string, Promise<string | undefined>>()
+  #playtimeSessions = new Map<string, TrackedPlaytimeSession>()
   #cosmeticsSession: { token: string; account: MineLatinoCosmeticsAccount } | undefined
 
   constructor(@Inject(LauncherAppKey) app: LauncherApp) {
@@ -212,21 +222,29 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       void this.#refresh()
       this.#timer = setInterval(() => { void this.#refresh() }, REFRESH_INTERVAL_MS)
 
-      // The backend measures playtime between a premium-authenticated start
-      // and its one-time end token. It never trusts a name or duration sent by
-      // the client.
+      // Reconcile the historical total across every local profile, then send
+      // server-measured checkpoints while Minecraft remains open. Checkpoints
+      // limit loss during launcher/backend restarts and are idempotent because
+      // the backend advances each session cursor after accepting one.
       const launchService = await this.app.registry.get(LaunchService)
       launchService.registerMiddleware({
         name: 'MineLatino cosmetics account',
         onBeforeLaunch: async input => { await this.#writeCosmeticsGameSession(input.gameDirectory) },
       })
       launchService.on('minecraft-start', (options) => {
-        this.#playtimeSessions.set(options.launchId, this.#openPlaytimeSession(options.user))
+        const session: TrackedPlaytimeSession = { user: options.user }
+        session.timer = setInterval(() => {
+          void this.#checkpointPlaytimeSession(session, false)
+        }, PLAYTIME_CHECKPOINT_INTERVAL_MS)
+        session.timer.unref()
+        this.#playtimeSessions.set(options.launchId, session)
+        void this.#ensurePlaytimeSession(session)
       })
       launchService.on('minecraft-exit', (options) => {
-        const pending = this.#playtimeSessions.get(options.launchId)
+        const session = this.#playtimeSessions.get(options.launchId)
         this.#playtimeSessions.delete(options.launchId)
-        if (pending) void pending.then(token => token ? this.#closePlaytimeSession(token) : undefined)
+        if (session?.timer) clearInterval(session.timer)
+        if (session) void this.#checkpointPlaytimeSession(session, true)
       })
       // A first launch without a reachable backend still uses the bundled
       // GatinoLauncher catalog. Start the same one-shot profile sync after
@@ -245,6 +263,11 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     this.app.registryDisposer(() => {
       if (this.#timer) clearInterval(this.#timer)
       this.#timer = undefined
+      for (const session of this.#playtimeSessions.values()) {
+        if (session.timer) clearInterval(session.timer)
+        void this.#checkpointPlaytimeSession(session, false)
+      }
+      this.#playtimeSessions.clear()
       this.#windows.closeAll()
     })
   }
@@ -811,11 +834,49 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     return this.#windows.list()
   }
 
+  async #getAggregateLocalPlaytime(): Promise<number> {
+    const instanceService = await this.app.registry.get(InstanceService)
+    await instanceService.initialize()
+    let total = sumInstancePlaytime(Object.values(instanceService.state.all).map(instance => instance.playtime))
+
+    // Retired launcher presets are deliberately renamed with a leading dot so
+    // their worlds remain recoverable. InstanceService skips those directories,
+    // but their historical playtime still belongs in the user's global total.
+    const getGameDataPath = await this.app.registry.get(kGameDataPath)
+    const managedRoot = getGameDataPath('instances')
+    const hiddenNames = await readdir(managedRoot).catch(() => [])
+    for (const name of hiddenNames) {
+      if (!name.startsWith('.')) continue
+      try {
+        const instance = asObject(JSON.parse(await readFile(join(managedRoot, name, 'instance.json'), 'utf-8')))
+        total += sumInstancePlaytime([instance.playtime])
+      } catch {
+        // Removed folders and unrelated dot-directories are not instances.
+      }
+    }
+    return total
+  }
+
   async #openPlaytimeSession(user: UserProfile): Promise<string | undefined> {
-    if (!this.#backendUrl || user.authority !== AUTHORITY_MICROSOFT || !user.selectedProfile) return
+    if (!this.#backendUrl || !user.selectedProfile) return
     const profile = user.profiles[user.selectedProfile]
     if (!profile?.name) return
     try {
+      const localPlaytime = await this.#getAggregateLocalPlaytime()
+      if (user.authority === AUTHORITY_DEV) {
+        const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/offline-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent },
+          body: JSON.stringify({ profileId: profile.id, username: profile.name, localPlaytime }),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        })
+        if (!sessionResponse.ok) {
+          this.warn(`MineLatino offline playtime session rejected: HTTP ${sessionResponse.status}`)
+          return
+        }
+        return asString(asObject(await sessionResponse.json()).token) || undefined
+      }
+      if (user.authority !== AUTHORITY_MICROSOFT) return
       const tokenStorage = await this.app.registry.get(kUserTokenStorage)
       const accessToken = await tokenStorage.get(user)
       if (!accessToken) return
@@ -825,7 +886,10 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         body: JSON.stringify({ username: profile.name }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
-      if (!challengeResponse.ok) return
+      if (!challengeResponse.ok) {
+        this.warn(`MineLatino playtime challenge rejected: HTTP ${challengeResponse.status}`)
+        return
+      }
       const challenge = asObject(await challengeResponse.json())
       const challengeId = asString(challenge.challengeId)
       const serverId = asString(challenge.serverId)
@@ -836,14 +900,20 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         body: JSON.stringify({ accessToken, selectedProfile: user.selectedProfile, serverId }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
-      if (!joinResponse.ok) return
+      if (!joinResponse.ok) {
+        this.warn(`MineLatino premium playtime verification rejected: HTTP ${joinResponse.status}`)
+        return
+      }
       const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent },
-        body: JSON.stringify({ challengeId }),
+        body: JSON.stringify({ challengeId, localPlaytime }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
-      if (!sessionResponse.ok) return
+      if (!sessionResponse.ok) {
+        this.warn(`MineLatino playtime session rejected: HTTP ${sessionResponse.status}`)
+        return
+      }
       return asString(asObject(await sessionResponse.json()).token) || undefined
     } catch (err) {
       this.warn(`MineLatino playtime session could not start: ${(err as Error).message}`)
@@ -851,17 +921,44 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     }
   }
 
-  async #closePlaytimeSession(token: string): Promise<void> {
+  #ensurePlaytimeSession(session: TrackedPlaytimeSession): Promise<string | undefined> {
+    if (session.token) return Promise.resolve(session.token)
+    if (session.opening) return session.opening
+    session.opening = this.#openPlaytimeSession(session.user)
+      .then((token) => {
+        session.token = token
+        return token
+      })
+      .finally(() => { session.opening = undefined })
+    return session.opening
+  }
+
+  async #checkpointPlaytimeSession(session: TrackedPlaytimeSession, close: boolean, retry = true): Promise<void> {
     if (!this.#backendUrl) return
+    const token = await this.#ensurePlaytimeSession(session)
+    if (!token) return
     try {
-      const response = await this.app.fetch(`${this.#backendUrl}/api/playtime/report`, {
+      const response = await this.app.fetch(`${this.#backendUrl}/api/playtime/${close ? 'report' : 'checkpoint'}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'User-Agent': this.app.userAgent },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
-      if (!response.ok) this.warn(`MineLatino playtime report rejected: HTTP ${response.status}`)
+      if (response.ok) {
+        if (close) session.token = undefined
+        return
+      }
+      if (response.status === 401 && retry) {
+        session.token = undefined
+        await this.#checkpointPlaytimeSession(session, close, false)
+        return
+      }
+      this.warn(`MineLatino playtime ${close ? 'report' : 'checkpoint'} rejected: HTTP ${response.status}`)
     } catch (err) {
-      this.warn(`MineLatino playtime report failed: ${(err as Error).message}`)
+      if (retry) {
+        await this.#checkpointPlaytimeSession(session, close, false)
+        return
+      }
+      this.warn(`MineLatino playtime ${close ? 'report' : 'checkpoint'} failed: ${(err as Error).message}`)
     }
   }
 
@@ -869,7 +966,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     if (!this.#backendUrl) return []
     try {
       const { ok, body } = await this.#request('/api/playtime/leaderboard')
-      if (!ok) return []
+      if (!ok) throw new Error('Leaderboard request was rejected')
       const source = asObject(body)
       const items = Array.isArray(source.items) ? source.items : []
       return items
@@ -888,7 +985,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         .filter((e): e is MineLatinoPlaytimeLeaderboardEntry => !!e)
     } catch (err) {
       this.warn(`MineLatino leaderboard fetch failed: ${(err as Error).message}`)
-      return []
+      throw err
     }
   }
 
