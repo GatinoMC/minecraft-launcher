@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "xmcl-runtime/**"
       - "xmcl-runtime-api/**"

@@ -128,8 +128,29 @@ async function start() {
   const dir = !(process.env.BUILD_TARGET || (process.env.RELEASE === 'true'))
   // Create empty binding.gyp to let electron-rebuild trigger rebuild to it
   await ensureFile(resolve(__dirname, 'node_modules', 'node_datachannel', 'binding.gyp'))
+  const linuxTargets = process.env.LINUX_BUILD_TARGETS
+    ?.split(',')
+    .map(target => target.trim())
+    .filter(Boolean)
+  const linuxArch = process.env.LINUX_BUILD_ARCH?.trim()
+  if (linuxTargets?.length && process.platform !== 'linux') {
+    throw new Error('LINUX_BUILD_TARGETS can only be used on a Linux build host')
+  }
+  if (linuxTargets?.length && !['x64', 'arm64'].includes(linuxArch || '')) {
+    throw new Error('LINUX_BUILD_ARCH must be x64 or arm64 when LINUX_BUILD_TARGETS is set')
+  }
+  const selectedLinuxArch: 'x64' | 'arm64' = linuxArch === 'arm64' ? 'arm64' : 'x64'
+  const selectedBuilderConfig: Configuration = linuxTargets?.length
+    ? {
+        ...electronBuilderConfig,
+        linux: {
+          ...electronBuilderConfig.linux,
+          target: linuxTargets.map(target => ({ target, arch: [selectedLinuxArch] })),
+        },
+      }
+    : electronBuilderConfig
   const config: Configuration = {
-    ...electronBuilderConfig,
+    ...selectedBuilderConfig,
     async beforeBuild(context) {
       const rebuildProcess = rebuild({
         buildPath: context.appDir,

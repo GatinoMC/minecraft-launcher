@@ -1,0 +1,118 @@
+name: Publish Linux release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable release tag to receive the Linux packages
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+    steps:
+      - name: Check out the current release source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify tag, version and signing configuration
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'The tag must use vMAJOR.MINOR.PATCH.' >&2; exit 1; }
+          test "${RELEASE_TAG#v}" = "$(node -p "require('./package.json').version")" || { echo 'The tag does not match package.json.' >&2; exit 1; }
+          test -n "$ASAR_SIGNING_PRIVATE_KEY" || { echo 'ASAR_SIGNING_PRIVATE_KEY is not configured.' >&2; exit 1; }
+          gh release view "$RELEASE_TAG" >/dev/null
+
+      - name: Restore Electron caches
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ${{ env.ELECTRON_CACHE }}
+            ${{ env.ELECTRON_BUILDER_CACHE }}
+          key: linux-electron-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+
+      - name: Install project dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build x86-64 AppImage and Debian package
+        env:
+          NODE_ENV: production
+          NODE_OPTIONS: --max-old-space-size=32768
+          LINUX_BUILD_ARCH: x64
+          LINUX_BUILD_TARGETS: AppImage,deb
+        run: |
+          pnpm build:renderer
+          pnpm build:all
+
+      - name: Sign and verify Linux update assets
+        env:
+          ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
+        run: |
+          node scripts/sign-asar.mjs xmcl-electron-app/build/output
+          node scripts/verify-asar-signatures.mjs xmcl-electron-app/build/output
+
+      - name: Verify Linux packages
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          output=xmcl-electron-app/build/output
+          required=(
+            "$output/minelatino-$version-x86_64.AppImage"
+            "$output/minelatino-$version-x86_64.AppImage.sha256"
+            "$output/minelatino-$version-amd64.deb"
+            "$output/minelatino-$version-amd64.deb.sha256"
+            "$output/app-$version-linux.asar"
+            "$output/app-$version-linux.asar.gz"
+            "$output/app-$version-linux.asar.sha256"
+            "$output/app-$version-linux.asar.sha256.sig"
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing release asset: $file" >&2; exit 1; }
+          done
+          chmod +x "$output/minelatino-$version-x86_64.AppImage"
+          "$output/minelatino-$version-x86_64.AppImage" --appimage-version
+          dpkg-deb --info "$output/minelatino-$version-amd64.deb" >/dev/null
+
+      - name: Publish Linux packages to the existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          output=xmcl-electron-app/build/output
+          gh release upload "$RELEASE_TAG" --clobber \
+            "$output/minelatino-$version-x86_64.AppImage" \
+            "$output/minelatino-$version-x86_64.AppImage.sha256" \
+            "$output/minelatino-$version-amd64.deb" \
+            "$output/minelatino-$version-amd64.deb.sha256" \
+            "$output/app-$version-linux.asar" \
+            "$output/app-$version-linux.asar.gz" \
+            "$output/app-$version-linux.asar.sha256" \
+            "$output/app-$version-linux.asar.sha256.sig"
