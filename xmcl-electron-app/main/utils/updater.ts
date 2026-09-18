@@ -14,7 +14,8 @@ import {
 import { DownloadUpdateOptions, LauncherAppUpdater } from '@xmcl/runtime/app'
 import { AnyError, isSystemError } from '@xmcl/utils'
 import { spawn } from 'child_process'
-import { shell } from 'electron'
+import { randomUUID } from 'crypto'
+import { app as electronApp, shell } from 'electron'
 import * as updater from 'electron-updater'
 import { AppUpdater, CancellationToken, UpdaterSignal } from 'electron-updater'
 import { createReadStream, createWriteStream } from 'fs'
@@ -30,6 +31,7 @@ import { resolveBackendUrl } from '@/minelatino/config'
 import { kSettings } from '~/settings'
 import { checksum } from '~/util/fs'
 import ElectronLauncherApp from '../ElectronLauncherApp'
+import { probeUpdateDirectory } from './updateDirectory'
 import { isNewerRelease } from './updateVersion'
 import { verifyAsarChecksumSignature } from './updateSignature'
 
@@ -211,106 +213,299 @@ function trustedUpdateUrl(raw: string): string {
   return url.toString()
 }
 
-const WINDOWS_PENDING_INSTALLER = 'pending_launcher_update.exe'
+const WINDOWS_UPDATE_HELPER = String.raw`
+param([Parameter(Mandatory = $true)][string]$ConfigPath)
 
-async function readSignedChecksum(
-  app: ElectronLauncherApp,
-  url: string,
-  signal?: AbortSignal,
-): Promise<{ checksum: string; signature: string }> {
-  const checksumUrl = `${url}.sha256`
-  const checksumResponse = await app.fetch(checksumUrl, { signal })
-  if (!checksumResponse.ok) {
-    throw new AnyError(
-      'UpdateError',
-      'La actualización no publica un checksum SHA-256 legible.',
-      {},
-      { url: checksumUrl, status: checksumResponse.status },
-    )
+$ErrorActionPreference = 'Stop'
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$Config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+
+function Write-UpdateLog([string]$Phase, [string]$Message) {
+  $entry = [ordered]@{
+    time = [DateTime]::UtcNow.ToString('o')
+    phase = $Phase
+    message = $Message
   }
-  const checksumValue = (await checksumResponse.text()).trim().toLowerCase()
-  const signatureUrl = `${checksumUrl}.sig`
-  const signatureResponse = await app.fetch(signatureUrl, { signal })
-  const signature = signatureResponse.ok ? (await signatureResponse.text()).trim() : ''
-  if (
-    !/^[a-f0-9]{64}$/.test(checksumValue) ||
-    !signatureResponse.ok ||
-    !verifyAsarChecksumSignature(checksumValue, signature)
-  ) {
-    throw new AnyError(
-      'UpdateError',
-      'La actualización no tiene una firma válida de GatinoLauncher.',
-      {},
-      { checksumUrl, signatureUrl, signatureStatus: signatureResponse.status },
-    )
-  }
-  return { checksum: checksumValue, signature }
+  [IO.File]::AppendAllText($Config.logPath, (($entry | ConvertTo-Json -Compress) + [Environment]::NewLine), $Utf8NoBom)
 }
 
-function windowsInstallerName(version: string): string {
-  return `minelatino-${version.replace(/^v/, '')}-win32-x64.exe`
+function Set-UpdateStatus([string]$State, [string]$Detail) {
+  $status = [ordered]@{
+    transactionId = $Config.transactionId
+    state = $State
+    detail = $Detail
+    updatedAt = [DateTime]::UtcNow.ToString('o')
+  }
+  [IO.File]::WriteAllText($Config.statusPath, ($status | ConvertTo-Json -Compress), $Utf8NoBom)
+  Write-UpdateLog $State $Detail
 }
 
-async function downloadWindowsInstallerUpdate(
-  app: ElectronLauncherApp,
-  destination: string,
-  updateInfo: ReleaseInfo,
-  options?: {
-    abortSignal?: AbortSignal
-    tracker?: Tracker<DownloadUpdateTrackerEvents>
-  } & DownloadBaseOptions,
+function Test-ProcessRunning([int]$ProcessId) {
+  try {
+    $null = Get-Process -Id $ProcessId -ErrorAction Stop
+    return $true
+  } catch {
+    return $false
+  }
+}
+
+function Get-TrackedProcesses {
+  $result = @()
+  foreach ($processId in @($Config.processPids)) {
+    if ($processId -and $processId -gt 0 -and $processId -ne $PID -and $result -notcontains [int]$processId) {
+      $result += [int]$processId
+    }
+  }
+  if ($result.Count -eq 0 -and $Config.parentPid) {
+    $result += [int]$Config.parentPid
+  }
+  return $result
+}
+
+function Wait-ForLauncherProcesses {
+  $tracked = @(Get-TrackedProcesses)
+  for ($attempt = 0; $attempt -lt 480; $attempt += 1) {
+    $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+    if ($running.Count -eq 0) { return }
+    if ($attempt -eq 0 -or $attempt % 40 -eq 39) {
+      Write-UpdateLog 'waiting-for-exit' ('Still running: ' + ($running -join ','))
+    }
+    Start-Sleep -Milliseconds 250
+  }
+  $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+  throw 'Launcher processes did not exit within 120 seconds (pids=' + ($running -join ',') + ')'
+}
+
+function Restore-Backup([string]$AppAsarPath, [string]$BackupAsarPath) {
+  if (-not (Test-Path -LiteralPath $AppAsarPath) -and (Test-Path -LiteralPath $BackupAsarPath)) {
+    Move-Item -LiteralPath $BackupAsarPath -Destination $AppAsarPath -Force
+  }
+}
+
+function Get-Sha256([string]$Path) {
+  $stream = [IO.File]::OpenRead($Path)
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    return ([BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+  } finally {
+    $sha256.Dispose()
+    $stream.Dispose()
+  }
+}
+
+function Restore-BackupWithRetry([string]$AppAsarPath, [string]$BackupAsarPath) {
+  if (-not (Test-Path -LiteralPath $BackupAsarPath)) { return }
+  $lastError = $null
+  for ($attempt = 0; $attempt -lt 120; $attempt += 1) {
+    try {
+      Remove-Item -LiteralPath $AppAsarPath -Force -ErrorAction SilentlyContinue
+      Move-Item -LiteralPath $BackupAsarPath -Destination $AppAsarPath -Force
+      return
+    } catch {
+      $lastError = $_.Exception
+      Start-Sleep -Milliseconds 250
+    }
+  }
+  throw 'Unable to restore app.asar backup: ' + $lastError.Message
+}
+
+function Install-PendingAsar {
+  $backupAsarPath = $Config.appAsarPath + '.bk'
+  $lastError = $null
+  for ($attempt = 0; $attempt -lt 120; $attempt += 1) {
+    try {
+      Restore-Backup $Config.appAsarPath $backupAsarPath
+      Remove-Item -LiteralPath $backupAsarPath -Force -ErrorAction SilentlyContinue
+      Move-Item -LiteralPath $Config.appAsarPath -Destination $backupAsarPath -Force
+      Move-Item -LiteralPath $Config.updateAsarPath -Destination $Config.appAsarPath -Force
+      return $backupAsarPath
+    } catch {
+      $lastError = $_.Exception
+      Write-UpdateLog 'swap-retry' ('attempt=' + ($attempt + 1) + ' message=' + $lastError.Message)
+      Restore-Backup $Config.appAsarPath $backupAsarPath
+      Start-Sleep -Milliseconds 250
+    }
+  }
+  throw 'Unable to replace app.asar after 120 attempts: ' + $lastError.Message
+}
+
+function Start-Launcher([string]$TransactionId) {
+  $hadTransaction = Test-Path Env:\MINELATINO_UPDATE_TRANSACTION_ID
+  $previousTransaction = $env:MINELATINO_UPDATE_TRANSACTION_ID
+  try {
+    if ([string]::IsNullOrEmpty($TransactionId)) {
+      Remove-Item Env:\MINELATINO_UPDATE_TRANSACTION_ID -ErrorAction SilentlyContinue
+    } else {
+      $env:MINELATINO_UPDATE_TRANSACTION_ID = $TransactionId
+    }
+    Remove-Item Env:\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+    $startOptions = @{
+      FilePath = [string]$Config.executable
+      WorkingDirectory = [string]$Config.cwd
+      PassThru = $true
+    }
+    $launcherArguments = @($Config.arguments)
+    if ($launcherArguments.Count -gt 0) {
+      $startOptions.ArgumentList = $launcherArguments
+    }
+    $process = Start-Process @startOptions
+    return $process.Id
+  } finally {
+    if ($hadTransaction) {
+      $env:MINELATINO_UPDATE_TRANSACTION_ID = $previousTransaction
+    } else {
+      Remove-Item Env:\MINELATINO_UPDATE_TRANSACTION_ID -ErrorAction SilentlyContinue
+    }
+  }
+}
+
+function Wait-ForBootConfirmation([int]$ProcessId) {
+  $timeout = if ($Config.bootConfirmationTimeoutMs) { [int]$Config.bootConfirmationTimeoutMs } else { 30000 }
+  $attempts = [Math]::Max(1, [Math]::Ceiling($timeout / 250))
+  for ($attempt = 0; $attempt -lt $attempts; $attempt += 1) {
+    try {
+      $status = Get-Content -LiteralPath $Config.statusPath -Raw | ConvertFrom-Json
+      if ($status.transactionId -eq $Config.transactionId -and $status.state -eq 'booted') { return }
+    } catch {}
+    if (-not (Test-ProcessRunning $ProcessId)) {
+      throw 'Relaunched process exited before confirming startup'
+    }
+    Start-Sleep -Milliseconds 250
+  }
+  throw 'Relaunched process did not confirm startup within ' + $timeout + 'ms'
+}
+
+$backupAsarPath = $null
+$relaunchedProcessId = $null
+try {
+  Set-UpdateStatus 'prepared' 'Waiting for all launcher processes to exit'
+  Wait-ForLauncherProcesses
+  $actualSha256 = Get-Sha256 ([string]$Config.updateAsarPath)
+  if ($actualSha256 -ne $Config.expectedSha256) {
+    throw 'Pending ASAR checksum mismatch'
+  }
+  Set-UpdateStatus 'verified' 'Pending ASAR checksum verified'
+  $backupAsarPath = Install-PendingAsar
+  Set-UpdateStatus 'swapped' 'app.asar replaced successfully'
+  Set-UpdateStatus 'awaiting-relaunch' 'Waiting for the updated launcher to finish booting'
+  $relaunchedProcessId = Start-Launcher ([string]$Config.transactionId)
+  Wait-ForBootConfirmation $relaunchedProcessId
+  Set-UpdateStatus 'relaunched' 'Updated launcher confirmed successful startup'
+  Remove-Item -LiteralPath $backupAsarPath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $Config.checksumPath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $Config.signaturePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $ConfigPath -Force -ErrorAction SilentlyContinue
+} catch {
+  if ($relaunchedProcessId -and (Test-ProcessRunning $relaunchedProcessId)) {
+    Stop-Process -Id $relaunchedProcessId -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
+  }
+  try {
+    Restore-BackupWithRetry $Config.appAsarPath $(if ($backupAsarPath) { $backupAsarPath } else { $Config.appAsarPath + '.bk' })
+  } catch {}
+  Set-UpdateStatus 'failed' $_.Exception.ToString()
+  $tracked = @(Get-TrackedProcesses)
+  $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+  if ($running.Count -eq 0) {
+    try { $null = Start-Launcher '' } catch { Write-UpdateLog 'relaunch-failed' $_.Exception.Message }
+  }
+  exit 1
+}
+`
+
+/**
+ * Creates a tiny Node helper that runs through Electron's own executable.
+ * This avoids cmd.exe, PowerShell, batch files, visible consoles and UAC.
+ * The pending ASAR has already been downloaded and SHA-256 verified before
+ * this helper is started; it only performs the atomic swap after we exit.
+ */
+async function prepareWindowsUpdateHelper(
+  appAsarPath: string,
+  updateAsarPath: string,
+  appDataPath: string,
+  expectedSha256: string,
+): Promise<{ args: string[]; statusPath: string; transactionId: string }> {
+  const helperPath = join(appDataPath, `GatinoLauncherAutoUpdate-${process.pid}.ps1`)
+  const configPath = join(appDataPath, `GatinoLauncherAutoUpdate-${process.pid}.json`)
+  const statusPath = join(appDataPath, 'GatinoLauncherAutoUpdate-status.json')
+  const transactionId = randomUUID()
+  await unlinkAsync(statusPath).catch(() => {})
+  await writeFile(helperPath, WINDOWS_UPDATE_HELPER, 'utf8')
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      parentPid: process.pid,
+      transactionId,
+      processPids: Array.from(
+        new Set([process.pid, ...electronApp.getAppMetrics().map((metric) => metric.pid)]),
+      ),
+      appAsarPath,
+      updateAsarPath,
+      checksumPath: updateAsarPath + '.sha256',
+      signaturePath: updateAsarPath + '.sha256.sig',
+      expectedSha256,
+      executable: process.execPath,
+      arguments: [],
+      cwd: dirname(process.execPath),
+      logPath: join(appDataPath, 'GatinoLauncherAutoUpdate.log'),
+      statusPath,
+    }),
+    'utf8',
+  )
+  // Clean up the legacy helper so older upgrades do not leave
+  // an alarming AutoUpdate.bat behind in the application-data directory.
+  await unlinkAsync(join(appDataPath, 'AutoUpdate.bat')).catch(() => {})
+
+  const windowsRoot = process.env.SystemRoot || process.env.WINDIR || 'C:\\Windows'
+  const powershellPath = join(
+    windowsRoot,
+    'System32',
+    'WindowsPowerShell',
+    'v1.0',
+    'powershell.exe',
+  )
+  if (!existsSync(powershellPath)) {
+    throw new Error(`No se encontró Windows PowerShell en ${powershellPath}.`)
+  }
+  return {
+    args: [
+      powershellPath,
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-WindowStyle',
+      'Hidden',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      helperPath,
+      configPath,
+    ],
+    statusPath,
+    transactionId,
+  }
+}
+
+async function waitForWindowsUpdateHelper(
+  statusPath: string,
+  transactionId: string,
+  child: ReturnType<typeof spawn>,
 ): Promise<void> {
-  const name = windowsInstallerName(updateInfo.name)
-  const publishedUrl = updateInfo.files.find((file) => file.name === name)?.url
-  if (!publishedUrl) {
-    throw new AnyError('UpdateError', `La versión ${updateInfo.name} no publica ${name}.`)
-  }
-  const url = trustedUpdateUrl(publishedUrl)
-  const signed = await readSignedChecksum(app, url, options?.abortSignal)
-  const existing = ((await checksum(destination, 'sha256').catch(() => undefined)) ?? '').toLowerCase()
-  if (existing === signed.checksum) {
-    await writeFile(destination + '.sha256', signed.checksum, 'utf8')
-    await writeFile(destination + '.sha256.sig', signed.signature, 'utf8')
-    return
-  }
-
-  const temporary = destination + '.tmp'
-  await unlinkAsync(temporary).catch(() => {})
-  await download({
-    url,
-    destination: temporary,
-    tracker: onDownloadSingle(options?.tracker, 'download-update.full', { url }),
-    signal: options?.abortSignal,
-    ...getDownloadBaseOptions(options),
+  let exited = child.exitCode !== null
+  let exitCode: number | null = child.exitCode
+  child.once('exit', (code) => {
+    exited = true
+    exitCode = code
   })
-  const actual = ((await checksum(temporary, 'sha256').catch(() => undefined)) ?? '').toLowerCase()
-  if (actual !== signed.checksum) {
-    await unlinkAsync(temporary).catch(() => {})
-    throw new AnyError(
-      'UpdateError',
-      'El instalador descargado está dañado o fue modificado.',
-      {},
-      { expected: signed.checksum, actual: actual || 'unreadable' },
-    )
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const status = await readFile(statusPath, 'utf8')
+      .then((raw) => JSON.parse(raw) as { transactionId?: string; state?: string })
+      .catch(() => undefined)
+    if (status?.transactionId === transactionId && status.state === 'prepared') return
+    if (exited) throw new Error(`El proceso auxiliar de actualización terminó antes de estar listo (código ${exitCode ?? 'desconocido'}).`)
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
-  await unlinkAsync(destination).catch(() => {})
-  await renameAsync(temporary, destination)
-  await writeFile(destination + '.sha256', signed.checksum, 'utf8')
-  await writeFile(destination + '.sha256.sig', signed.signature, 'utf8')
-}
-
-async function verifyPendingWindowsInstaller(installerPath: string): Promise<void> {
-  const expected = (await readFile(installerPath + '.sha256', 'utf8').catch(() => ''))
-    .trim()
-    .toLowerCase()
-  const signature = (await readFile(installerPath + '.sha256.sig', 'utf8').catch(() => '')).trim()
-  if (!/^[a-f0-9]{64}$/.test(expected) || !verifyAsarChecksumSignature(expected, signature)) {
-    throw new Error('El instalador pendiente no tiene una firma válida de GatinoLauncher.')
-  }
-  const actual = ((await checksum(installerPath, 'sha256').catch(() => undefined)) ?? '').toLowerCase()
-  if (actual !== expected) {
-    throw new Error('El instalador pendiente está dañado o fue modificado.')
-  }
+  throw new Error('El proceso auxiliar de actualización no confirmó que estaba listo.')
 }
 /**
  * Download the full update. This size can be larger as it carry the whole electron thing...
@@ -349,22 +544,52 @@ async function downloadFullUpdate(
 
 export class ElectronUpdater implements LauncherAppUpdater {
   private logger: Logger
-  private windowsInstallerStarted = false
+  private windowsUpdatePrepared = false
 
   constructor(private app: ElectronLauncherApp) {
     this.logger = app.getLogger('ElectronUpdater')
+    const statusPath = join(app.appDataPath, 'GatinoLauncherAutoUpdate-status.json')
+    const bootTransactionId = process.env.MINELATINO_UPDATE_TRANSACTION_ID
+    if (bootTransactionId) {
+      delete process.env.MINELATINO_UPDATE_TRANSACTION_ID
+      void readFile(statusPath, 'utf8')
+        .then(async (raw) => {
+          const status = JSON.parse(raw) as { transactionId?: string; state?: string }
+          if (status.transactionId === bootTransactionId &&
+            (status.state === 'swapped' || status.state === 'awaiting-relaunch')) {
+            await writeFile(statusPath, JSON.stringify({
+              transactionId: bootTransactionId,
+              state: 'booted',
+              detail: 'Updated launcher main process initialized',
+              updatedAt: new Date().toISOString(),
+            }), 'utf8')
+          }
+        })
+        .catch(() => undefined)
+    }
+    void readFile(statusPath, 'utf8')
+      .then((raw) => {
+        const status = JSON.parse(raw) as { state?: string; detail?: string }
+        if (status.state === 'failed') {
+          this.logger.warn(
+            `Previous launcher update failed. See ${join(app.appDataPath, 'GatinoLauncherAutoUpdate.log')}`,
+          )
+        }
+      })
+      .catch(() => undefined)
 
-    // The official NSIS installer owns file replacement. Starting it from the
-    // normal quit path avoids modifying a loaded app.asar and avoids hidden
-    // PowerShell/batch helpers that antivirus heuristics reasonably distrust.
+    // A verified ASAR is applied on any normal launcher exit. Preparing the
+    // helper as a disposer lets LauncherApp finish its own cleanup first; the
+    // external PowerShell process waits for every Electron PID to disappear,
+    // swaps the archive, and then relaunches GatinoLauncher.
     if (app.platform.os === 'windows' && !HAS_DEV_SERVER) {
       app.registryDisposer(async () => {
-        const pending = join(app.appDataPath, WINDOWS_PENDING_INSTALLER)
+        const pending = join(app.appDataPath, 'pending_update')
         if (!existsSync(pending) ||
           !existsSync(pending + '.sha256') ||
           !existsSync(pending + '.sha256.sig')) return
         try {
-          await this.startPendingWindowsInstaller()
+          await this.quitAndInstallAsar(false)
         } catch (error) {
           this.logger.error(error as Error)
         }
@@ -431,18 +656,11 @@ export class ElectronUpdater implements LauncherAppUpdater {
       operation: ElectronUpdateOperation.Manual,
     }
 
-    // Windows uses the standard NSIS installer, signed with the same offline
-    // Ed25519 release key as ASAR updates. Other supported installations keep
-    // the smaller ASAR path where replacing the archive is safe.
+    // Asks for the exact asset `downloadAsarUpdate` would fetch, so an install
+    // is only offered an in-place update when its own platform and architecture
+    // were published.
     const hasAsar = files.some((f) => f.name === asarAssetName(version))
-    const installer = windowsInstallerName(version)
-    const hasSignedWindowsInstaller = [installer, `${installer}.sha256`, `${installer}.sha256.sig`]
-      .every((name) => files.some((file) => file.name === name))
-    if (this.app.platform.os === 'windows') {
-      updateInfo.operation = hasSignedWindowsInstaller
-        ? ElectronUpdateOperation.AutoUpdater
-        : ElectronUpdateOperation.Manual
-    } else if (this.app.platform.os === 'linux' && this.app.env === 'appimage') {
+    if (this.app.platform.os === 'linux' && this.app.env === 'appimage') {
       // An AppImage is one self-contained file; replacing the app.asar inside a
       // running copy is not how it is updated.
       updateInfo.operation = ElectronUpdateOperation.Manual
@@ -475,55 +693,113 @@ export class ElectronUpdater implements LauncherAppUpdater {
     return release
   }
 
-  private async quitAndInstallAsar() {
+  private async quitAndInstallAsar(quitAfterPreparing = true) {
     const appAsarPath = join(dirname(__dirname), 'app.asar')
     const updateAsarPath = join(this.app.appDataPath, 'pending_update')
 
     this.logger.log(`Install asar on ${this.app.platform.os} ${appAsarPath}`)
     if (this.app.platform.os === 'windows') {
-      throw new Error('Windows updates must use the signed NSIS installer.')
-    }
-    await promisify(rename)(appAsarPath, appAsarPath + '.bk').catch(() => {})
-    try {
-      try {
-        await promisify(rename)(updateAsarPath, appAsarPath)
-      } catch (e) {
-        if (isSystemError(e) && e.code === 'EXDEV') {
-          await writeFile(appAsarPath, await readFile(updateAsarPath))
-          await unlinkAsync(updateAsarPath).catch(() => {})
-        } else {
-          throw e
-        }
+      if (this.windowsUpdatePrepared) {
+        if (quitAfterPreparing) await this.app.quit()
+        return
       }
-      await promisify(unlink)(appAsarPath + '.bk').catch(() => {})
-      this.app.relaunch()
-    } catch (e) {
-      this.logger.error(
-        new AnyError('UpdateError', `Fail to rename update the file: ${appAsarPath}`, {
-          cause: e,
-        }),
-      )
-      await promisify(rename)(appAsarPath + '.bk', appAsarPath)
-    }
-  }
+      const appAsarPath = join(dirname(__dirname), 'app.asar')
+      const updateAsarPath = join(this.app.appDataPath, 'pending_update')
 
-  private async startPendingWindowsInstaller(): Promise<void> {
-    if (this.windowsInstallerStarted) return
-    const installerPath = join(this.app.appDataPath, WINDOWS_PENDING_INSTALLER)
-    await verifyPendingWindowsInstaller(installerPath)
-    this.logger.log(`Start verified NSIS update installer: ${installerPath}`)
-    const child = spawn(installerPath, ['--updated', '/S'], {
-      cwd: this.app.appDataPath,
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true,
-    })
-    await new Promise<void>((resolve, reject) => {
-      child.once('spawn', resolve)
-      child.once('error', reject)
-    })
-    child.unref()
-    this.windowsInstallerStarted = true
+      if (!existsSync(updateAsarPath)) {
+        throw new Error(`No update found: ${updateAsarPath}`)
+      }
+
+      const checksumPath = updateAsarPath + '.sha256'
+      const signaturePath = updateAsarPath + '.sha256.sig'
+      const expectedSha256 = (await readFile(checksumPath, 'utf8').catch(() => ''))
+        .trim()
+        .toLowerCase()
+      const checksumSignature = (await readFile(signaturePath, 'utf8').catch(() => '')).trim()
+      if (
+        !/^[a-f0-9]{64}$/.test(expectedSha256) ||
+        !verifyAsarChecksumSignature(expectedSha256, checksumSignature)
+      ) {
+        throw new AnyError(
+          'UpdateError',
+          'La actualización pendiente no tiene una firma válida. Vuelve a descargarla.',
+          {},
+          { checksumPath, signaturePath },
+        )
+      }
+      const actualSha256 = (
+        (await checksum(updateAsarPath, 'sha256').catch(() => undefined)) ?? ''
+      ).toLowerCase()
+      if (actualSha256 !== expectedSha256) {
+        throw new AnyError(
+          'UpdateError',
+          'La actualización pendiente está dañada o fue modificada. Vuelve a descargarla.',
+          {},
+          { expectedSha256, actualSha256: actualSha256 || 'unreadable' },
+        )
+      }
+
+      try {
+        await probeUpdateDirectory(appAsarPath)
+      } catch (cause) {
+        throw new AnyError(
+          'UpdateError',
+          'MineLatino no puede actualizarse porque la carpeta de instalación no permite escritura. Reinstala el launcher para tu usuario o elige una carpeta donde tengas permisos.',
+          { cause },
+          { appAsarPath },
+        )
+      }
+      this.logger.log(
+        `Process has write access to ${dirname(appAsarPath)}; install without elevation`,
+      )
+
+      const prepared = await prepareWindowsUpdateHelper(
+        appAsarPath,
+        updateAsarPath,
+        this.app.appDataPath,
+        expectedSha256,
+      )
+      const { args } = prepared
+      this.logger.log(`Install from windows: ${args.join(' ')}`)
+      const x = spawn(args[0], args.slice(1), {
+        cwd: this.app.appDataPath,
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: process.env,
+      })
+      await new Promise<void>((resolve, reject) => {
+        x.once('spawn', resolve)
+        x.once('error', reject)
+      })
+      await waitForWindowsUpdateHelper(prepared.statusPath, prepared.transactionId, x)
+      x.unref()
+      this.windowsUpdatePrepared = true
+      if (quitAfterPreparing) await this.app.quit()
+    } else {
+      await promisify(rename)(appAsarPath, appAsarPath + '.bk').catch(() => {})
+      try {
+        try {
+          await promisify(rename)(updateAsarPath, appAsarPath)
+        } catch (e) {
+          if (isSystemError(e) && e.code === 'EXDEV') {
+            await writeFile(appAsarPath, await readFile(updateAsarPath))
+            await unlinkAsync(updateAsarPath).catch(() => {})
+          } else {
+            throw e
+          }
+        }
+        await promisify(unlink)(appAsarPath + '.bk').catch(() => {})
+        this.app.relaunch()
+      } catch (e) {
+        this.logger.error(
+          new AnyError('UpdateError', `Fail to rename update the file: ${appAsarPath}`, {
+            cause: e,
+          }),
+        )
+        await promisify(rename)(appAsarPath + '.bk', appAsarPath)
+      }
+    }
   }
 
   async checkUpdateTask(): Promise<ReleaseInfo> {
@@ -544,16 +820,11 @@ export class ElectronUpdater implements LauncherAppUpdater {
     }
     if (!result.newUpdate) {
       const pending = join(this.app.appDataPath, 'pending_update')
-      const pendingInstaller = join(this.app.appDataPath, WINDOWS_PENDING_INSTALLER)
       await Promise.all([
         unlinkAsync(pending).catch(() => {}),
         unlinkAsync(pending + '.sha256').catch(() => {}),
         unlinkAsync(pending + '.sha256.sig').catch(() => {}),
         unlinkAsync(pending + '.tmp').catch(() => {}),
-        unlinkAsync(pendingInstaller).catch(() => {}),
-        unlinkAsync(pendingInstaller + '.sha256').catch(() => {}),
-        unlinkAsync(pendingInstaller + '.sha256.sig').catch(() => {}),
-        unlinkAsync(pendingInstaller + '.tmp').catch(() => {}),
       ])
     }
     return result
@@ -564,19 +835,10 @@ export class ElectronUpdater implements LauncherAppUpdater {
     const abortSignal = options?.abortSignal
 
     if (updateInfo.operation === ElectronUpdateOperation.AutoUpdater) {
-      if (this.app.platform.os === 'windows') {
-        await downloadWindowsInstallerUpdate(
-          this.app,
-          join(this.app.appDataPath, WINDOWS_PENDING_INSTALLER),
-          updateInfo,
-          { tracker, abortSignal },
-        )
-      } else {
-        await downloadFullUpdate(this.app, updater.autoUpdater, {
-          tracker,
-          abortSignal,
-        })
-      }
+      await downloadFullUpdate(this.app, updater.autoUpdater, {
+        tracker,
+        abortSignal,
+      })
     } else if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       const updatePath = join(this.app.appDataPath, 'pending_update')
       await downloadAsarUpdate(this.app, updatePath, updateInfo, {
@@ -603,12 +865,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
     if (updateInfo.operation === ElectronUpdateOperation.Asar) {
       await this.quitAndInstallAsar()
     } else if (updateInfo.operation === ElectronUpdateOperation.AutoUpdater) {
-      if (this.app.platform.os === 'windows') {
-        await this.startPendingWindowsInstaller()
-        await this.app.quit()
-      } else {
-        updater.autoUpdater.quitAndInstall()
-      }
+      updater.autoUpdater.quitAndInstall()
     } else {
       throw new Error('Esta actualización requiere descargar el instalador y no puede aplicarse al reiniciar.')
     }

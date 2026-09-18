@@ -16,10 +16,8 @@ async function sha256(readable) {
   return hash.digest('hex')
 }
 
-const checksumFiles = (await readdir(outputDirectory)).filter(name =>
-  /^(?:app-.+\.asar|minelatino-.+-win32-x64\.exe)\.sha256$/.test(name),
-)
-if (checksumFiles.length === 0) throw new Error(`No release checksum files found in ${outputDirectory}`)
+const checksumFiles = (await readdir(outputDirectory)).filter(name => /^app-.+\.asar\.sha256$/.test(name))
+if (checksumFiles.length === 0) throw new Error(`No ASAR checksum files found in ${outputDirectory}`)
 
 for (const checksumName of checksumFiles) {
   const asarName = checksumName.slice(0, -'.sha256'.length)
@@ -37,11 +35,9 @@ for (const checksumName of checksumFiles) {
     throw new Error(`${checksumName} does not have a valid GatinoLauncher signature`)
   }
 
-  if (asarName.endsWith('.asar')) {
-    const gzipName = `${asarName}.gz`
-    const gzipHash = await sha256(createReadStream(resolve(outputDirectory, gzipName)).pipe(createGunzip()))
-    if (gzipHash !== expected) throw new Error(`${gzipName} does not expand to the signed ASAR`)
-  }
+  const gzipName = `${asarName}.gz`
+  const gzipHash = await sha256(createReadStream(resolve(outputDirectory, gzipName)).pipe(createGunzip()))
+  if (gzipHash !== expected) throw new Error(`${gzipName} does not expand to the signed ASAR`)
 
   console.log(`Verified ${asarName}`)
 }

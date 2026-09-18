@@ -98,7 +98,6 @@ jobs:
             "app-$version-win.asar.gz",
             "app-$version-win.asar.sha256",
             "app-$version-win.asar.sha256.sig",
-            "minelatino-$version-win32-x64.exe.sha256.sig",
             'manifest.json'
           )
           $missing = $required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $output $_) -PathType Leaf) }
@@ -132,7 +131,6 @@ jobs:
             Get-Item (Join-Path $output 'manifest.json')
             Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe")
             Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe.sha256")
-            Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe.sha256.sig")
           ) | Select-Object -ExpandProperty FullName
           & gh release create $env:RELEASE_TAG @assets `
             --title "GatinoLauncher $version" `

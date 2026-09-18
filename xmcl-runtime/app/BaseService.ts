@@ -250,13 +250,11 @@ export class BaseService extends AbstractService implements IBaseService {
       settings.updateInfoSet(info)
       if (info.newUpdate) {
         settings.updateStatusSet('pending')
-        // Download signed GatinoLauncher updates in the background. Windows
-        // stages the verified NSIS installer; other supported installations
-        // may stage the smaller ASAR archive. A normal quit applies either.
-        if (
-          info.operation === ElectronUpdateOperation.Asar ||
-          info.operation === ElectronUpdateOperation.AutoUpdater
-        ) {
+        // GatinoLauncher updates are small, signed ASAR archives. Download
+        // them in the background so closing the launcher is enough to apply
+        // the update; the external helper will install it after Electron has
+        // released the running app.asar file.
+        if (info.operation === ElectronUpdateOperation.Asar) {
           try {
             await this.downloadUpdate()
           } catch (error) {
