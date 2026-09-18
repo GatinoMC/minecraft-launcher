@@ -46,6 +46,17 @@ import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
 import { sumInstancePlaytime } from './playtime'
 import { normalizePublicServerAddress } from './competitionServers'
+import {
+  DEFAULT_ACTIVE_SHADER,
+  DEFAULT_SHADER_PACKS,
+  MANAGED_CONTENT_STATE_FILE,
+  MANAGED_MINECRAFT_VERSIONS,
+  managedResourcePackFileName,
+  normalizeLauncherResourcePackManifest,
+  updateIrisProperties,
+  updateResourcePackOptions,
+  type LauncherResourcePack,
+} from './managedContent'
 
 /**
  * Feeds the MineLatino home screen.
@@ -100,6 +111,12 @@ interface CompetitionTelemetryState {
   lastSubmittedAt: number
   submitted: number
   pending: boolean
+}
+
+interface ManagedContentState {
+  resourcePack?: { fileName: string, sha1: string }
+  shaderPacks?: Array<{ fileName: string, sha1: string }>
+  defaultShaderFile?: string
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -220,6 +237,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #defaultInstanceSync: Promise<void> | undefined
   #autoModsSync: Promise<void> | undefined
   #autoModInstanceSyncs = new Map<string, Promise<void>>()
+  #managedContentInstanceSyncs = new Map<string, Promise<void>>()
+  #launcherResourcePackManifest: { fetchedAt: number, items: Map<string, LauncherResourcePack> } | undefined
+  #launcherResourcePackManifestFetch: Promise<Map<string, LauncherResourcePack> | undefined> | undefined
   #instancePreparations = new Map<string, Promise<void>>()
   #preparedInstances = new Map<string, { fingerprint: string, preparedAt: number }>()
   #timer: NodeJS.Timeout | undefined
@@ -256,6 +276,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       launchService.registerMiddleware({
         name: 'MineLatino cosmetics account',
         onBeforeLaunch: async input => {
+          await this.#syncManagedContentBeforeLaunch(input.gameDirectory)
           await this.#writeCosmeticsGameSession(input.gameDirectory)
           // Statistics never delay launch; a failed refresh is retried later.
           if (this.#competitionTelemetry.enabled || this.#competitionTelemetry.pending) void this.#syncCompetitionServers()
@@ -1369,6 +1390,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         }
       }
       await this.syncAutoMods()
+      await this.#syncManagedContentForPresets(presets, instanceService)
     } catch (error) {
       this.warn(`[autoInstance] Failed to auto-create profiles: ${(error as Error).message}`)
       void this.syncAutoMods()
@@ -1459,6 +1481,194 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     if (managedFiles && await this.#applyPresetDefaults(preset, path)) {
       await this.#markPresetApplied(path, preset, managedFiles)
     }
+  }
+
+  async #fetchLauncherResourcePackManifest(): Promise<Map<string, LauncherResourcePack> | undefined> {
+    const cached = this.#launcherResourcePackManifest
+    if (cached && Date.now() - cached.fetchedAt < CONFIG_TTL_MS) return cached.items
+    if (!this.#launcherResourcePackManifestFetch) {
+      this.#launcherResourcePackManifestFetch = (async () => {
+        try {
+          const response = await this.app.fetch(`${COSMETICS_API}/v1/launcher/resource-packs`, {
+            headers: { 'User-Agent': this.app.userAgent, Accept: 'application/json' },
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          })
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const normalized = normalizeLauncherResourcePackManifest(await response.json())
+          const base = new URL(`${COSMETICS_API}/`)
+          const items = new Map<string, LauncherResourcePack>()
+          for (const pack of normalized) {
+            const download = new URL(pack.downloadUrl, base)
+            if (download.origin !== base.origin) {
+              this.warn(`[managedContent] Ignoring cross-origin resource pack URL for ${pack.minecraftVersion}`)
+              continue
+            }
+            items.set(pack.minecraftVersion, { ...pack, downloadUrl: download.toString() })
+          }
+          this.#launcherResourcePackManifest = { fetchedAt: Date.now(), items }
+          return items
+        } catch (error) {
+          this.warn(`[managedContent] Resource-pack manifest unavailable; keeping installed pack: ${(error as Error).message}`)
+          return undefined
+        }
+      })().finally(() => { this.#launcherResourcePackManifestFetch = undefined })
+    }
+    return this.#launcherResourcePackManifestFetch
+  }
+
+  async #readManagedContentState(instancePath: string): Promise<ManagedContentState> {
+    try {
+      const source = asObject(JSON.parse(await readFile(join(instancePath, MANAGED_CONTENT_STATE_FILE), 'utf8')))
+      const resourcePack = asObject(source.resourcePack)
+      const shaderPacks = Array.isArray(source.shaderPacks)
+        ? source.shaderPacks.map(asObject).map(item => ({ fileName: asString(item.fileName), sha1: asString(item.sha1) }))
+          .filter(item => item.fileName && /^[a-f\d]{40}$/i.test(item.sha1))
+        : []
+      return {
+        resourcePack: asString(resourcePack.fileName) && /^[a-f\d]{40}$/i.test(asString(resourcePack.sha1))
+          ? { fileName: asString(resourcePack.fileName), sha1: asString(resourcePack.sha1) }
+          : undefined,
+        shaderPacks,
+        defaultShaderFile: asString(source.defaultShaderFile) || undefined,
+      }
+    } catch {
+      return {}
+    }
+  }
+
+  async #isManagedContentProfile(instancePath: string, rawInstance: unknown): Promise<boolean> {
+    const instance = asObject(rawInstance)
+    const minecraft = asString(asObject(instance.runtime).minecraft)
+    if (!MANAGED_MINECRAFT_VERSIONS.some(version => version === minecraft)) return false
+    const presets = selectAutoCreatePresets(this.#config.presets)
+      .filter(preset => preset.minecraftVersion === minecraft)
+    if (presets.length === 0) return false
+    const stateId = await this.#readPresetState(instancePath).then(state => asString(state.id)).catch(() => '')
+    return presets.some(preset => preset.id === stateId || preset.name === asString(instance.name))
+  }
+
+  async #syncManagedContentBeforeLaunch(instancePath: string): Promise<void> {
+    try {
+      const instanceService = await this.app.registry.get(InstanceService)
+      await instanceService.initialize()
+      const instance = instanceService.state.all[instancePath]
+      if (!instance || !(await this.#isManagedContentProfile(instancePath, instance))) return
+      const installService = await this.app.registry.get(InstanceInstallService)
+      await this.#syncManagedContentForInstance(instancePath, instance, installService)
+    } catch (error) {
+      this.warn(`[managedContent] Pre-launch synchronization failed; keeping current files: ${(error as Error).message}`)
+    }
+  }
+
+  async #syncManagedContentForPresets(presets: MineLatinoPreset[], instanceService: InstanceService) {
+    const manifest = (await this.#fetchLauncherResourcePackManifest()) ?? null
+    const installService = await this.app.registry.get(InstanceInstallService)
+    for (const preset of presets) {
+      if (!MANAGED_MINECRAFT_VERSIONS.some(version => version === preset.minecraftVersion)) continue
+      const instance = await this.#findPresetInstance(preset, instanceService)
+      if (!instance) continue
+      await this.#syncManagedContentForInstance(instance.path, instance, installService, manifest)
+    }
+  }
+
+  #syncManagedContentForInstance(
+    instancePath: string,
+    rawInstance: unknown,
+    installService: InstanceInstallService,
+    suppliedManifest?: Map<string, LauncherResourcePack> | null,
+  ): Promise<void> {
+    const active = this.#managedContentInstanceSyncs.get(instancePath)
+    if (active) return active
+    const synchronization = (async () => {
+      if (!(await this.#isManagedContentProfile(instancePath, rawInstance))) return
+      const manifest = suppliedManifest === undefined
+        ? ((await this.#fetchLauncherResourcePackManifest()) ?? null)
+        : suppliedManifest
+      await this.#syncManagedContentForInstanceInternal(instancePath, rawInstance, installService, manifest)
+    })().finally(() => { this.#managedContentInstanceSyncs.delete(instancePath) })
+    this.#managedContentInstanceSyncs.set(instancePath, synchronization)
+    return synchronization
+  }
+
+  async #syncManagedContentForInstanceInternal(
+    instancePath: string,
+    rawInstance: unknown,
+    installService: InstanceInstallService,
+    manifest: Map<string, LauncherResourcePack> | null,
+  ) {
+    const minecraft = asString(asObject(asObject(rawInstance).runtime).minecraft)
+    if (!MANAGED_MINECRAFT_VERSIONS.some(version => version === minecraft)) return
+    const state = await this.#readManagedContentState(instancePath)
+
+    try {
+      const missingShaders = []
+      for (const shader of DEFAULT_SHADER_PACKS) {
+        const valid = await checksum(join(instancePath, 'shaderpacks', shader.fileName), 'sha1')
+          .then(value => value.toLowerCase() === shader.sha1).catch(() => false)
+        if (!valid) missingShaders.push({
+          path: `shaderpacks/${shader.fileName}`,
+          hashes: { sha1: shader.sha1 },
+          downloads: [shader.downloadUrl],
+          size: shader.fileSize,
+        })
+      }
+      if (missingShaders.length > 0) {
+        this.log(`[managedContent] Installing ${missingShaders.length} shaderpack(s) into ${asString(asObject(rawInstance).name) || instancePath}`)
+        await installService.installInstanceFiles({ path: instancePath, oldFiles: [], files: missingShaders })
+      }
+      const expectedShaders = new Set(DEFAULT_SHADER_PACKS.map(shader => shader.fileName))
+      for (const previous of state.shaderPacks ?? []) {
+        if (!expectedShaders.has(previous.fileName)) await remove(join(instancePath, 'shaderpacks', previous.fileName))
+      }
+      const irisPath = join(instancePath, 'config', 'iris.properties')
+      const iris = await readFile(irisPath, 'utf8').catch(() => '')
+      const currentShader = /^shaderPack=(.*)$/m.exec(iris)?.[1]?.trim() ?? ''
+      if (!state.defaultShaderFile || !currentShader || currentShader === state.defaultShaderFile) {
+        await outputFile(irisPath, updateIrisProperties(iris, DEFAULT_ACTIVE_SHADER))
+      }
+      state.shaderPacks = DEFAULT_SHADER_PACKS.map(shader => ({ fileName: shader.fileName, sha1: shader.sha1 }))
+      state.defaultShaderFile = DEFAULT_ACTIVE_SHADER
+    } catch (error) {
+      this.warn(`[managedContent] Shaderpack update failed; keeping the previous set: ${(error as Error).message}`)
+    }
+
+    if (manifest) {
+      const next = manifest.get(minecraft)
+      const previous = state.resourcePack
+      if (next) {
+        const fileName = managedResourcePackFileName(next)
+        try {
+          const valid = await checksum(join(instancePath, 'resourcepacks', fileName), 'sha1')
+            .then(value => value.toLowerCase() === next.sha1).catch(() => false)
+          if (!valid) {
+            await installService.installInstanceFiles({ path: instancePath, oldFiles: [], files: [{
+              path: `resourcepacks/${fileName}`,
+              hashes: { sha1: next.sha1 },
+              downloads: [next.downloadUrl],
+              size: next.fileSize,
+            }] })
+          }
+          const optionsPath = join(instancePath, 'options.txt')
+          const options = await readFile(optionsPath, 'utf8').catch(() => '')
+          await outputFile(optionsPath, updateResourcePackOptions(options, fileName, previous?.fileName))
+          if (previous?.fileName && previous.fileName !== fileName) {
+            await remove(join(instancePath, 'resourcepacks', previous.fileName))
+          }
+          state.resourcePack = { fileName, sha1: next.sha1 }
+          this.log(`[managedContent] Resource pack revision ${next.revision} ready for Minecraft ${minecraft}`)
+        } catch (error) {
+          this.warn(`[managedContent] Resource-pack update failed; keeping the previous version: ${(error as Error).message}`)
+        }
+      } else if (previous) {
+        const optionsPath = join(instancePath, 'options.txt')
+        const options = await readFile(optionsPath, 'utf8').catch(() => '')
+        await outputFile(optionsPath, updateResourcePackOptions(options, undefined, previous.fileName))
+        await remove(join(instancePath, 'resourcepacks', previous.fileName))
+        delete state.resourcePack
+      }
+    }
+
+    await outputJson(join(instancePath, MANAGED_CONTENT_STATE_FILE), state, { spaces: 2 })
   }
 
   /**
@@ -1684,6 +1894,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     // background, while the per-profile lock still prevents duplicate writes.
     const installService = await this.app.registry.get(InstanceInstallService)
     await this.#syncAutoModsForInstance(instancePath, instanceService.state.all[instancePath], installService)
+    await this.#syncManagedContentForInstance(instancePath, instanceService.state.all[instancePath], installService)
 
     const prepared = instanceService.state.all[instancePath]
     if (prepared) {
