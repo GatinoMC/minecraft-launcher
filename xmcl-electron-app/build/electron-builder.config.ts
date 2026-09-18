@@ -51,7 +51,7 @@ export const config = {
   files: [{
     from: 'dist',
     to: '.',
-    filter: ['**/*.js', '**/*.ico', '**/*.png', '**/*.webp', '**/*.svg', '*.node', '*.dll', '**/*.html', '**/*.css', '**/*.woff2', '**/*.wasm'],
+    filter: ['**/*.js', '**/*.ico', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.webp', '**/*.svg', '*.node', '*.dll', '**/*.html', '**/*.css', '**/*.woff2', '**/*.wasm'],
   }, {
     from: '.',
     to: '.',
