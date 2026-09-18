@@ -210,12 +210,12 @@ MineLatinoUpdate:
   downloadInstaller: Download installer
   downloadUpdate: Download and update
   downloading: Downloading update…
-  installRestart: Install now and restart
+  installRestart: Restart to install
   latest: You are on the latest version.
   openRelease: View on GitHub
-  ready: Downloaded; it will install automatically when you close the launcher
+  ready: Downloaded, ready to install
   releaseNotes: What is new
-  subtitle: Downloads updates in the background and installs them when you close.
+  subtitle: Updates in place, so you never have to download the launcher again.
   title: Launcher update
 SettingMigrationDialog:
   selectRootDirectory: Select Root Directory
