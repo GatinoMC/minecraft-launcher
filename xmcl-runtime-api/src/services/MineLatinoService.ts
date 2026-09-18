@@ -341,6 +341,14 @@ export interface MineLatinoPlaytimeLeaderboardEntry {
   updatedAt: string
 }
 
+export interface MineLatinoCompetitionTelemetrySettings {
+  enabled: boolean
+  /** Number of distinct public addresses in the last successful snapshot. */
+  submitted: number
+  /** A clear or refresh is waiting for connectivity. */
+  pending: boolean
+}
+
 /**
  * Fired when a background refresh produces new data, so the home screen updates
  * without a manual reload.
@@ -399,6 +407,12 @@ export interface MineLatinoService extends GenericEventEmitter<MineLatinoService
    * an empty array on failure.
    */
   getPlaytimeLeaderboard(): Promise<MineLatinoPlaytimeLeaderboardEntry[]>
+
+  /** Read the explicit opt-in state for anonymous saved-server statistics. */
+  getCompetitionTelemetrySettings(): Promise<MineLatinoCompetitionTelemetrySettings>
+
+  /** Enable/disable anonymous statistics and immediately scan existing profiles. */
+  setCompetitionTelemetryEnabled(enabled: boolean): Promise<MineLatinoCompetitionTelemetrySettings>
 
   /**
    * Ensures every matching instance has the latest autoMods installed.

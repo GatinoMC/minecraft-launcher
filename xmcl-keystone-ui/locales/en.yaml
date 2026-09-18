@@ -105,6 +105,10 @@ MineLatinoProfiles:
   deleteConfirm: Are you sure you want to delete "{name}"? The instance and all its data will be removed.
   deleteCancel: Cancel
   deleteConfirmBtn: Delete
+  statisticsTitle: Statistics improvements
+  statisticsDescription: Anonymously share public addresses saved in your server lists. Your account, UUID, and local servers are never included.
+  statisticsShared: '{count} public servers shared'
+  statisticsPending: Will sync when a connection is available
 MineLatinoCreateProfile:
   installFailed: 'The profile was created, but these items could not be installed: {items}. You can retry from the profile content catalog.'
   requiresLoader: To add mods, return to the previous step and select Forge, Fabric, NeoForge or Quilt.

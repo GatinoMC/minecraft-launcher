@@ -90,6 +90,37 @@
       </v-btn>
     </div>
 
+    <div
+      class="ml-statistics-card flex flex-grow-0 items-center gap-3 rounded-xl px-3 py-2"
+      data-testid="minelatino-statistics-consent"
+    >
+      <v-icon size="22" :color="accentColor || 'primary'" aria-hidden="true">insights</v-icon>
+      <div class="min-w-0 flex-grow">
+        <div class="text-sm font-semibold" style="color: var(--ml-text)">
+          {{ t('MineLatinoProfiles.statisticsTitle') }}
+        </div>
+        <div class="text-xs" style="color: var(--ml-dim)">
+          {{ t('MineLatinoProfiles.statisticsDescription') }}
+        </div>
+        <div v-if="statisticsEnabled" class="text-xs mt-0.5" style="color: var(--ml-accent)">
+          {{ statisticsPending
+            ? t('MineLatinoProfiles.statisticsPending')
+            : t('MineLatinoProfiles.statisticsShared', { count: statisticsSubmitted }) }}
+        </div>
+      </div>
+      <v-switch
+        :model-value="statisticsEnabled"
+        :loading="statisticsLoading"
+        :disabled="statisticsLoading"
+        color="primary"
+        density="compact"
+        hide-details
+        inset
+        :aria-label="t('MineLatinoProfiles.statisticsTitle')"
+        @update:model-value="setStatisticsEnabled"
+      />
+    </div>
+
     <!-- Creation dialog -->
     <MineLatinoCreateProfileDialog
       v-model="showCreateDialog"
@@ -121,20 +152,51 @@
 
 <script lang="ts" setup>
 import { injection } from '@/util/inject'
+import { useService } from '@/composables/service'
 import { kInstances } from '@/composables/instances'
 import { kMineLatino } from '@/composables/minelatino'
 import { getInstanceIcon } from '@/util/favicon'
 import MineLatinoCreateProfileDialog from '@/components/MineLatinoCreateProfileDialog.vue'
 import type { Instance } from '@xmcl/instance'
+import { MineLatinoServiceKey } from '@xmcl/runtime-api'
 
 const { t } = useI18n()
 const { accentColor } = injection(kMineLatino)
 const { instances, selectedInstance, remove } = injection(kInstances)
+const mineLatinoService = useService(MineLatinoServiceKey)
 
 const router = useRouter()
 const showCreateDialog = ref(false)
 const showDeleteDialog = ref(false)
 const pendingDelete = ref<Instance | null>(null)
+const statisticsEnabled = ref(false)
+const statisticsLoading = ref(true)
+const statisticsPending = ref(false)
+const statisticsSubmitted = ref(0)
+
+onMounted(async () => {
+  try {
+    const settings = await mineLatinoService.getCompetitionTelemetrySettings()
+    statisticsEnabled.value = settings.enabled
+    statisticsPending.value = settings.pending
+    statisticsSubmitted.value = settings.submitted
+  } finally {
+    statisticsLoading.value = false
+  }
+})
+
+async function setStatisticsEnabled(value: boolean | null) {
+  const enabled = value === true
+  statisticsLoading.value = true
+  try {
+    const settings = await mineLatinoService.setCompetitionTelemetryEnabled(enabled)
+    statisticsEnabled.value = settings.enabled
+    statisticsPending.value = settings.pending
+    statisticsSubmitted.value = settings.submitted
+  } finally {
+    statisticsLoading.value = false
+  }
+}
 
 function selectInstance(instancePath: string) {
   selectedInstance.value = instancePath
@@ -201,6 +263,11 @@ function iconOf(inst: Instance) {
   background: var(--ml-panel);
   border: 1px solid var(--ml-border);
   transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.ml-statistics-card {
+  background: var(--ml-panel);
+  border: 1px solid var(--ml-border);
 }
 
 .ml-profile-card:hover {

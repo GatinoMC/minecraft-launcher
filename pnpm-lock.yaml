@@ -1022,6 +1022,9 @@ importers:
       '@xmcl/file-transfer':
         specifier: workspace:*
         version: link:../packages/file-transfer
+      '@xmcl/game-data':
+        specifier: workspace:*
+        version: link:../packages/game-data
       '@xmcl/installer':
         specifier: workspace:*
         version: link:../packages/installer

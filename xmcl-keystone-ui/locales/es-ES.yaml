@@ -106,6 +106,10 @@ MineLatinoProfiles:
   deleteConfirm: ¿Seguro que quieres eliminar "{name}"? Se borrará la instancia y todos sus datos.
   deleteCancel: Cancelar
   deleteConfirmBtn: Eliminar
+  statisticsTitle: Mejoras de estadísticas
+  statisticsDescription: Comparte de forma anónima las direcciones públicas guardadas en tus listas de servidores. No incluye tu cuenta, UUID ni servidores locales.
+  statisticsShared: '{count} servidores públicos compartidos'
+  statisticsPending: Se sincronizará cuando haya conexión
 MineLatinoCreateProfile:
   installFailed: 'El perfil se creó, pero no se pudieron instalar: {items}. Puedes reintentarlo desde el catálogo de contenido del perfil.'
   createFailed: No se pudo crear el perfil. Revisa la configuración e inténtalo de nuevo.

@@ -1,6 +1,8 @@
 import { readFile, outputFile, outputJson, readdir, remove } from 'fs-extra'
 import { basename, join } from 'path'
+import { createHash, randomUUID } from 'node:crypto'
 import { rcompare, valid } from 'semver'
+import { readServerInfo } from '@xmcl/game-data'
 import {
   AUTHORITY_DEV,
   AUTHORITY_MICROSOFT,
@@ -11,6 +13,7 @@ import {
   type MineLatinoAccountCredentials,
   type MineLatinoCosmeticsAccount,
   type MineLatinoCosmeticOrder,
+  type MineLatinoCompetitionTelemetrySettings,
   type MineLatinoConfig,
   type MineLatinoNewsEmbed,
   type MineLatinoPaymentProvider,
@@ -42,6 +45,7 @@ import { getPresetDefaults } from './presetDefaults'
 import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
 import { sumInstancePlaytime } from './playtime'
+import { normalizePublicServerAddress } from './competitionServers'
 
 /**
  * Feeds the MineLatino home screen.
@@ -72,6 +76,9 @@ const PREPARED_INSTANCE_TTL_MS = 10 * 60_000
 const COSMETICS_API = (process.env.MINELATINO_COSMETICS_API || 'https://minelatino-cosmetics-production.up.railway.app').replace(/\/$/, '')
 const COSMETICS_SECRET_SERVICE = 'MineLatino Cosmetics'
 const COSMETICS_SECRET_ACCOUNT = 'player-session'
+const COMPETITION_TELEMETRY_FILE = 'competition-telemetry.json'
+const COMPETITION_TELEMETRY_REFRESH_MS = 24 * 60 * 60 * 1000
+const MAX_COMPETITION_SERVERS = 200
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -84,6 +91,15 @@ interface TrackedPlaytimeSession {
   token?: string
   opening?: Promise<string | undefined>
   timer?: NodeJS.Timeout
+}
+
+interface CompetitionTelemetryState {
+  enabled: boolean
+  installationId: string
+  lastFingerprint: string
+  lastSubmittedAt: number
+  submitted: number
+  pending: boolean
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -210,11 +226,21 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #windows: MineLatinoWebWindows
   #playtimeSessions = new Map<string, TrackedPlaytimeSession>()
   #cosmeticsSession: { token: string; account: MineLatinoCosmeticsAccount } | undefined
+  #competitionTelemetry: CompetitionTelemetryState = {
+    enabled: false,
+    installationId: randomUUID(),
+    lastFingerprint: '',
+    lastSubmittedAt: 0,
+    submitted: 0,
+    pending: false,
+  }
+  #competitionTelemetrySync: Promise<MineLatinoCompetitionTelemetrySettings> | undefined
 
   constructor(@Inject(LauncherAppKey) app: LauncherApp) {
     super(app, async () => {
       await this.#restore()
       await this.#restoreCosmeticsSession()
+      await this.#restoreCompetitionTelemetry()
       if (!this.#backendUrl) {
         this.warn('No MineLatino backend URL configured; running on the bundled fallback config. Set MINELATINO_BACKEND_URL or DEFAULT_BACKEND_URL in main/minelatino/config.ts.')
       }
@@ -229,7 +255,11 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       const launchService = await this.app.registry.get(LaunchService)
       launchService.registerMiddleware({
         name: 'MineLatino cosmetics account',
-        onBeforeLaunch: async input => { await this.#writeCosmeticsGameSession(input.gameDirectory) },
+        onBeforeLaunch: async input => {
+          await this.#writeCosmeticsGameSession(input.gameDirectory)
+          // Statistics never delay launch; a failed refresh is retried later.
+          if (this.#competitionTelemetry.enabled || this.#competitionTelemetry.pending) void this.#syncCompetitionServers()
+        },
       })
       launchService.on('minecraft-start', (options) => {
         const session: TrackedPlaytimeSession = { user: options.user }
@@ -251,6 +281,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       // setup has selected the data root; a simultaneous backend refresh is
       // deduplicated by #defaultInstanceSync.
       void this.#ensureDefaultInstanceThenSync()
+      if (this.#competitionTelemetry.enabled || this.#competitionTelemetry.pending) void this.#syncCompetitionServers(this.#competitionTelemetry.pending)
     })
     this.#windows = new MineLatinoWebWindows(
       message => this.log(message),
@@ -419,6 +450,104 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       COSMETICS_SECRET_ACCOUNT,
       this.#cosmeticsSession ? JSON.stringify(this.#cosmeticsSession) : '',
     )
+  }
+
+  async #restoreCompetitionTelemetry() {
+    const stored = asObject(await this.#readJson<unknown>(COMPETITION_TELEMETRY_FILE))
+    const installationId = asString(stored.installationId)
+    this.#competitionTelemetry = {
+      enabled: stored.enabled === true,
+      installationId: /^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(installationId)
+        ? installationId
+        : randomUUID(),
+      lastFingerprint: asString(stored.lastFingerprint),
+      lastSubmittedAt: asNumber(stored.lastSubmittedAt, 0),
+      submitted: Math.max(0, Math.floor(asNumber(stored.submitted, 0))),
+      pending: stored.pending === true,
+    }
+    await this.#persistCompetitionTelemetry()
+  }
+
+  async #persistCompetitionTelemetry() {
+    await outputJson(this.#cachePath(COMPETITION_TELEMETRY_FILE), this.#competitionTelemetry, { spaces: 2 })
+  }
+
+  #competitionTelemetrySettings(): MineLatinoCompetitionTelemetrySettings {
+    return {
+      enabled: this.#competitionTelemetry.enabled,
+      submitted: this.#competitionTelemetry.submitted,
+      pending: this.#competitionTelemetry.pending,
+    }
+  }
+
+  async #collectCompetitionServers() {
+    const instanceService = await this.app.registry.get(InstanceService)
+    await instanceService.initialize()
+    const getGameDataPath = await this.app.registry.get(kGameDataPath)
+    const files = new Set([
+      getGameDataPath('servers.dat'),
+      ...Object.keys(instanceService.state.all).map(instancePath => join(instancePath, 'servers.dat')),
+    ])
+    const ownServer = normalizePublicServerAddress(`${this.#config.server.host}:${this.#config.server.port}`)
+    const addresses = new Set<string>()
+    for (const file of files) {
+      try {
+        for (const server of await readServerInfo(await readFile(file))) {
+          const address = normalizePublicServerAddress(server.ip)
+          if (address && address !== ownServer) addresses.add(address)
+          if (addresses.size >= MAX_COMPETITION_SERVERS) break
+        }
+      } catch {
+        // Missing and malformed server lists are ordinary and contain no data.
+      }
+      if (addresses.size >= MAX_COMPETITION_SERVERS) break
+    }
+    return [...addresses].sort()
+  }
+
+  #syncCompetitionServers(force = false): Promise<MineLatinoCompetitionTelemetrySettings> {
+    if (this.#competitionTelemetrySync) return this.#competitionTelemetrySync
+    this.#competitionTelemetrySync = (async () => {
+      const servers = this.#competitionTelemetry.enabled ? await this.#collectCompetitionServers() : []
+      const fingerprint = createHash('sha256').update(JSON.stringify(servers)).digest('hex')
+      const recentlySubmitted = Date.now() - this.#competitionTelemetry.lastSubmittedAt < COMPETITION_TELEMETRY_REFRESH_MS
+      if (!force && !this.#competitionTelemetry.pending
+        && fingerprint === this.#competitionTelemetry.lastFingerprint && recentlySubmitted) {
+        return this.#competitionTelemetrySettings()
+      }
+      this.#competitionTelemetry.pending = true
+      await this.#persistCompetitionTelemetry()
+      try {
+        await this.#cosmeticsRequest('/v1/telemetry/competition-servers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ installationId: this.#competitionTelemetry.installationId, servers }),
+        })
+        this.#competitionTelemetry.lastFingerprint = fingerprint
+        this.#competitionTelemetry.lastSubmittedAt = Date.now()
+        this.#competitionTelemetry.submitted = servers.length
+        this.#competitionTelemetry.pending = false
+        await this.#persistCompetitionTelemetry()
+      } catch (error) {
+        this.warn(`Anonymous server statistics could not be refreshed: ${(error as Error).message}`)
+      }
+      return this.#competitionTelemetrySettings()
+    })().finally(() => { this.#competitionTelemetrySync = undefined })
+    return this.#competitionTelemetrySync
+  }
+
+  async getCompetitionTelemetrySettings(): Promise<MineLatinoCompetitionTelemetrySettings> {
+    await this.initialize()
+    return this.#competitionTelemetrySettings()
+  }
+
+  async setCompetitionTelemetryEnabled(enabled: boolean): Promise<MineLatinoCompetitionTelemetrySettings> {
+    await this.initialize()
+    if (this.#competitionTelemetrySync) await this.#competitionTelemetrySync
+    this.#competitionTelemetry.enabled = enabled
+    this.#competitionTelemetry.pending = true
+    await this.#persistCompetitionTelemetry()
+    return this.#syncCompetitionServers(true)
   }
 
   async #cosmeticsRequest(path: string, options: RequestInit = {}) {
