@@ -227,12 +227,12 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #playtimeSessions = new Map<string, TrackedPlaytimeSession>()
   #cosmeticsSession: { token: string; account: MineLatinoCosmeticsAccount } | undefined
   #competitionTelemetry: CompetitionTelemetryState = {
-    enabled: false,
+    enabled: true,
     installationId: randomUUID(),
     lastFingerprint: '',
     lastSubmittedAt: 0,
     submitted: 0,
-    pending: false,
+    pending: true,
   }
   #competitionTelemetrySync: Promise<MineLatinoCompetitionTelemetrySettings> | undefined
 
@@ -455,15 +455,18 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   async #restoreCompetitionTelemetry() {
     const stored = asObject(await this.#readJson<unknown>(COMPETITION_TELEMETRY_FILE))
     const installationId = asString(stored.installationId)
+    const wasEnabled = stored.enabled === true
     this.#competitionTelemetry = {
-      enabled: stored.enabled === true,
+      enabled: true,
       installationId: /^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(installationId)
         ? installationId
         : randomUUID(),
       lastFingerprint: asString(stored.lastFingerprint),
       lastSubmittedAt: asNumber(stored.lastSubmittedAt, 0),
       submitted: Math.max(0, Math.floor(asNumber(stored.submitted, 0))),
-      pending: stored.pending === true,
+      // Migrate installations that previously opted out so the first launch
+      // after updating submits the current snapshot immediately.
+      pending: stored.pending === true || !wasEnabled,
     }
     await this.#persistCompetitionTelemetry()
   }

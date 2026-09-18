@@ -6,7 +6,7 @@ This file is the contract between the launcher UI in `xmcl-keystone-ui/` and the
 
 If the anchor you need is not here, add a `data-testid="…"` attribute to the corresponding Vue component, then re-run `pnpm gen:testids`.
 
-**Total anchors:** 293 (in 314 Vue files)
+**Total anchors:** 292 (in 314 Vue files)
 
 | Test ID | Defined in |
 |---|---|
@@ -186,7 +186,6 @@ If the anchor you need is not here, add a `data-testid="…"` attribute to the c
 | `minelatino-required-mods-cancel` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L64`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L64) |
 | `minelatino-required-mods-play` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L73`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoRequiredModsDialog.vue#L73) |
 | `minelatino-start` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L186`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoPlay.vue#L186)<br>[`xmcl-keystone-ui/src/views/minelatino/MineLatinoStart.vue#L15`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStart.vue#L15) |
-| `minelatino-statistics-consent` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilesScreen.vue#L95`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoProfilesScreen.vue#L95) |
 | `minelatino-store-open` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L39`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L39) |
 | `minelatino-store-screen` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L16`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoStoreScreen.vue#L16) |
 | `minelatino-update` | [`xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L109`](../xmcl-keystone-ui/src/views/minelatino/MineLatinoSidebar.vue#L109) |
