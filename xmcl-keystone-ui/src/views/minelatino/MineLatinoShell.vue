@@ -53,16 +53,14 @@ import MineLatinoProfilePanel from './MineLatinoProfilePanel.vue'
 import MineLatinoSidebar from './MineLatinoSidebar.vue'
 import './minelatino-theme.css'
 
-const { t } = useI18n()
-
 const state = useMineLatino()
 // One subscription shared by the whole subtree (see the comment above).
 provide(kMineLatino, { ...state, accentColor: computed(() => '#53dfed') })
 
 const { branding } = state
 
-const brandName = computed(() => branding.value?.name || t('MineLatinoPlay.startTitle'))
-const logoSrc = computed(() => branding.value?.logoUrl || bundledLogo)
+const brandName = 'GatinoLauncher'
+const logoSrc = bundledLogo
 
 </script>
 

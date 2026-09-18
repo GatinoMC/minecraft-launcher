@@ -1,4 +1,4 @@
-# MineLatino Launcher — fork map
+# GatinoLauncher — MineLatino fork map
 
 Fork of [XMCL](https://github.com/Voxelum/x-minecraft-launcher) v0.68.1 (MIT, commit `30b9f92`).
 Upstream is kept on the `upstream` remote so our changes can be rebased.
@@ -217,7 +217,7 @@ Every hunk is additive except the ones marked ↱, which replace an existing lin
 | `xmcl-keystone-ui/src/views/Home.vue` | +7 | render `<MineLatinoHome />` + import |
 | `xmcl-keystone-ui/locales/en.yaml` | +48 | `MineLatinoHome.*`, `MineLatinoAuth.*`, `MineLatinoPreset.*`, `MineLatinoRequiredMods.*` |
 | `xmcl-keystone-ui/locales/es-ES.yaml` | +48 | same, in Spanish |
-| `xmcl-keystone-ui/src/index.html` | +1/−1 ↱ | `<title>` → MineLatino Launcher |
+| `xmcl-keystone-ui/src/index.html` | +1/−1 ↱ | `<title>` → GatinoLauncher |
 | `xmcl-electron-app/main/defaultApp.ts` | +4/−1 ↱ | pre-load window title |
 | `xmcl-runtime/settings/pluginSettings.ts` | +6 | any `es-*` host locale → `es-ES` |
 | `xmcl-runtime-api/src/services/InstanceServerInfoService.ts` | +13 | `ensureServer` contract |
@@ -241,7 +241,7 @@ Every hunk is additive except the ones marked ↱, which replace an existing lin
 | `xmcl-electron-app/main/ElectronController.ts` | +3/−2 ↱ | window titles use `LAUNCHER_PRODUCT_NAME` |
 | `xmcl-electron-app/main/controllers/notification.ts` | +2/−1 ↱ | `setAppUserModelId(LAUNCHER_APP_ID)` |
 | `xmcl-electron-app/main/index.dev.ts` | +4/−5 | upstream `setFeedURL` removed |
-| `xmcl-electron-app/main/locales/{en,es-ES}.yaml` | +1/−1 ↱ | root `title` → MineLatino Launcher (tray tooltip) |
+| `xmcl-electron-app/main/locales/{en,es-ES}.yaml` | +1/−1 ↱ | root `title` → GatinoLauncher (tray tooltip) |
 | `xmcl-electron-app/build/electron-builder.config.ts` | +64/−37 | productName/appId/protocols/nsis/publish, appx+snap dropped |
 | `xmcl-electron-app/build.ts` | +16/−22 | asar naming, `app-update.yml` removal, appx hooks dropped |
 | `xmcl-electron-app/postinstall.ts` | +7/−11 | dead appx patch dropped, linux prefix → `minelatino` |

@@ -1699,8 +1699,8 @@ setting:
     loadTheme: Cargar tema
   about: Acerca de
   aboutLicense: MIT LICENSE
-  baseProjectDescription: MineLatino Launcher es una distribución modificada basada en X Minecraft Launcher (XMCL), el proyecto de código abierto creado por ci010 y su comunidad, utilizado conforme a la licencia MIT.
-  baseProjectDisclaimer: MineLatino mantiene sus propias modificaciones y soporte. El proyecto XMCL original no es responsable de esta distribución.
+  baseProjectDescription: GatinoLauncher es una distribución modificada basada en X Minecraft Launcher (XMCL), el proyecto de código abierto creado por ci010 y su comunidad, utilizado conforme a la licencia MIT.
+  baseProjectDisclaimer: GatinoLauncher mantiene sus propias modificaciones y soporte. El proyecto XMCL original no es responsable de esta distribución.
   baseProjectTitle: Basado en X Minecraft Launcher (XMCL)
   launcherVersion: Versión {version}
   openSource: Código abierto
@@ -1790,7 +1790,7 @@ setting:
   developerModeDescription: El Modo de Desarrollador está diseñado para probar tus propios mods
   disableTelemetry: Desactivar Telemetría
   disableTelemetryDescription: >-
-    MineLatino recopilará eventos de inicio del juego y de inicio de sesión del usuario.
+    GatinoLauncher recopilará eventos de inicio del juego y de inicio de sesión del usuario.
   enableDedicatedGPUOptimization: Asignar GPU dedicada
   enableDedicatedGPUOptimizationDescription: Esta opción asignará GPU dedicada al proceso de Minecraft.
   enableDiscord: Habilitar Presencia en Discord
@@ -2072,8 +2072,8 @@ theme:
   selectImage: Seleccionar imagen
   selectMusic: Seleccionar música
   selectVideo: Seleccionar vídeo
-  title: MineLatino Launcher
-title: MineLatino Launcher
+  title: GatinoLauncher
+title: GatinoLauncher
 transportType:
   host: Candidato de Anfitrión
   prflx: Candidato Reflexivo de Par

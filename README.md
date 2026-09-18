@@ -1,9 +1,9 @@
-# MineLatino Launcher
+# GatinoLauncher
 
-MineLatino Launcher is the public MineLatino distribution of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher), maintained under the MIT license with its own account, cosmetics, server and update integrations.
+GatinoLauncher is the public launcher for MineLatino, based on [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher) and maintained under the MIT license with its own account, cosmetics, server and update integrations.
 
-- [Download official MineLatino releases](https://github.com/GatinoMC/minecraft-launcher/releases)
-- [MineLatino code signing policy](CODE_SIGNING_POLICY.md)
+- [Download official GatinoLauncher releases](https://github.com/GatinoMC/minecraft-launcher/releases)
+- [GatinoLauncher code signing policy](CODE_SIGNING_POLICY.md)
 - [Privacy policy](PRIVACY.md)
 - [Upstream attribution](NOTICE)
 

@@ -7,7 +7,7 @@
         <div class="d-flex align-center flex-wrap gap-4 mb-6">
           <v-img
             :src="logo"
-            alt="MineLatino Logo"
+            alt="GatinoLauncher Logo"
             width="64"
             height="64"
             class="mr-4 rounded-lg flex-grow-0 flex-shrink-0"
@@ -15,7 +15,7 @@
           <div>
             <a
               class="text-h5 font-weight-bold text-decoration-none"
-              href="https://minelatino.com"
+              href="https://github.com/GatinoMC/minecraft-launcher"
               target="_blank"
               v-shared-tooltip="() => productName"
             >
@@ -110,10 +110,8 @@ const debugInfo = computed(() => {
 const { t } = useI18n()
 const version = computed(() => env.value?.version ?? '')
 
-// The operator-configured name, with the product name as the offline fallback
-// so the page never flashes the upstream launcher's identity.
-const { branding, openInBrowser } = useMineLatino()
-const productName = computed(() => branding.value?.name || 'MineLatino')
+const { openInBrowser } = useMineLatino()
+const productName = 'GatinoLauncher'
 const XMCL_REPOSITORY_URL = 'https://github.com/Voxelum/x-minecraft-launcher'
 const XMCL_LICENSE_URL = `${XMCL_REPOSITORY_URL}/blob/master/LICENSE`
 </script>

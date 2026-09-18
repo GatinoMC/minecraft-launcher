@@ -3,7 +3,7 @@ body {
 }
 
 .unloaded {
-  background-color: rgb(18, 18, 18);
+  background: radial-gradient(circle at center, #fffaf6 0%, #f4ece6 58%, #eadbd1 100%);
   height: 100vh;
   width: 100vw;
   min-width: 100vw;
@@ -13,6 +13,23 @@ body {
   align-items: center;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   overflow: hidden;
+}
+
+.unloaded #app {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.unloaded #app img {
+  width: min(72vw, 620px);
+  height: auto;
+  max-height: 64vh;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 @keyframes pulse {
@@ -31,4 +48,3 @@ body {
     /* background: #121212; */
   }
 }
-

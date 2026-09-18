@@ -5,14 +5,14 @@ import type { Configuration } from 'electron-builder'
 dotenv()
 
 /**
- * Packaging identity of the MineLatino fork.
+ * Packaging identity of GatinoLauncher.
  *
  * These literals mirror `LAUNCHER_PRODUCT_NAME`, `LAUNCHER_APP_ID` and
  * `LAUNCHER_PROTOCOL` in `xmcl-runtime/constant.ts`. electron-builder loads
  * this file outside the app's module graph, so it cannot import them — change
  * both places together.
  */
-const productName = 'MineLatino'
+const productName = 'GatinoLauncher'
 const appId = 'com.minelatino.launcher'
 const scheme = 'minelatino'
 const artifact = 'minelatino'

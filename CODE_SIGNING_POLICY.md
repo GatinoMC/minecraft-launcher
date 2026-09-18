@@ -1,4 +1,4 @@
-# MineLatino Launcher code signing policy
+# GatinoLauncher code signing policy
 
 Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
@@ -6,7 +6,7 @@ Free code signing provided by [SignPath.io](https://signpath.io/), certificate b
 
 The official Windows installer is named `minelatino-<version>-win32-x64.exe` and is rebuilt from the matching public Git tag. The preferred path is [the signing workflow](.github/workflows/sign-release.yml), which verifies Authenticode before publishing. While SignPath approval is pending, a release explicitly requested by the project owner may include the unsigned installer built by [the release workflow](.github/workflows/publish-signed-update.yml); that release must disclose the missing Authenticode signature and publish a SHA-256 checksum. Existing installations may also receive an updater-only release: its ASAR checksum is signed with the launcher's pinned Ed25519 key and verified again immediately before replacement. Local builds, pull-request builds, dependencies, portable archives and binaries belonging to upstream projects are not signed with the MineLatino subscription.
 
-MineLatino Launcher is a maintained derivative of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher). Its origin and retained MIT attribution are documented in [NOTICE](NOTICE). Release binaries are published only through [MineLatino Launcher GitHub Releases](https://github.com/GatinoMC/minecraft-launcher/releases).
+GatinoLauncher is a maintained derivative of [X Minecraft Launcher (XMCL)](https://github.com/Voxelum/x-minecraft-launcher). Its origin and retained MIT attribution are documented in [NOTICE](NOTICE). Release binaries are published only through [GatinoLauncher GitHub Releases](https://github.com/GatinoMC/minecraft-launcher/releases).
 
 ## Team roles
 

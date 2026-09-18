@@ -8,7 +8,7 @@ if (!outfile) throw new Error('Provide the cosmetics service public/cosmetic-pre
 await build({
   stdin: { contents: `export * from './xmcl-keystone-ui/src/util/cosmeticGeometry'; export * from './xmcl-keystone-ui/src/util/cosmeticMaterials';`, resolveDir: resolve('.') },
   bundle: true, format: 'iife', globalName: 'MineLatinoCosmetics', platform: 'browser', target: 'es2022', outfile,
-  banner: { js: '// Generated from MineLatino Launcher cosmeticGeometry.ts and cosmeticMaterials.ts. Do not edit by hand.' },
+  banner: { js: '// Generated from GatinoLauncher cosmeticGeometry.ts and cosmeticMaterials.ts. Do not edit by hand.' },
   plugins: [{ name: 'admin-adapter', setup(b) {
     b.onResolve({ filter: /^three$/ }, () => ({ path: 'three', namespace: 'admin' }));
     b.onResolve({ filter: /^@\/composables\/cosmeticsStore$/ }, () => ({ path: 'resources', namespace: 'admin' }));

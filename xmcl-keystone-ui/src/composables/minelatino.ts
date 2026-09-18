@@ -417,7 +417,8 @@ export function useMineLatino() {
   }, { immediate: true })
 
   /**
-   * The window title follows the backend's brand name.
+   * The window title is the desktop product identity. MineLatino remains the
+   * server name and must not rename the launcher through remote configuration.
    *
    * This lives in the renderer rather than the main process because Electron
    * replaces the `BrowserWindow` title with the document title as soon as the
@@ -426,8 +427,8 @@ export function useMineLatino() {
    * before the config arrives, and an unconfigured launcher keeps that
    * default rather than renaming itself.
    */
-  watch(() => branding.value?.name, (name) => {
-    if (name && isConfigured.value) document.title = name
+  watch(isConfigured, () => {
+    document.title = 'GatinoLauncher'
   }, { immediate: true })
 
   function openInBrowser(url: string) {

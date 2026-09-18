@@ -6,12 +6,11 @@ import { HAS_DEV_SERVER, HOST } from './constant'
 
 const manifest: InstalledAppManifest = {
   // Shown for the frame between window creation and the page load, so it must
-  // match the `<title>` in xmcl-keystone-ui/src/index.html. The MineLatino
-  // config overrides it at runtime once the backend is reachable.
-  name: 'MineLatino Launcher',
+  // match the `<title>` in xmcl-keystone-ui/src/index.html.
+  name: 'GatinoLauncher',
   description: 'The default launcher UI',
   url: HAS_DEV_SERVER ? defaultUrl : `http://${HOST}/index.html`,
-  backgroundColor: '0x424242',
+  backgroundColor: '0xF4ECE6',
   minWidth: 800,
   minHeight: 400,
   vibrancy: false,

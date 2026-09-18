@@ -26,7 +26,7 @@ export function getCrashPrompt(useCN: boolean, crash: string, log: string, local
   if (useCN) {
     return `你是Minecraft 崩溃报告（crash report）助手，帮助我分析crash造成的原因。你应当首先分析出游戏崩溃的主要原因（java，游戏原版library，mod，或者是其他原因）
 对于java问题或者游戏原版library，你应当直接提醒我。
-若是mod造成的崩溃，你应当通过日志分析出哪些mod可能造成这些错误，并提示我。注意我正在使用 MineLatino Launcher，关于修复崩溃的建议（如下载 Mod）应当在 MineLatino Launcher 里进行。
+若是mod造成的崩溃，你应当通过日志分析出哪些mod可能造成这些错误，并提示我。注意我正在使用 GatinoLauncher，关于修复崩溃的建议（如下载 Mod）应当在 GatinoLauncher 里进行。
 
 如果实在分析不出具体原因，请告知我应当联系服务器社区。请访问 https://minelatino.com
 
@@ -44,7 +44,7 @@ ${log}
     return `
 You are a Minecraft crash report assistant, helping me analyze the causes of crashes. You should first identify the main reason for the game crash (Java issues, missing vanilla game libraries, mod-related problems, or other causes).
 
-For Java issues or missing vanilla game libraries, you should provide direct reminders. Please note that I am using the MineLatino Launcher, and any suggestions for fixing crashes (such as downloading mods) should be done within the MineLatino Launcher.
+For Java issues or missing vanilla game libraries, you should provide direct reminders. Please note that I am using GatinoLauncher, and any suggestions for fixing crashes (such as downloading mods) should be done within GatinoLauncher.
 
 If the crash is caused by mods, you should analyze the logs to determine which mods may be responsible for the errors and notify me.
 
@@ -86,7 +86,7 @@ export function getCrashAgentPrompt(
 Read the evidence for launch ${launchId} through the instance VFS:
 - Launch evidence: launches/${launchId}
 
-Inspect installed mods and the resolved loader / Java setup as needed. Apply a supported fix when the cause is clear, then report what changed. If the cause is uncertain or outside the MineLatino Launcher, say so plainly.
+Inspect installed mods and the resolved loader / Java setup as needed. Apply a supported fix when the cause is clear, then report what changed. If the cause is uncertain or outside GatinoLauncher, say so plainly.
 `
   }
 
@@ -101,7 +101,7 @@ Inspect installed mods and the resolved loader / Java setup as needed. Apply a s
 Read the available evidence through the instance VFS:
 ${evidence.join('\n')}
 
-Inspect installed mods and the resolved loader / Java setup as needed. Apply a supported fix when the cause is clear, then report what changed. If the cause is uncertain or outside the MineLatino Launcher, say so plainly.
+Inspect installed mods and the resolved loader / Java setup as needed. Apply a supported fix when the cause is clear, then report what changed. If the cause is uncertain or outside GatinoLauncher, say so plainly.
 `
   }
 
@@ -113,7 +113,7 @@ Inspect installed mods and the resolved loader / Java setup as needed. Apply a s
     ? `Latest log file (inspect it via the instance virtual filesystem using vfs_read/vfs_list): ${logPath}`
     : `Latest log (supplementary):\n\`\`\`\n${log || '<none captured>'}\n\`\`\``
 
-  return `My Minecraft game crashed or failed to launch. Find the root cause and fix it for me within the MineLatino Launcher.
+  return `My Minecraft game crashed or failed to launch. Find the root cause and fix it for me within GatinoLauncher.
 
 Investigate before concluding: read the latest log and crash report from the instance virtual filesystem, inspect the installed mods and the resolved version / Java setup, and cross-reference them with the failure details below. When the cause is actionable, apply the fix yourself (disable or uninstall the offending mod, install a missing dependency, switch Java, etc.) and tell me what you changed. If it is a Java or vanilla-library problem, or you cannot pin down the cause, say so plainly.
 

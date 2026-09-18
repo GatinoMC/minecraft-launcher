@@ -244,7 +244,7 @@ export class ElectronController implements LauncherAppController {
     await app.whenReady()
     const restoredSession = this.app.session.getSession(defaultApp.url)
     const browser = new BrowserWindow({
-      title: `${LAUNCHER_PRODUCT_NAME} Launcher Migrate`,
+      title: `${LAUNCHER_PRODUCT_NAME} Migrate`,
       frame: false,
       resizable: false,
       width: 600,
@@ -289,7 +289,7 @@ export class ElectronController implements LauncherAppController {
     const enableTranslucency = this.settings?.windowTranslucent ?? false
 
     const browser = new BrowserWindow({
-      title: `${LAUNCHER_PRODUCT_NAME} Launcher Browser`,
+      title: `${LAUNCHER_PRODUCT_NAME} Browser`,
       frame: false,
       transparent: true,
       resizable: false,

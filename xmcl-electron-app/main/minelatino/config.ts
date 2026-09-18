@@ -47,7 +47,7 @@ const LOADERS: MineLatinoLoader[] = ['vanilla', 'fabric', 'neoforge', 'forge', '
 export const FALLBACK_CONFIG: MineLatinoConfig = {
   schemaVersion: 1,
   branding: {
-    name: 'MineLatino Launcher',
+    name: 'GatinoLauncher',
     tagline: 'Apoya al servidor y mejora tu experiencia de juego',
     logoUrl: 'https://minelatino.com/wp-content/uploads/2025/09/Logo-ML-1.png',
     accentColor: '#E8A32E',
@@ -368,7 +368,10 @@ export function normalizeConfig(raw: unknown): MineLatinoConfig {
   return {
     schemaVersion: asNumber(source.schemaVersion, base.schemaVersion),
     branding: {
-      name: asString(branding.name).trim() || base.branding.name,
+      // The backend describes the MineLatino server, but the desktop product
+      // has a fixed local identity. Never let an old cached config rename the
+      // launcher back to the old server-branded product name.
+      name: 'GatinoLauncher',
       tagline: asString(branding.tagline),
       logoUrl: asString(branding.logoUrl) || undefined,
       backgroundUrl: asString(branding.backgroundUrl) || undefined,

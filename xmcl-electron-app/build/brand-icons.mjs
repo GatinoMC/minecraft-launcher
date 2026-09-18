@@ -1,7 +1,6 @@
 /**
- * Regenerates every shipped application icon from the real MineLatino logo
- * (`icons/source-logo.png`, 800x800 RGBA, downloaded from
- * https://minelatino.com/wp-content/uploads/2025/09/Logo-ML-1.png).
+ * Regenerates every shipped application icon from the GatinoLauncher logo
+ * stored in `icons/source-logo.png`.
  *
  * Run with plain Node from this package: `node build/brand-icons.mjs`.
  *
@@ -297,4 +296,4 @@ for (const [theme, { tile }] of Object.entries(THEMES)) {
   write(`${theme}@256x256.png`, pngsBySize[256])
   write(`${theme}@tray.png`, pngsBySize[32])
 }
-console.log('icon set regenerated from the MineLatino logo')
+console.log('icon set regenerated from the GatinoLauncher logo')

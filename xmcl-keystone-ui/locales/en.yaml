@@ -915,9 +915,9 @@ launchBlocked:
       java file or raise the permission of launcher.
     title: No permission to launch
   launchLinuxDisplayUnavailable:
-    environmentMissing: MineLatino Launcher could not recover the X11 display information from your desktop session. Restart MineLatino Launcher from a terminal in the current desktop session, or sign out and sign in again.
-    noGraphicalSession: MineLatino Launcher is not running in a graphical desktop session. Start MineLatino Launcher from your desktop session before launching Minecraft.
-    sandboxDenied: The application sandbox cannot access X11. Grant MineLatino Launcher access to the X11 socket in your Flatpak permissions, then restart MineLatino Launcher.
+    environmentMissing: GatinoLauncher could not recover the X11 display information from your desktop session. Restart GatinoLauncher from a terminal in the current desktop session, or sign out and sign in again.
+    noGraphicalSession: GatinoLauncher is not running in a graphical desktop session. Start GatinoLauncher from your desktop session before launching Minecraft.
+    sandboxDenied: The application sandbox cannot access X11. Grant GatinoLauncher access to the X11 socket in your Flatpak permissions, then restart GatinoLauncher.
     title: X11 display unavailable
     xwaylandMissing: Minecraft needs XWayland in this Wayland session. Install the XWayland package provided by your Linux distribution, then sign out and sign in again.
     xwaylandNotRunning: XWayland is installed but no X11 display is running. Enable XWayland in your compositor configuration, then sign out and sign in again.
@@ -2093,8 +2093,8 @@ setting:
   multiplayerTransportDescription: Choose the WebRTC implementation used by Together. Changing transport disconnects active peers.
   about: About
   aboutLicense: MIT LICENSE
-  baseProjectDescription: MineLatino Launcher is a modified distribution based on X Minecraft Launcher (XMCL), the open-source project created by ci010 and its community, used under the MIT License.
-  baseProjectDisclaimer: MineLatino maintains its own modifications and support. The original XMCL project is not responsible for this distribution.
+  baseProjectDescription: GatinoLauncher is a modified distribution based on X Minecraft Launcher (XMCL), the open-source project created by ci010 and its community, used under the MIT License.
+  baseProjectDisclaimer: GatinoLauncher maintains its own modifications and support. The original XMCL project is not responsible for this distribution.
   baseProjectTitle: Based on X Minecraft Launcher (XMCL)
   launcherVersion: Version {version}
   openSource: Open source
@@ -2191,7 +2191,7 @@ setting:
   developerMode: Developer Mode
   developerModeDescription: Developer Mode is for testing your own mods
   disableTelemetry: Disable Telemetry
-  disableTelemetryDescription: MineLatino will collect the game launch and user login events.
+  disableTelemetryDescription: GatinoLauncher will collect the game launch and user login events.
   enableDedicatedGPUOptimization: Assign Dedicated GPU
   enableDedicatedGPUOptimizationDescription: This option will assign dedicated GPU to Minecraft process.
   enableDiscord: Enable Discord Presence
@@ -2490,8 +2490,8 @@ theme:
   selectImage: Select Image
   selectMusic: Select Music
   selectVideo: Select Video
-  title: MineLatino Launcher
-title: MineLatino Launcher
+  title: GatinoLauncher
+title: GatinoLauncher
 transportType:
   host: Host Candidate
   prflx: Peer Reflexive Candidate

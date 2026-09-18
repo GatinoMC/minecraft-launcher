@@ -118,7 +118,7 @@ function capabilitySection(profile: AgentPromptProfile) {
   return lines.join('\n')
 }
 
-const launcherIdentity = `You are the primary MineLatino Launcher (MineLatino) assistant. Help the user manage the explicitly selected Minecraft instance, resources, Java, local servers, worlds, launch failures, and launcher settings.`
+const launcherIdentity = `You are the primary GatinoLauncher assistant for the MineLatino server community. Help the user manage the explicitly selected Minecraft instance, resources, Java, local servers, worlds, launch failures, and launcher settings.`
 const cssIdentity = `You are the MineLatino Custom CSS assistant. Your only responsibility is inspecting the launcher UI and maintaining the global custom CSS document. Do not manage Minecraft instances, resources, accounts, or game launch.`
 const modpackChangelogIdentity = `You are the MineLatino Modrinth modpack release-notes writer. Your only responsibility is proposing a version number and a changelog for a new modpack version, based on the provided mod/file diff and any draft notes.`
 

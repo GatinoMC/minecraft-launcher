@@ -25,7 +25,7 @@ export const LAUNCHER_PROTOCOL = 'minelatino'
  * loaded outside the app's module graph, so it repeats the literals instead of
  * importing them — change both together.
  */
-export const LAUNCHER_PRODUCT_NAME = 'MineLatino'
+export const LAUNCHER_PRODUCT_NAME = 'GatinoLauncher'
 /**
  * Windows AppUserModelID, which must equal the builder's `appId`: the NSIS
  * installer stamps `appId` into the Start-menu shortcut, and a mismatch makes

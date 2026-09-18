@@ -9,8 +9,8 @@
 
   The backdrop is a bundled voxel landscape that drifts on a slow Ken Burns
   loop with floating voxel motes, so the screen reads as a living scene rather
-  than a static wallpaper; `branding.backgroundUrl` still wins when the
-  backend supplies its own art.
+  than a static wallpaper. The artwork is bundled so development and
+  production always show the same approved MineLatino scene.
 -->
 <template>
   <section
@@ -285,17 +285,10 @@ const serverLogo = computed(() => {
   return branding.value?.logoUrl || bundledLogo
 })
 
-/**
- * Backend art when it is safe to interpolate into `url("...")`, the bundled
- * voxel scene otherwise.
- */
-const bgStyle = computed(() => {
-  const url = branding.value?.backgroundUrl
-  const safe = url
-    && /^(?:https?:\/\/|data:image\/)/i.test(url)
-    && !/["'()\s\\]/.test(url)
-  return { backgroundImage: `url("${safe ? url : sceneArt}")` }
-})
+// Keep the approved Jugar artwork identical in development and production.
+// Remote branding still supplies MineLatino's server logo and tagline, but it
+// cannot replace this bundled background with an old deployment asset.
+const bgStyle = { backgroundImage: `url("${sceneArt}")` }
 
 // Live player count for the configured server, pinged through the shared
 // cache so revisiting the panel within the TTL costs nothing.

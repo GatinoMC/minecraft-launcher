@@ -1,6 +1,6 @@
-# MineLatino Launcher privacy policy
+# GatinoLauncher privacy policy
 
-MineLatino Launcher is an open-source Minecraft launcher. It does not enable the external application-analytics or remote-experiment services inherited from XMCL.
+GatinoLauncher is an open-source Minecraft launcher for the MineLatino server. It does not enable the external application-analytics or remote-experiment services inherited from XMCL.
 
 The launcher connects to network services when required by a feature the user chooses or by the selected Minecraft installation. These services can include Microsoft and Mojang for account authentication and game resources; Modrinth and CurseForge for optional content; GitHub and the MineLatino launcher backend for application and mod updates; and the MineLatino cosmetics service for MineLatino accounts, ownership, equipment and password recovery.
 
