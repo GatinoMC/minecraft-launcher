@@ -211,12 +211,12 @@ MineLatinoUpdate:
   downloadInstaller: Descargar instalador
   downloadUpdate: Descargar y actualizar
   downloading: Descargando actualización…
-  installRestart: Reiniciar para instalar
+  installRestart: Instalar ahora y reiniciar
   latest: Ya tienes la última versión.
   openRelease: Ver en GitHub
-  ready: Descargada, lista para instalar
+  ready: Descargada; se instalará automáticamente al cerrar
   releaseNotes: Novedades
-  subtitle: Se actualiza al momento, sin descargar el launcher de nuevo.
+  subtitle: Descarga las actualizaciones en segundo plano y las instala al cerrar.
   title: Actualización del launcher
 SettingMigrationDialog:
   selectRootDirectory: Seleccionar Directorio Raíz

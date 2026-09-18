@@ -214,176 +214,203 @@ function trustedUpdateUrl(raw: string): string {
 }
 
 const WINDOWS_UPDATE_HELPER = String.raw`
-'use strict'
-const { createReadStream, existsSync } = require('fs')
-const { appendFile, readFile, rename, unlink, writeFile } = require('fs/promises')
-const { spawn } = require('child_process')
-const { createHash } = require('crypto')
+param([Parameter(Mandatory = $true)][string]$ConfigPath)
 
-const sleep = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
+$ErrorActionPreference = 'Stop'
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$Config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
 
-async function log(config, phase, message) {
-  const line = JSON.stringify({ time: new Date().toISOString(), phase, message }) + '\n'
-  await appendFile(config.logPath, line, 'utf8').catch(() => {})
+function Write-UpdateLog([string]$Phase, [string]$Message) {
+  $entry = [ordered]@{
+    time = [DateTime]::UtcNow.ToString('o')
+    phase = $Phase
+    message = $Message
+  }
+  [IO.File]::AppendAllText($Config.logPath, (($entry | ConvertTo-Json -Compress) + [Environment]::NewLine), $Utf8NoBom)
 }
 
-async function setStatus(config, state, detail) {
-  await writeFile(config.statusPath, JSON.stringify({ transactionId: config.transactionId, state, detail, updatedAt: new Date().toISOString() }), 'utf8')
-    .catch(() => {})
-  await log(config, state, detail)
+function Set-UpdateStatus([string]$State, [string]$Detail) {
+  $status = [ordered]@{
+    transactionId = $Config.transactionId
+    state = $State
+    detail = $Detail
+    updatedAt = [DateTime]::UtcNow.ToString('o')
+  }
+  [IO.File]::WriteAllText($Config.statusPath, ($status | ConvertTo-Json -Compress), $Utf8NoBom)
+  Write-UpdateLog $State $Detail
 }
 
-function isRunning(pid) {
+function Test-ProcessRunning([int]$ProcessId) {
   try {
-    process.kill(pid, 0)
-    return true
+    $null = Get-Process -Id $ProcessId -ErrorAction Stop
+    return $true
   } catch {
-    return false
+    return $false
   }
 }
 
-async function waitForLauncherProcesses(config) {
-  const processPids = Array.from(new Set(
-    (Array.isArray(config.processPids) ? config.processPids : [config.parentPid])
-      .filter(pid => Number.isInteger(pid) && pid > 0 && pid !== process.pid),
-  ))
-  for (let attempt = 0; attempt < 480; attempt += 1) {
-    const running = processPids.filter(isRunning)
-    if (running.length === 0) return
-    if (attempt === 0 || attempt % 40 === 39) {
-      await log(config, 'waiting-for-exit', 'Still running: ' + running.join(','))
-    }
-    await sleep(250)
-  }
-  const running = processPids.filter(isRunning)
-  throw new Error('Launcher processes did not exit within 120 seconds (pids=' + running.join(',') + ')')
-}
-
-async function hashFile(path) {
-  return await new Promise((resolve, reject) => {
-    const hash = createHash('sha256')
-    const stream = createReadStream(path)
-    stream.on('data', chunk => hash.update(chunk))
-    stream.on('error', reject)
-    stream.on('end', () => resolve(hash.digest('hex')))
-  })
-}
-
-async function restoreBackup(appAsarPath, backupAsarPath) {
-  if (!existsSync(appAsarPath) && existsSync(backupAsarPath)) {
-    await rename(backupAsarPath, appAsarPath).catch(() => {})
-  }
-}
-
-async function rollbackToBackup(appAsarPath, backupAsarPath) {
-  if (!existsSync(backupAsarPath)) return
-  let lastError
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    try {
-      await unlink(appAsarPath).catch(() => {})
-      await rename(backupAsarPath, appAsarPath)
-      return
-    } catch (error) {
-      lastError = error
-      await sleep(250)
+function Get-TrackedProcesses {
+  $result = @()
+  foreach ($processId in @($Config.processPids)) {
+    if ($processId -and $processId -gt 0 -and $processId -ne $PID -and $result -notcontains [int]$processId) {
+      $result += [int]$processId
     }
   }
-  throw new Error('Unable to restore app.asar backup: ' + (lastError?.message || 'unknown error'))
+  if ($result.Count -eq 0 -and $Config.parentPid) {
+    $result += [int]$Config.parentPid
+  }
+  return $result
 }
 
-async function replaceAsar(config) {
-  const backupAsarPath = config.appAsarPath + '.bk'
-  let lastError
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    await restoreBackup(config.appAsarPath, backupAsarPath)
-    await unlink(backupAsarPath).catch(() => {})
-    try {
-      await rename(config.appAsarPath, backupAsarPath)
-      await rename(config.updateAsarPath, config.appAsarPath)
-      return backupAsarPath
-    } catch (error) {
-      lastError = error
-      await log(config, 'swap-retry', 'attempt=' + (attempt + 1) + ' code=' + (error.code || 'unknown') + ' message=' + error.message)
-      await restoreBackup(config.appAsarPath, backupAsarPath)
-      await sleep(250)
+function Wait-ForLauncherProcesses {
+  $tracked = @(Get-TrackedProcesses)
+  for ($attempt = 0; $attempt -lt 480; $attempt += 1) {
+    $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+    if ($running.Count -eq 0) { return }
+    if ($attempt -eq 0 -or $attempt % 40 -eq 39) {
+      Write-UpdateLog 'waiting-for-exit' ('Still running: ' + ($running -join ','))
     }
+    Start-Sleep -Milliseconds 250
   }
-  throw new Error('Unable to replace app.asar after 120 attempts: ' + (lastError?.message || 'unknown error'))
+  $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+  throw 'Launcher processes did not exit within 120 seconds (pids=' + ($running -join ',') + ')'
 }
 
-async function relaunch(config, transactionId = config.transactionId) {
-  const environment = { ...process.env }
-  delete environment.ELECTRON_RUN_AS_NODE
-  if (transactionId) environment.MINELATINO_UPDATE_TRANSACTION_ID = transactionId
-  else delete environment.MINELATINO_UPDATE_TRANSACTION_ID
-  const child = spawn(config.executable, config.arguments, {
-    cwd: config.cwd,
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-    env: environment,
-  })
-  await new Promise((resolve, reject) => {
-    child.once('spawn', resolve)
-    child.once('error', reject)
-  })
-  child.unref()
-  return child.pid
-}
-
-async function waitForBootConfirmation(config, pid) {
-  const attempts = Math.max(1, Math.ceil((config.bootConfirmationTimeoutMs || 30000) / 250))
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const status = await readFile(config.statusPath, 'utf8')
-      .then(raw => JSON.parse(raw))
-      .catch(() => ({}))
-    if (status.transactionId === config.transactionId && status.state === 'booted') return
-    if (!isRunning(pid)) throw new Error('Relaunched process exited before confirming startup')
-    await sleep(250)
+function Restore-Backup([string]$AppAsarPath, [string]$BackupAsarPath) {
+  if (-not (Test-Path -LiteralPath $AppAsarPath) -and (Test-Path -LiteralPath $BackupAsarPath)) {
+    Move-Item -LiteralPath $BackupAsarPath -Destination $AppAsarPath -Force
   }
-  throw new Error('Relaunched process did not confirm startup within 30 seconds')
 }
 
-async function main() {
-  const configPath = process.argv[2]
-  const config = JSON.parse(await readFile(configPath, 'utf8'))
-  let backupAsarPath
-  let relaunchedPid
+function Get-Sha256([string]$Path) {
+  $stream = [IO.File]::OpenRead($Path)
+  $sha256 = [Security.Cryptography.SHA256]::Create()
   try {
-    await setStatus(config, 'prepared', 'Waiting for all launcher processes to exit')
-    await waitForLauncherProcesses(config)
-    const actualSha256 = await hashFile(config.updateAsarPath)
-    if (actualSha256 !== config.expectedSha256) {
-      throw new Error('Pending ASAR checksum mismatch')
-    }
-    await setStatus(config, 'verified', 'Pending ASAR checksum verified')
-    backupAsarPath = await replaceAsar(config)
-    await setStatus(config, 'swapped', 'app.asar replaced successfully')
-    await setStatus(config, 'awaiting-relaunch', 'Waiting for the updated launcher to finish booting')
-    relaunchedPid = await relaunch(config)
-    await waitForBootConfirmation(config, relaunchedPid)
-    await setStatus(config, 'relaunched', 'Updated launcher confirmed successful startup')
-    await unlink(backupAsarPath).catch(() => {})
-    await unlink(config.checksumPath).catch(() => {})
-    await unlink(config.signaturePath).catch(() => {})
-    await unlink(configPath).catch(() => {})
-    await unlink(__filename).catch(() => {})
-  } catch (error) {
-    if (relaunchedPid && isRunning(relaunchedPid)) {
-      try { process.kill(relaunchedPid) } catch {}
-      await sleep(1000)
-    }
-    await rollbackToBackup(config.appAsarPath, backupAsarPath || config.appAsarPath + '.bk').catch(() => {})
-    await setStatus(config, 'failed', (error && error.stack) || String(error))
-    const trackedPids = Array.isArray(config.processPids) ? config.processPids : [config.parentPid]
-    if (!trackedPids.some(isRunning)) {
-      await relaunch(config, '').catch(relaunchError => log(config, 'relaunch-failed', relaunchError.message))
-    }
-    throw error
+    return ([BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+  } finally {
+    $sha256.Dispose()
+    $stream.Dispose()
   }
 }
 
-main().catch(() => { process.exitCode = 1 })
+function Restore-BackupWithRetry([string]$AppAsarPath, [string]$BackupAsarPath) {
+  if (-not (Test-Path -LiteralPath $BackupAsarPath)) { return }
+  $lastError = $null
+  for ($attempt = 0; $attempt -lt 120; $attempt += 1) {
+    try {
+      Remove-Item -LiteralPath $AppAsarPath -Force -ErrorAction SilentlyContinue
+      Move-Item -LiteralPath $BackupAsarPath -Destination $AppAsarPath -Force
+      return
+    } catch {
+      $lastError = $_.Exception
+      Start-Sleep -Milliseconds 250
+    }
+  }
+  throw 'Unable to restore app.asar backup: ' + $lastError.Message
+}
+
+function Install-PendingAsar {
+  $backupAsarPath = $Config.appAsarPath + '.bk'
+  $lastError = $null
+  for ($attempt = 0; $attempt -lt 120; $attempt += 1) {
+    try {
+      Restore-Backup $Config.appAsarPath $backupAsarPath
+      Remove-Item -LiteralPath $backupAsarPath -Force -ErrorAction SilentlyContinue
+      Move-Item -LiteralPath $Config.appAsarPath -Destination $backupAsarPath -Force
+      Move-Item -LiteralPath $Config.updateAsarPath -Destination $Config.appAsarPath -Force
+      return $backupAsarPath
+    } catch {
+      $lastError = $_.Exception
+      Write-UpdateLog 'swap-retry' ('attempt=' + ($attempt + 1) + ' message=' + $lastError.Message)
+      Restore-Backup $Config.appAsarPath $backupAsarPath
+      Start-Sleep -Milliseconds 250
+    }
+  }
+  throw 'Unable to replace app.asar after 120 attempts: ' + $lastError.Message
+}
+
+function Start-Launcher([string]$TransactionId) {
+  $hadTransaction = Test-Path Env:\MINELATINO_UPDATE_TRANSACTION_ID
+  $previousTransaction = $env:MINELATINO_UPDATE_TRANSACTION_ID
+  try {
+    if ([string]::IsNullOrEmpty($TransactionId)) {
+      Remove-Item Env:\MINELATINO_UPDATE_TRANSACTION_ID -ErrorAction SilentlyContinue
+    } else {
+      $env:MINELATINO_UPDATE_TRANSACTION_ID = $TransactionId
+    }
+    Remove-Item Env:\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+    $startOptions = @{
+      FilePath = [string]$Config.executable
+      WorkingDirectory = [string]$Config.cwd
+      PassThru = $true
+    }
+    $launcherArguments = @($Config.arguments)
+    if ($launcherArguments.Count -gt 0) {
+      $startOptions.ArgumentList = $launcherArguments
+    }
+    $process = Start-Process @startOptions
+    return $process.Id
+  } finally {
+    if ($hadTransaction) {
+      $env:MINELATINO_UPDATE_TRANSACTION_ID = $previousTransaction
+    } else {
+      Remove-Item Env:\MINELATINO_UPDATE_TRANSACTION_ID -ErrorAction SilentlyContinue
+    }
+  }
+}
+
+function Wait-ForBootConfirmation([int]$ProcessId) {
+  $timeout = if ($Config.bootConfirmationTimeoutMs) { [int]$Config.bootConfirmationTimeoutMs } else { 30000 }
+  $attempts = [Math]::Max(1, [Math]::Ceiling($timeout / 250))
+  for ($attempt = 0; $attempt -lt $attempts; $attempt += 1) {
+    try {
+      $status = Get-Content -LiteralPath $Config.statusPath -Raw | ConvertFrom-Json
+      if ($status.transactionId -eq $Config.transactionId -and $status.state -eq 'booted') { return }
+    } catch {}
+    if (-not (Test-ProcessRunning $ProcessId)) {
+      throw 'Relaunched process exited before confirming startup'
+    }
+    Start-Sleep -Milliseconds 250
+  }
+  throw 'Relaunched process did not confirm startup within ' + $timeout + 'ms'
+}
+
+$backupAsarPath = $null
+$relaunchedProcessId = $null
+try {
+  Set-UpdateStatus 'prepared' 'Waiting for all launcher processes to exit'
+  Wait-ForLauncherProcesses
+  $actualSha256 = Get-Sha256 ([string]$Config.updateAsarPath)
+  if ($actualSha256 -ne $Config.expectedSha256) {
+    throw 'Pending ASAR checksum mismatch'
+  }
+  Set-UpdateStatus 'verified' 'Pending ASAR checksum verified'
+  $backupAsarPath = Install-PendingAsar
+  Set-UpdateStatus 'swapped' 'app.asar replaced successfully'
+  Set-UpdateStatus 'awaiting-relaunch' 'Waiting for the updated launcher to finish booting'
+  $relaunchedProcessId = Start-Launcher ([string]$Config.transactionId)
+  Wait-ForBootConfirmation $relaunchedProcessId
+  Set-UpdateStatus 'relaunched' 'Updated launcher confirmed successful startup'
+  Remove-Item -LiteralPath $backupAsarPath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $Config.checksumPath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $Config.signaturePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $ConfigPath -Force -ErrorAction SilentlyContinue
+} catch {
+  if ($relaunchedProcessId -and (Test-ProcessRunning $relaunchedProcessId)) {
+    Stop-Process -Id $relaunchedProcessId -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
+  }
+  try {
+    Restore-BackupWithRetry $Config.appAsarPath $(if ($backupAsarPath) { $backupAsarPath } else { $Config.appAsarPath + '.bk' })
+  } catch {}
+  Set-UpdateStatus 'failed' $_.Exception.ToString()
+  $tracked = @(Get-TrackedProcesses)
+  $running = @($tracked | Where-Object { Test-ProcessRunning $_ })
+  if ($running.Count -eq 0) {
+    try { $null = Start-Launcher '' } catch { Write-UpdateLog 'relaunch-failed' $_.Exception.Message }
+  }
+  exit 1
+}
 `
 
 /**
@@ -398,9 +425,9 @@ async function prepareWindowsUpdateHelper(
   appDataPath: string,
   expectedSha256: string,
 ): Promise<{ args: string[]; statusPath: string; transactionId: string }> {
-  const helperPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.cjs`)
-  const configPath = join(appDataPath, `MineLatinoAutoUpdate-${process.pid}.json`)
-  const statusPath = join(appDataPath, 'MineLatinoAutoUpdate-status.json')
+  const helperPath = join(appDataPath, `GatinoLauncherAutoUpdate-${process.pid}.ps1`)
+  const configPath = join(appDataPath, `GatinoLauncherAutoUpdate-${process.pid}.json`)
+  const statusPath = join(appDataPath, 'GatinoLauncherAutoUpdate-status.json')
   const transactionId = randomUUID()
   await unlinkAsync(statusPath).catch(() => {})
   await writeFile(helperPath, WINDOWS_UPDATE_HELPER, 'utf8')
@@ -420,7 +447,7 @@ async function prepareWindowsUpdateHelper(
       executable: process.execPath,
       arguments: [],
       cwd: dirname(process.execPath),
-      logPath: join(appDataPath, 'MineLatinoAutoUpdate.log'),
+      logPath: join(appDataPath, 'GatinoLauncherAutoUpdate.log'),
       statusPath,
     }),
     'utf8',
@@ -429,7 +456,34 @@ async function prepareWindowsUpdateHelper(
   // an alarming AutoUpdate.bat behind in the application-data directory.
   await unlinkAsync(join(appDataPath, 'AutoUpdate.bat')).catch(() => {})
 
-  return { args: [process.execPath, helperPath, configPath], statusPath, transactionId }
+  const windowsRoot = process.env.SystemRoot || process.env.WINDIR || 'C:\\Windows'
+  const powershellPath = join(
+    windowsRoot,
+    'System32',
+    'WindowsPowerShell',
+    'v1.0',
+    'powershell.exe',
+  )
+  if (!existsSync(powershellPath)) {
+    throw new Error(`No se encontró Windows PowerShell en ${powershellPath}.`)
+  }
+  return {
+    args: [
+      powershellPath,
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-WindowStyle',
+      'Hidden',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      helperPath,
+      configPath,
+    ],
+    statusPath,
+    transactionId,
+  }
 }
 
 async function waitForWindowsUpdateHelper(
@@ -490,10 +544,11 @@ async function downloadFullUpdate(
 
 export class ElectronUpdater implements LauncherAppUpdater {
   private logger: Logger
+  private windowsUpdatePrepared = false
 
   constructor(private app: ElectronLauncherApp) {
     this.logger = app.getLogger('ElectronUpdater')
-    const statusPath = join(app.appDataPath, 'MineLatinoAutoUpdate-status.json')
+    const statusPath = join(app.appDataPath, 'GatinoLauncherAutoUpdate-status.json')
     const bootTransactionId = process.env.MINELATINO_UPDATE_TRANSACTION_ID
     if (bootTransactionId) {
       delete process.env.MINELATINO_UPDATE_TRANSACTION_ID
@@ -517,11 +572,29 @@ export class ElectronUpdater implements LauncherAppUpdater {
         const status = JSON.parse(raw) as { state?: string; detail?: string }
         if (status.state === 'failed') {
           this.logger.warn(
-            `Previous launcher update failed. See ${join(app.appDataPath, 'MineLatinoAutoUpdate.log')}`,
+            `Previous launcher update failed. See ${join(app.appDataPath, 'GatinoLauncherAutoUpdate.log')}`,
           )
         }
       })
       .catch(() => undefined)
+
+    // A verified ASAR is applied on any normal launcher exit. Preparing the
+    // helper as a disposer lets LauncherApp finish its own cleanup first; the
+    // external PowerShell process waits for every Electron PID to disappear,
+    // swaps the archive, and then relaunches GatinoLauncher.
+    if (app.platform.os === 'windows' && !HAS_DEV_SERVER) {
+      app.registryDisposer(async () => {
+        const pending = join(app.appDataPath, 'pending_update')
+        if (!existsSync(pending) ||
+          !existsSync(pending + '.sha256') ||
+          !existsSync(pending + '.sha256.sig')) return
+        try {
+          await this.quitAndInstallAsar(false)
+        } catch (error) {
+          this.logger.error(error as Error)
+        }
+      })
+    }
   }
 
   /**
@@ -620,12 +693,16 @@ export class ElectronUpdater implements LauncherAppUpdater {
     return release
   }
 
-  private async quitAndInstallAsar() {
+  private async quitAndInstallAsar(quitAfterPreparing = true) {
     const appAsarPath = join(dirname(__dirname), 'app.asar')
     const updateAsarPath = join(this.app.appDataPath, 'pending_update')
 
     this.logger.log(`Install asar on ${this.app.platform.os} ${appAsarPath}`)
     if (this.app.platform.os === 'windows') {
+      if (this.windowsUpdatePrepared) {
+        if (quitAfterPreparing) await this.app.quit()
+        return
+      }
       const appAsarPath = join(dirname(__dirname), 'app.asar')
       const updateAsarPath = join(this.app.appDataPath, 'pending_update')
 
@@ -689,7 +766,7 @@ export class ElectronUpdater implements LauncherAppUpdater {
         detached: true,
         stdio: 'ignore',
         windowsHide: true,
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        env: process.env,
       })
       await new Promise<void>((resolve, reject) => {
         x.once('spawn', resolve)
@@ -697,7 +774,8 @@ export class ElectronUpdater implements LauncherAppUpdater {
       })
       await waitForWindowsUpdateHelper(prepared.statusPath, prepared.transactionId, x)
       x.unref()
-      this.app.quit()
+      this.windowsUpdatePrepared = true
+      if (quitAfterPreparing) await this.app.quit()
     } else {
       await promisify(rename)(appAsarPath, appAsarPath + '.bk').catch(() => {})
       try {

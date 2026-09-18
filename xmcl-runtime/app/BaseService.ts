@@ -10,6 +10,7 @@ import {
   Settings,
   type SharedState,
   DownloadUpdateTask,
+  ElectronUpdateOperation,
   NetworkStatus,
 } from '@xmcl/runtime-api'
 import { readFile, readdir, stat, pathExists } from 'fs-extra'
@@ -249,6 +250,17 @@ export class BaseService extends AbstractService implements IBaseService {
       settings.updateInfoSet(info)
       if (info.newUpdate) {
         settings.updateStatusSet('pending')
+        // GatinoLauncher updates are small, signed ASAR archives. Download
+        // them in the background so closing the launcher is enough to apply
+        // the update; the external helper will install it after Electron has
+        // released the running app.asar file.
+        if (info.operation === ElectronUpdateOperation.Asar) {
+          try {
+            await this.downloadUpdate()
+          } catch (error) {
+            this.warn('No se pudo descargar automáticamente la actualización.', error)
+          }
+        }
       } else {
         settings.updateStatusSet('none')
       }
