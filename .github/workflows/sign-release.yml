@@ -122,6 +122,8 @@ jobs:
 
       - name: Verify signed installer and refresh metadata
         shell: pwsh
+        env:
+          ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
         run: |
           $installer = Get-ChildItem signed -Recurse -Filter 'minelatino-*-win32-x64.exe'
           if ($installer.Count -ne 1) {
@@ -134,6 +136,8 @@ jobs:
 
           $sha256 = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           [System.IO.File]::WriteAllText("$($installer.FullName).sha256", $sha256)
+          node scripts/sign-asar.mjs $installer.DirectoryName
+          node scripts/verify-asar-signatures.mjs $installer.DirectoryName
 
           $bytes = [System.IO.File]::ReadAllBytes($installer.FullName)
           $sha512 = [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData($bytes))
@@ -162,6 +166,7 @@ jobs:
           $releaseAssets = @(
             $installer.FullName,
             "$($installer.FullName).sha256",
+            "$($installer.FullName).sha256.sig",
             (Join-Path signed 'latest.yml')
           )
           $releaseAssets += Get-ChildItem xmcl-electron-app/build/output -Filter 'app-*.asar*' | ForEach-Object FullName

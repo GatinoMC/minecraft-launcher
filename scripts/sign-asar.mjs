@@ -10,8 +10,10 @@ if (!privateKeyPem) throw new Error('ASAR_SIGNING_PRIVATE_KEY is required')
 const privateKey = createPrivateKey(privateKeyPem)
 if (privateKey.asymmetricKeyType !== 'ed25519') throw new Error('ASAR signing key must be Ed25519')
 
-const checksumFiles = (await readdir(outputDirectory)).filter(name => /^app-.+\.asar\.sha256$/.test(name))
-if (checksumFiles.length === 0) throw new Error(`No ASAR checksum files found in ${outputDirectory}`)
+const checksumFiles = (await readdir(outputDirectory)).filter(name =>
+  /^(?:app-.+\.asar|minelatino-.+-win32-x64\.exe)\.sha256$/.test(name),
+)
+if (checksumFiles.length === 0) throw new Error(`No release checksum files found in ${outputDirectory}`)
 
 for (const name of checksumFiles) {
   const checksum = (await readFile(resolve(outputDirectory, name), 'utf8')).trim().toLowerCase()
