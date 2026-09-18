@@ -1,0 +1,50 @@
+name: Sign existing Windows installer checksum
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable tag whose Windows installer checksum will be signed
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sign-checksum:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out signing utility
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Validate tag and signing key
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'The tag must use vMAJOR.MINOR.PATCH.' >&2; exit 1; }
+          test -n "$ASAR_SIGNING_PRIVATE_KEY" || { echo 'ASAR_SIGNING_PRIVATE_KEY is not configured.' >&2; exit 1; }
+
+      - name: Download and verify the published installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          installer="minelatino-$version-win32-x64.exe"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$installer" --pattern "$installer.sha256"
+          actual="$(sha256sum "$installer" | cut -d' ' -f1)"
+          expected="$(tr -d '\r\n' < "$installer.sha256" | tr '[:upper:]' '[:lower:]')"
+          test "$actual" = "$expected" || { echo 'Published installer checksum mismatch.' >&2; exit 1; }
+
+      - name: Sign and publish the installer checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          ASAR_SIGNING_PRIVATE_KEY: ${{ secrets.ASAR_SIGNING_PRIVATE_KEY }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          checksum="minelatino-$version-win32-x64.exe.sha256"
+          node scripts/sign-checksum.mjs "$checksum"
+          gh release upload "$RELEASE_TAG" "$checksum.sig" --repo "$GITHUB_REPOSITORY" --clobber

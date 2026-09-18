@@ -134,6 +134,7 @@ jobs:
 
           $sha256 = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           [System.IO.File]::WriteAllText("$($installer.FullName).sha256", $sha256)
+          node scripts/sign-checksum.mjs "$($installer.FullName).sha256"
 
           $bytes = [System.IO.File]::ReadAllBytes($installer.FullName)
           $sha512 = [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData($bytes))
@@ -162,6 +163,7 @@ jobs:
           $releaseAssets = @(
             $installer.FullName,
             "$($installer.FullName).sha256",
+            "$($installer.FullName).sha256.sig",
             (Join-Path signed 'latest.yml')
           )
           $releaseAssets += Get-ChildItem xmcl-electron-app/build/output -Filter 'app-*.asar*' | ForEach-Object FullName

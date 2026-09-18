@@ -110,6 +110,7 @@ jobs:
           $installer = $installers[0]
           $installerHash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           [System.IO.File]::WriteAllText("$($installer.FullName).sha256", $installerHash)
+          node scripts/sign-checksum.mjs "$($installer.FullName).sha256"
           $authenticode = Get-AuthenticodeSignature -LiteralPath $installer.FullName
           if ($authenticode.Status -ne 'Valid') {
             Write-Warning "Publishing owner-requested installer without Authenticode (status: $($authenticode.Status))."
@@ -131,6 +132,7 @@ jobs:
             Get-Item (Join-Path $output 'manifest.json')
             Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe")
             Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe.sha256")
+            Get-Item (Join-Path $output "minelatino-$version-win32-x64.exe.sha256.sig")
           ) | Select-Object -ExpandProperty FullName
           & gh release create $env:RELEASE_TAG @assets `
             --title "GatinoLauncher $version" `
