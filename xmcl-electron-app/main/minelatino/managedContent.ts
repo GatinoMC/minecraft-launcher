@@ -44,8 +44,6 @@ export const DEFAULT_SHADER_PACKS: readonly ManagedDownload[] = [
   },
 ]
 
-export const DEFAULT_ACTIVE_SHADER = DEFAULT_SHADER_PACKS[0].fileName
-
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
@@ -114,15 +112,18 @@ export function updateResourcePackOptions(content: string, nextFileName?: string
   return lines.join(content.includes('\r\n') ? '\r\n' : '\n')
 }
 
-export function updateIrisProperties(content: string, shaderFileName: string): string {
+/** Retire only the shader previously selected by the launcher, not a player's choice. */
+export function disableManagedDefaultShader(content: string, previousDefaultShader?: string): string {
   const eol = content.includes('\r\n') ? '\r\n' : '\n'
   const lines = content.split(/\r?\n/)
+  const currentShader = /^shaderPack=(.*)$/m.exec(content)?.[1]?.trim() ?? ''
+  if (currentShader && currentShader !== previousDefaultShader) return content
   const set = (key: string, value: string) => {
     const index = lines.findIndex(line => line.startsWith(`${key}=`))
     if (index >= 0) lines[index] = `${key}=${value}`
     else lines.push(`${key}=${value}`)
   }
-  set('enableShaders', 'true')
-  set('shaderPack', shaderFileName)
+  set('enableShaders', 'false')
+  set('shaderPack', '')
   return lines.join(eol)
 }

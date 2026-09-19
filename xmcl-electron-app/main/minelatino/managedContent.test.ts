@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   managedResourcePackFileName,
   normalizeLauncherResourcePackManifest,
-  updateIrisProperties,
+  disableManagedDefaultShader,
   updateResourcePackOptions,
 } from './managedContent'
 
@@ -26,8 +26,19 @@ describe('managed launcher content', () => {
     expect(updated).toContain('guiScale:2')
   })
 
-  it('enables the selected default shader without discarding Iris settings', () => {
-    expect(updateIrisProperties('colorSpace=SRGB\nenableShaders=false\nshaderPack=Old.zip', 'New.zip'))
-      .toBe('colorSpace=SRGB\nenableShaders=true\nshaderPack=New.zip')
+  it('disables the shader previously activated by the launcher', () => {
+    expect(disableManagedDefaultShader('colorSpace=SRGB\nenableShaders=true\nshaderPack=Old.zip', 'Old.zip'))
+      .toBe('colorSpace=SRGB\nenableShaders=false\nshaderPack=')
+  })
+
+  it('preserves a shader manually selected by the player', () => {
+    const custom = 'colorSpace=SRGB\nenableShaders=true\nshaderPack=Custom.zip'
+    expect(disableManagedDefaultShader(custom, 'Old.zip')).toBe(custom)
+    expect(disableManagedDefaultShader(custom)).toBe(custom)
+  })
+
+  it('does not activate a shader in a fresh profile', () => {
+    expect(disableManagedDefaultShader('colorSpace=SRGB\nenableShaders=false\nshaderPack='))
+      .toBe('colorSpace=SRGB\nenableShaders=false\nshaderPack=')
   })
 })

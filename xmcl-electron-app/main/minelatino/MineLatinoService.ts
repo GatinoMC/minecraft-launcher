@@ -47,13 +47,12 @@ import { checksum } from '~/util/fs'
 import { sumInstancePlaytime } from './playtime'
 import { normalizePublicServerAddress } from './competitionServers'
 import {
-  DEFAULT_ACTIVE_SHADER,
   DEFAULT_SHADER_PACKS,
   MANAGED_CONTENT_STATE_FILE,
   MANAGED_MINECRAFT_VERSIONS,
   managedResourcePackFileName,
   normalizeLauncherResourcePackManifest,
-  updateIrisProperties,
+  disableManagedDefaultShader,
   updateResourcePackOptions,
   type LauncherResourcePack,
 } from './managedContent'
@@ -117,6 +116,7 @@ interface ManagedContentState {
   resourcePack?: { fileName: string, sha1: string }
   shaderPacks?: Array<{ fileName: string, sha1: string }>
   defaultShaderFile?: string
+  shaderDefaultDisabled?: boolean
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -1116,10 +1116,12 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   }
 
   async getPlaytimeLeaderboard(): Promise<MineLatinoPlaytimeLeaderboardEntry[]> {
-    if (!this.#backendUrl) return []
     try {
-      const { ok, body } = await this.#request('/api/playtime/leaderboard')
-      if (!ok) throw new Error('Leaderboard request was rejected')
+      const response = await this.app.fetch(`${COSMETICS_API}/v1/launcher/playtime-leaderboard`, {
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!response.ok) throw new Error(`Leaderboard request was rejected: HTTP ${response.status}`)
+      const body = await response.json()
       const source = asObject(body)
       const items = Array.isArray(source.items) ? source.items : []
       return items
@@ -1530,6 +1532,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
           : undefined,
         shaderPacks,
         defaultShaderFile: asString(source.defaultShaderFile) || undefined,
+        shaderDefaultDisabled: source.shaderDefaultDisabled === true,
       }
     } catch {
       return {}
@@ -1621,13 +1624,14 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         if (!expectedShaders.has(previous.fileName)) await remove(join(instancePath, 'shaderpacks', previous.fileName))
       }
       const irisPath = join(instancePath, 'config', 'iris.properties')
-      const iris = await readFile(irisPath, 'utf8').catch(() => '')
-      const currentShader = /^shaderPack=(.*)$/m.exec(iris)?.[1]?.trim() ?? ''
-      if (!state.defaultShaderFile || !currentShader || currentShader === state.defaultShaderFile) {
-        await outputFile(irisPath, updateIrisProperties(iris, DEFAULT_ACTIVE_SHADER))
+      if (!state.shaderDefaultDisabled) {
+        const iris = await readFile(irisPath, 'utf8').catch(() => '')
+        const updated = disableManagedDefaultShader(iris, state.defaultShaderFile)
+        if (updated !== iris) await outputFile(irisPath, updated)
+        state.shaderDefaultDisabled = true
       }
       state.shaderPacks = DEFAULT_SHADER_PACKS.map(shader => ({ fileName: shader.fileName, sha1: shader.sha1 }))
-      state.defaultShaderFile = DEFAULT_ACTIVE_SHADER
+      delete state.defaultShaderFile
     } catch (error) {
       this.warn(`[managedContent] Shaderpack update failed; keeping the previous set: ${(error as Error).message}`)
     }

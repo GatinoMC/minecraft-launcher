@@ -20,6 +20,8 @@ describe('GatinoLauncher preset defaults', () => {
     const sodiumExtra = defaults?.files.find(file => file.path === 'config/sodium-extra-options.json')
     expect(sodiumExtra).toBeDefined()
     expect(JSON.parse(sodiumExtra?.content ?? '{}').extra_settings.show_fps).toBe(false)
+    const iris = defaults?.files.find(file => file.path === 'config/iris.properties')
+    expect(iris?.content).toMatch(/^enableShaders=false$/m)
     expect(defaults?.signature).toMatch(/^[a-f0-9]{64}$/)
   })
 })
