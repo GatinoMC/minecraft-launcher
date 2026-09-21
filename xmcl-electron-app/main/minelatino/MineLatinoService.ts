@@ -102,6 +102,7 @@ function asObject(value: unknown): Record<string, unknown> {
 
 interface TrackedPlaytimeSession {
   user: UserProfile
+  gameDirectory: string
   token?: string
   opening?: Promise<string | undefined>
   timer?: NodeJS.Timeout
@@ -273,9 +274,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       void this.#refresh()
       this.#timer = setInterval(() => { void this.#refresh() }, REFRESH_INTERVAL_MS)
 
-      // Send server-measured checkpoints while Minecraft remains open.
-      // Historical local totals are never sent because they can include other
-      // players on a shared launcher and cannot be authenticated remotely.
+      // Send server-measured checkpoints while Minecraft remains open. For a
+      // matching authenticated offline account, the current profile's local
+      // counter repairs its historical baseline without mixing other profiles.
       const launchService = await this.app.registry.get(LaunchService)
       for (const pid of launchService.getProcesses()) this.#managedContentSyncGate.start(pid)
       launchService.registerMiddleware({
@@ -289,7 +290,10 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       })
       launchService.on('minecraft-start', (options) => {
         this.#managedContentSyncGate.start(options.pid)
-        const session: TrackedPlaytimeSession = { user: options.user }
+        const session: TrackedPlaytimeSession = {
+          user: options.user,
+          gameDirectory: options.gameDirectory,
+        }
         session.timer = setInterval(() => {
           void this.#checkpointPlaytimeSession(session, false)
         }, PLAYTIME_CHECKPOINT_INTERVAL_MS)
@@ -1020,7 +1024,8 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     return this.#windows.list()
   }
 
-  async #openPlaytimeSession(user: UserProfile): Promise<string | undefined> {
+  async #openPlaytimeSession(session: TrackedPlaytimeSession): Promise<string | undefined> {
+    const { user } = session
     if (!this.#backendUrl || !user.selectedProfile) return
     const profile = user.profiles[user.selectedProfile]
     if (!profile?.name) return
@@ -1034,11 +1039,14 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
           this.warn('MineLatino offline playtime requires the matching MineLatino account session')
           return
         }
+        const instanceService = await this.app.registry.get(InstanceService)
+        await instanceService.initialize()
+        const localPlaytime = asNumber(instanceService.state.all[session.gameDirectory]?.playtime, 0)
         const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/offline-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent,
             Authorization: `Bearer ${linked.token}` },
-          body: JSON.stringify({ username: profile.name }),
+          body: JSON.stringify({ username: profile.name, localPlaytime }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         })
         if (!sessionResponse.ok) {
@@ -1095,7 +1103,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #ensurePlaytimeSession(session: TrackedPlaytimeSession): Promise<string | undefined> {
     if (session.token) return Promise.resolve(session.token)
     if (session.opening) return session.opening
-    session.opening = this.#openPlaytimeSession(session.user)
+    session.opening = this.#openPlaytimeSession(session)
       .then((token) => {
         session.token = token
         return token
@@ -1153,7 +1161,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
             name,
             playtime: asNumber(entry.playtime, 0),
             updatedAt: asString(entry.updatedAt),
-            recorded: entry.recorded !== false,
+            recorded: entry.recorded !== false && (asNumber(entry.playtime, 0) > 0 || !!asString(entry.updatedAt)),
           }
         })
         .filter((e): e is MineLatinoPlaytimeLeaderboardEntry => !!e)
