@@ -210,11 +210,11 @@ html.ml-premium-theme .ml-premium .v-btn.v-btn--disabled { opacity: .4; transfor
 /* Hero: keep the world artwork, give live stats and the player more room. */
 html.ml-premium-theme .ml-premium .ml-play { min-height: 420px; border: 1px solid var(--ml-border-soft); }
 html.ml-premium-theme .ml-premium .ml-play-layout { padding: 24px; }
-html.ml-premium-theme .ml-premium .ml-play-info { width: min(calc(420px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach))); min-width: 0; }
+html.ml-premium-theme .ml-premium .ml-play-info { width: min(560px, 70%); min-width: 0; }
 html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 14px; backdrop-filter: blur(16px); }
 html.ml-premium-theme .ml-premium .ml-play-title { font-size: clamp(1.15rem, 1.8vw, 1.5rem); letter-spacing: -.035em; font-weight: 700; }
 html.ml-premium-theme .ml-premium .ml-play-logo { width: 48px; height: 48px; border-radius: 14px; }
-html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
 html.ml-premium-theme .ml-premium .ml-play-stat { background: #211710a8; padding: 8px 9px; }
 html.ml-premium-theme .ml-premium .ml-play-stat-value { font-variant-numeric: tabular-nums; }
 html.ml-premium-theme .ml-premium .ml-play-stat-label { letter-spacing: .05em; }
@@ -241,11 +241,12 @@ html.ml-premium-theme .dialog-transition-leave-to { opacity: 0; transform: trans
   html.ml-premium-theme .ml-premium .ml-side:not(.ml-side--collapsed) { width: 170px; }
   html.ml-premium-theme .ml-premium .ml-body { gap: 8px; padding: 8px; }
   html.ml-premium-theme .ml-premium .ml-play-layout { padding: 16px; }
-  html.ml-premium-theme .ml-premium .ml-play-info { width: min(calc(360px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach))); }
+  html.ml-premium-theme .ml-premium .ml-play-info { width: min(480px, 75%); }
   html.ml-premium-theme .ml-premium .ml-play-stage { width: min(260px, 44%); }
 }
 @media (max-width: 900px) {
   html.ml-premium-theme .ml-premium .ml-play-info { right: 0; bottom: 60px; left: 0; width: auto; }
+  html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-height: 550px) {
   html.ml-premium-theme .ml-premium .ml-topbar { height: 44px; }

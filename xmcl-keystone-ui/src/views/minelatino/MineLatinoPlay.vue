@@ -364,7 +364,8 @@ function onStart() {
 
 <style scoped>
 .ml-play-layout {
-  --ml-play-info-reach: 24px;
+  --ml-play-info-offset: 236px;
+  --ml-play-info-bottom: 12px;
 
   min-height: 0;
   position: relative;
@@ -373,9 +374,9 @@ function onStart() {
 .ml-play-info {
   position: absolute;
   z-index: 2;
-  right: calc(-1 * var(--ml-play-info-reach));
-  bottom: 0;
-  width: min(calc(420px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach)));
+  right: calc(-1 * var(--ml-play-info-offset));
+  bottom: var(--ml-play-info-bottom);
+  width: min(560px, 70%);
   height: auto;
 }
 
@@ -513,7 +514,7 @@ function onStart() {
 /* ── Live stat tiles ── */
 .ml-play-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
   margin-top: 12px;
 }
@@ -809,7 +810,8 @@ function onStart() {
 /* Narrow windows: shrink the stage, then drop it so the CTA stays reachable. */
 @media (max-width: 1100px) {
   .ml-play-layout {
-    --ml-play-info-reach: 16px;
+    --ml-play-info-offset: 210px;
+    --ml-play-info-bottom: 8px;
   }
 
   .ml-play-stage {
@@ -817,7 +819,7 @@ function onStart() {
   }
 
   .ml-play-info {
-    width: min(calc(360px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach)));
+    width: min(480px, 75%);
   }
 }
 
@@ -837,6 +839,10 @@ function onStart() {
     width: auto;
   }
 
+  .ml-play-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .ml-play-idcard {
     max-width: none;
   }
@@ -854,7 +860,8 @@ function onStart() {
 
 @media (max-height: 550px) {
   .ml-play-layout {
-    --ml-play-info-reach: 8px;
+    --ml-play-info-offset: 0px;
+    --ml-play-info-bottom: 0px;
 
     padding: 8px;
   }
