@@ -12,6 +12,8 @@ import {
   type MineLatinoAutoModVersion,
   type MineLatinoAccountCredentials,
   type MineLatinoCosmeticsAccount,
+  type MineLatinoCosmeticsPlayer,
+  type MineLatinoEquippedCosmetic,
   type MineLatinoCosmeticOrder,
   type MineLatinoCompetitionTelemetrySettings,
   type MineLatinoConfig,
@@ -44,10 +46,12 @@ import { findPresetInstanceCandidate, selectAutoCreatePresets, selectSupersededP
 import { getPresetDefaults } from './presetDefaults'
 import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
-import { sumInstancePlaytime } from './playtime'
 import { normalizePublicServerAddress } from './competitionServers'
+import { normalizeCosmeticsPlayer, normalizeEquippedCosmetics, selectPlayerAppearance } from './cosmeticsAppearance'
+import { matchesPlaytimeAccount } from './playtime'
 import {
   DEFAULT_SHADER_PACKS,
+  ManagedContentSyncGate,
   MANAGED_CONTENT_STATE_FILE,
   MANAGED_MINECRAFT_VERSIONS,
   managedResourcePackFileName,
@@ -238,6 +242,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
   #autoModsSync: Promise<void> | undefined
   #autoModInstanceSyncs = new Map<string, Promise<void>>()
   #managedContentInstanceSyncs = new Map<string, Promise<void>>()
+  #managedContentSyncGate = new ManagedContentSyncGate()
   #launcherResourcePackManifest: { fetchedAt: number, items: Map<string, LauncherResourcePack> } | undefined
   #launcherResourcePackManifestFetch: Promise<Map<string, LauncherResourcePack> | undefined> | undefined
   #instancePreparations = new Map<string, Promise<void>>()
@@ -268,11 +273,11 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       void this.#refresh()
       this.#timer = setInterval(() => { void this.#refresh() }, REFRESH_INTERVAL_MS)
 
-      // Reconcile the historical total across every local profile, then send
-      // server-measured checkpoints while Minecraft remains open. Checkpoints
-      // limit loss during launcher/backend restarts and are idempotent because
-      // the backend advances each session cursor after accepting one.
+      // Send server-measured checkpoints while Minecraft remains open.
+      // Historical local totals are never sent because they can include other
+      // players on a shared launcher and cannot be authenticated remotely.
       const launchService = await this.app.registry.get(LaunchService)
+      for (const pid of launchService.getProcesses()) this.#managedContentSyncGate.start(pid)
       launchService.registerMiddleware({
         name: 'MineLatino cosmetics account',
         onBeforeLaunch: async input => {
@@ -283,6 +288,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         },
       })
       launchService.on('minecraft-start', (options) => {
+        this.#managedContentSyncGate.start(options.pid)
         const session: TrackedPlaytimeSession = { user: options.user }
         session.timer = setInterval(() => {
           void this.#checkpointPlaytimeSession(session, false)
@@ -296,6 +302,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         this.#playtimeSessions.delete(options.launchId)
         if (session?.timer) clearInterval(session.timer)
         if (session) void this.#checkpointPlaytimeSession(session, true)
+        if (this.#managedContentSyncGate.stop(options.pid)) {
+          void this.#ensureDefaultInstanceThenSync()
+        }
       })
       // A first launch without a reachable backend still uses the bundled
       // GatinoLauncher catalog. Start the same one-shot profile sync after
@@ -791,6 +800,30 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     }
   }
 
+  async getEquippedCosmetics(player?: MineLatinoCosmeticsPlayer): Promise<MineLatinoEquippedCosmetic[]> {
+    await this.initialize()
+    const identity = normalizeCosmeticsPlayer(player)
+    if (identity.uuid || identity.name) {
+      try {
+        const query = new URLSearchParams()
+        if (identity.uuid) query.set('uuids', identity.uuid)
+        if (identity.name) query.set('names', identity.name)
+        const appearance = await this.#cosmeticsRequest(`/v1/cosmetics/appearance?${query}`)
+        return selectPlayerAppearance(appearance, identity)
+      } catch (error) {
+        this.warn(`MineLatino public cosmetics appearance could not refresh: ${(error as Error).message}`)
+        const accountName = this.#cosmeticsSession?.account.nick.toLowerCase()
+        if (!accountName || accountName !== identity.name.toLowerCase()) return []
+      }
+    }
+    if (!this.#cosmeticsSession) return []
+    const result = await this.#cosmeticsRequest('/v1/account/wardrobe', {
+      headers: { Authorization: `Bearer ${this.#cosmeticsSession.token}` },
+    })
+    if (!Array.isArray(result.equipped)) throw new Error('Equipamiento de cosméticos inválido')
+    return normalizeEquippedCosmetics(result.equipped)
+  }
+
   async #openCosmeticsAccount(path: string, input: MineLatinoAccountCredentials) {
     const result = await this.#cosmeticsRequest(path, {
       method: 'POST',
@@ -987,40 +1020,25 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     return this.#windows.list()
   }
 
-  async #getAggregateLocalPlaytime(): Promise<number> {
-    const instanceService = await this.app.registry.get(InstanceService)
-    await instanceService.initialize()
-    let total = sumInstancePlaytime(Object.values(instanceService.state.all).map(instance => instance.playtime))
-
-    // Retired launcher presets are deliberately renamed with a leading dot so
-    // their worlds remain recoverable. InstanceService skips those directories,
-    // but their historical playtime still belongs in the user's global total.
-    const getGameDataPath = await this.app.registry.get(kGameDataPath)
-    const managedRoot = getGameDataPath('instances')
-    const hiddenNames = await readdir(managedRoot).catch(() => [])
-    for (const name of hiddenNames) {
-      if (!name.startsWith('.')) continue
-      try {
-        const instance = asObject(JSON.parse(await readFile(join(managedRoot, name, 'instance.json'), 'utf-8')))
-        total += sumInstancePlaytime([instance.playtime])
-      } catch {
-        // Removed folders and unrelated dot-directories are not instances.
-      }
-    }
-    return total
-  }
-
   async #openPlaytimeSession(user: UserProfile): Promise<string | undefined> {
     if (!this.#backendUrl || !user.selectedProfile) return
     const profile = user.profiles[user.selectedProfile]
     if (!profile?.name) return
     try {
-      const localPlaytime = await this.#getAggregateLocalPlaytime()
       if (user.authority === AUTHORITY_DEV) {
+        // An offline UUID is public and cannot prove identity. The backend
+        // verifies the selected nickname against this signed-in account.
+        await this.getCosmeticsAccount()
+        const linked = this.#cosmeticsSession
+        if (!linked || !matchesPlaytimeAccount(profile.name, linked.account.nick)) {
+          this.warn('MineLatino offline playtime requires the matching MineLatino account session')
+          return
+        }
         const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/offline-session`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent },
-          body: JSON.stringify({ profileId: profile.id, username: profile.name, localPlaytime }),
+          headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent,
+            Authorization: `Bearer ${linked.token}` },
+          body: JSON.stringify({ username: profile.name }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         })
         if (!sessionResponse.ok) {
@@ -1060,7 +1078,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent },
-        body: JSON.stringify({ challengeId, localPlaytime }),
+        body: JSON.stringify({ challengeId }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
       if (!sessionResponse.ok) {
@@ -1135,6 +1153,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
             name,
             playtime: asNumber(entry.playtime, 0),
             updatedAt: asString(entry.updatedAt),
+            recorded: entry.recorded !== false,
           }
         })
         .filter((e): e is MineLatinoPlaytimeLeaderboardEntry => !!e)
@@ -1365,6 +1384,13 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
    * behaviour.
    */
   #ensureDefaultInstanceThenSync(): Promise<void> {
+    const wasDeferred = this.#managedContentSyncGate.deferred
+    if (this.#managedContentSyncGate.deferIfRunning()) {
+      if (!wasDeferred) {
+        this.log('[managedContent] Minecraft is running; deferring background profile synchronization.')
+      }
+      return Promise.resolve()
+    }
     if (!this.#defaultInstanceSync) {
       this.#defaultInstanceSync = this.#ensureDefaultInstanceThenSyncInternal()
         .finally(() => { this.#defaultInstanceSync = undefined })

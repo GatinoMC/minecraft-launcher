@@ -1,16 +1,14 @@
 <!--
   MineLatino "Jugar" screen: the server's own showcase — a frosted identity
   card with the live status (players + capacity bar, version, latency, MOTD
-  and a copyable address), the player's skin rendered live in 3D on a framed
-  lit stage to the right, and the "Empezar" button at the bottom left that
+  and a copyable address) at the bottom right, the player's skin rendered live
+  in 3D on a centered stage, and the "Empezar" button at the bottom left that
   launches the game straight into the server with the profile selected in the
   right-hand panel (the shared launch funnel in `instanceLaunch.ts` adds the
   auto-join flags).
 
-  The backdrop is a bundled voxel landscape that drifts on a slow Ken Burns
-  loop with floating voxel motes, so the screen reads as a living scene rather
-  than a static wallpaper. The artwork is bundled so development and
-  production always show the same approved MineLatino scene.
+  MineLatinoShell owns the shared still backdrop behind this screen and the
+  "Jugando como" panel so the artwork stays continuous across both columns.
 -->
 <template>
   <section
@@ -18,16 +16,6 @@
     data-testid="minelatino-play"
     class="ml-play relative flex h-full min-h-[420px] flex-col overflow-hidden"
   >
-    <!-- Animated backdrop: transform-only Ken Burns loop (composited, so it
-         never repaints the layout around it). -->
-    <div class="ml-play-bg absolute inset-0" :style="bgStyle" aria-hidden="true" />
-    <div class="ml-play-scrim absolute inset-0" aria-hidden="true" />
-
-    <!-- Voxel motes rising through the scene: the "living" part of the art. -->
-    <div class="ml-play-motes" aria-hidden="true">
-      <span v-for="n in 7" :key="n" class="ml-play-mote" :class="`ml-play-mote-${n}`" />
-    </div>
-
     <v-alert
       v-if="maintenance && maintenance.enabled"
       class="relative m-4 mb-0"
@@ -38,10 +26,10 @@
       :text="maintenance.message"
     />
 
-    <!-- Two-column stage over the backdrop: the server identity and launch
-         actions on the left, the player's live 3D skin on the right. -->
-    <div class="ml-play-layout relative flex min-h-0 flex-1 items-stretch gap-6 p-6">
-      <div class="ml-play-info flex min-w-0 flex-1 flex-col">
+    <!-- The player stays central while the server card and launch action
+         anchor the two lower corners. -->
+    <div class="ml-play-layout relative min-h-0 flex-1 p-6">
+      <div class="ml-play-info flex min-w-0 flex-col">
         <!-- Server identity and live status in one frosted card. -->
         <div class="ml-play-idcard">
           <div class="flex min-w-0 items-center gap-4">
@@ -162,49 +150,47 @@
           </div>
         </div>
 
-        <div class="flex-grow" />
-
-        <!-- "Empezar": bottom left, launches with the selected profile. -->
-        <div class="ml-play-actions flex flex-wrap items-end gap-3">
-          <v-btn
-            v-if="!hasProfile"
-            variant="tonal"
-            :color="accentColor || 'primary'"
-            data-testid="minelatino-add-version"
-            @click="showAddInstance()"
-          >
-            <v-icon start aria-hidden="true"> add </v-icon>
-            {{ t('MineLatinoPlay.addVersion') }}
-          </v-btn>
-          <v-btn
-            size="x-large"
-            rounded="pill"
-            :color="accentColor || 'primary'"
-            :disabled="!hasProfile"
-            :loading="loading"
-            class="ml-play-start pl-10 pr-10"
-            data-testid="minelatino-start"
-            @click="onStart"
-          >
-            <v-icon start aria-hidden="true"> play_arrow </v-icon>
-            {{ t('MineLatinoPlay.empezar') }}
-          </v-btn>
-        </div>
       </div>
 
-      <!-- The player's own skin, framed on a lit stage. skinview3d
-           auto-detects the slim/classic model and floats the in-game nametag. -->
+      <!-- "Empezar": bottom left, launches with the selected profile. -->
+      <div class="ml-play-actions flex flex-wrap items-end gap-3">
+        <v-btn
+          v-if="!hasProfile"
+          variant="tonal"
+          :color="accentColor || 'primary'"
+          data-testid="minelatino-add-version"
+          @click="showAddInstance()"
+        >
+          <v-icon start aria-hidden="true"> add </v-icon>
+          {{ t('MineLatinoPlay.addVersion') }}
+        </v-btn>
+        <v-btn
+          size="x-large"
+          rounded="pill"
+          :color="accentColor || 'primary'"
+          :disabled="!hasProfile"
+          :loading="loading"
+          class="ml-play-start pl-10 pr-10"
+          data-testid="minelatino-start"
+          @click="onStart"
+        >
+          <v-icon start aria-hidden="true"> play_arrow </v-icon>
+          {{ t('MineLatinoPlay.empezar') }}
+        </v-btn>
+      </div>
+
+      <!-- The player's own skin and active MineLatino wardrobe, centered over
+           the world artwork. The canvas stays interactive for rotation/zoom. -->
       <div class="ml-play-stage">
         <div class="ml-play-stage-card">
           <div class="ml-play-stage-glow" aria-hidden="true" />
           <div class="ml-play-skin">
-            <SkinView
+            <!-- v-if intentionally destroys SkinViewer so its WebGL context,
+                 models and textures are released while Minecraft is open. -->
+            <EquippedCosmeticsPreview
+              v-if="!hasRunningInstance"
               :skin="skinUrl"
-              :name="playerName"
-              :width="360"
-              :height="620"
-              :zoom="0.9"
-              animation="idle"
+              :products="equippedCosmetics"
             />
           </div>
           <div class="ml-play-stage-floor" aria-hidden="true" />
@@ -219,22 +205,25 @@
   </section>
 </template>
 <script lang="ts" setup>
-import sceneArt from '@/assets/minelatino-scene.jpg'
 import bundledLogo from '@/assets/minelatino-logo.png'
 import steveSkin from '@/assets/steve_skin.png'
-import SkinView from '@/components/SkinView.vue'
 import TextComponent from '@/components/TextComponent'
+import { type CosmeticProduct, useCosmeticsStore } from '@/composables/cosmeticsStore'
 import { useDialog } from '@/composables/dialog'
 import { AddInstanceDialogKey } from '@/composables/instanceTemplates'
+import { kInstanceLaunchCoordinator } from '@/composables/instanceLaunchCoordinator'
 import { kInstances } from '@/composables/instances'
 import { kLaunchButton } from '@/composables/launchButton'
 import { kMineLatino } from '@/composables/minelatino'
 import { useMinecraftProtocol } from '@/composables/protocol'
 import { useServerStatus } from '@/composables/serverStatus'
+import { useService } from '@/composables/service'
 import { kUserContext } from '@/composables/user'
 import { BuiltinImages } from '@/constant'
 import { vFallbackImg } from '@/directives/fallbackImage'
 import { injection } from '@/util/inject'
+import { MineLatinoServiceKey, type MineLatinoEquippedCosmetic } from '@xmcl/runtime-api'
+import EquippedCosmeticsPreview from './EquippedCosmeticsPreview.vue'
 
 const { t } = useI18n()
 const {
@@ -246,15 +235,38 @@ const {
   copyText,
 } = injection(kMineLatino)
 const { instances, selectedInstance } = injection(kInstances)
+const { hasRunningInstance } = injection(kInstanceLaunchCoordinator)
 const { onClick, loading } = injection(kLaunchButton)
 const { show: showAddInstance } = useDialog(AddInstanceDialogKey)
 const { userProfile, gameProfile } = injection(kUserContext)
+const service = useService(MineLatinoServiceKey)
+const { products: cosmeticProducts, refresh: refreshCosmeticsCatalog } = useCosmeticsStore()
+const equipped = ref<MineLatinoEquippedCosmetic[]>([])
+const equippedCosmetics = computed(() => {
+  const byId = new Map(cosmeticProducts.value.map(product => [product.id, product]))
+  return equipped.value.map(item => byId.get(item.cosmeticId)).filter((product): product is CosmeticProduct => !!product)
+})
+
+async function refreshEquippedCosmetics() {
+  if (hasRunningInstance.value) return
+  try {
+    const active = await service.getEquippedCosmetics({
+      uuid: gameProfile.value?.id,
+      name: playerName.value,
+    })
+    equipped.value = active
+    if (active.length) await refreshCosmeticsCatalog()
+  } catch (error) {
+    equipped.value = []
+    console.warn('[cosmetics] equipped wardrobe could not be loaded', error)
+  }
+}
 
 const hasProfile = computed(() => !!selectedInstance.value)
 const selected = computed(() => instances.value.find(i => i.path === selectedInstance.value))
 
 /**
- * The signed-in player's own skin, rendered live in 3D on the right; falls
+ * The signed-in player's own skin, rendered live in 3D at the centre; falls
  * back to the bundled Steve when there is no profile texture (offline or not
  * signed in). skinview3d infers the slim vs classic model from the image.
  */
@@ -285,17 +297,23 @@ const serverLogo = computed(() => {
   return branding.value?.logoUrl || bundledLogo
 })
 
-// Keep the approved Jugar artwork identical in development and production.
-// Remote branding still supplies MineLatino's server logo and tagline, but it
-// cannot replace this bundled background with an old deployment asset.
-const bgStyle = { backgroundImage: `url("${sceneArt}")` }
-
 // Live player count for the configured server, pinged through the shared
 // cache so revisiting the panel within the TTL costs nothing.
 const protocol = useMinecraftProtocol(computed(() => selected.value?.runtime.minecraft))
 const serverRef = computed(() => ({ host: server.value?.host ?? '', port: server.value?.port }))
 const { status, pinging, refresh, refreshIfStale } = useServerStatus(serverRef, protocol)
-onMounted(() => { refreshIfStale() })
+onMounted(() => {
+  refreshIfStale()
+  void refreshEquippedCosmetics()
+  window.addEventListener('focus', refreshEquippedCosmetics)
+})
+onBeforeUnmount(() => window.removeEventListener('focus', refreshEquippedCosmetics))
+watch(hasRunningInstance, (running) => {
+  if (!running) void refreshEquippedCosmetics()
+})
+watch(() => [gameProfile.value?.id, playerName.value], () => {
+  void refreshEquippedCosmetics()
+})
 
 const online = computed(() => status.value.players.online >= 0)
 
@@ -345,70 +363,25 @@ function onStart() {
 </script>
 
 <style scoped>
-/* Animated backdrop: a slow drift + zoom that always stays above scale 1 so
-   the edges never show, and loops seamlessly (0% and 100% match). */
-.ml-play-bg {
-  background-size: cover;
-  background-position: center;
-  animation: ml-bg-drift 64s ease-in-out infinite;
-  will-change: transform;
-}
-
-@keyframes ml-bg-drift {
-  0% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
-  50% { transform: scale(1.15) translate3d(1.5%, 1%, 0); }
-  100% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
-}
-
-/* Readability scrim: the art stays vivid at the top and dissolves into the
-   theme surface towards the bottom where the launch button lives. */
-.ml-play-scrim {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, rgb(var(--v-theme-surface)) 28%, transparent) 0%,
-    color-mix(in srgb, rgb(var(--v-theme-surface)) 62%, transparent) 55%,
-    color-mix(in srgb, rgb(var(--v-theme-surface)) 88%, transparent) 100%
-  );
-  pointer-events: none;
-}
-
-/* ── Floating voxel motes ── */
-.ml-play-motes {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.ml-play-mote {
-  position: absolute;
-  bottom: -14px;
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  background-color: color-mix(in srgb, var(--ml-accent) 65%, #ffffff);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--ml-accent) 55%, transparent);
-  opacity: 0;
-  animation: ml-mote-rise linear infinite;
-}
-
-.ml-play-mote-1 { left: 8%; animation-duration: 13s; }
-.ml-play-mote-2 { left: 21%; width: 5px; height: 5px; animation-duration: 17s; animation-delay: 3s; }
-.ml-play-mote-3 { left: 36%; animation-duration: 15s; animation-delay: 6s; }
-.ml-play-mote-4 { left: 51%; width: 9px; height: 9px; animation-duration: 19s; animation-delay: 1.5s; }
-.ml-play-mote-5 { left: 66%; width: 5px; height: 5px; animation-duration: 14s; animation-delay: 8s; }
-.ml-play-mote-6 { left: 80%; animation-duration: 18s; animation-delay: 4.5s; }
-.ml-play-mote-7 { left: 92%; width: 6px; height: 6px; animation-duration: 16s; animation-delay: 10s; }
-
-@keyframes ml-mote-rise {
-  0% { transform: translate3d(0, 0, 0); opacity: 0; }
-  12% { opacity: 0.55; }
-  85% { opacity: 0.3; }
-  100% { transform: translate3d(26px, -700px, 0); opacity: 0; }
-}
-
 .ml-play-layout {
   min-height: 0;
+  position: relative;
+}
+
+.ml-play-info {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 54%);
+  height: auto;
+}
+
+.ml-play-actions {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  bottom: 0;
 }
 
 /* Flat identity card matching the shop panel style. */
@@ -417,8 +390,8 @@ function onStart() {
   flex-direction: column;
   align-self: flex-start;
   width: 100%;
-  max-width: 620px;
-  padding: 16px 18px;
+  max-width: none;
+  padding: 14px;
   border-radius: var(--ml-radius);
   border: 1px solid var(--ml-border);
   background-color: var(--ml-panel);
@@ -458,9 +431,9 @@ function onStart() {
 }
 
 .ml-play-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   object-fit: cover;
   flex-grow: 0;
   flex-shrink: 0;
@@ -471,7 +444,7 @@ function onStart() {
 }
 
 .ml-play-title {
-  font-size: 1.7rem;
+  font-size: 1.42rem;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0.01em;
@@ -538,14 +511,14 @@ function onStart() {
 /* ── Live stat tiles ── */
 .ml-play-stats {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
-  margin-top: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
 }
 
 .ml-play-stat {
   min-width: 0;
-  padding: 9px 12px;
+  padding: 8px 9px;
   border-radius: var(--ml-radius-sm);
   border: 1px solid var(--ml-border-soft);
   background-color: var(--ml-well);
@@ -660,9 +633,13 @@ function onStart() {
 
 /* ── 3D skin stage ── */
 .ml-play-stage {
-  position: relative;
-  flex: 0 0 auto;
-  width: 400px;
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  bottom: 16px;
+  left: 50%;
+  width: clamp(300px, 46%, 390px);
+  transform: translateX(-50%);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -676,8 +653,8 @@ function onStart() {
   width: 100%;
   border-radius: var(--ml-radius);
   border: 1px solid var(--ml-border);
-  background: var(--ml-panel);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: radial-gradient(ellipse at 50% 55%, rgba(65, 36, 19, 0.54), rgba(35, 24, 18, 0.18) 62%, transparent 78%);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -702,18 +679,17 @@ function onStart() {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 12px 14px 28px;
+  padding: 4px 8px 28px;
   animation: ml-skin-float 6s ease-in-out infinite;
 }
 
 /* Both maxes with auto sizes let the canvas shrink to fit either axis while
    keeping its aspect ratio, so short windows never clip the model. */
-.ml-play-skin :deep(canvas) {
+.ml-play-skin :deep(.equipped-cosmetics-preview) {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 /* Pedestal light the model stands on. */
@@ -812,24 +788,26 @@ function onStart() {
   filter: brightness(0.96);
 }
 
-/* The scene is decoration: honour the OS motion preference. */
+/* Keep the remaining player/status animation sensitive to OS preferences. */
 @media (prefers-reduced-motion: reduce) {
-  .ml-play-bg,
   .ml-play-skin,
   .ml-play-stage-glow,
   .ml-play-status--on .ml-play-status-dot {
     animation: none;
   }
+}
 
-  .ml-play-motes {
-    display: none;
+/* Medium windows balance the player against the server card without overlap. */
+@media (max-width: 1500px) and (min-width: 901px) {
+  .ml-play-stage {
+    left: 32%;
   }
 }
 
 /* Narrow windows: shrink the stage, then drop it so the CTA stays reachable. */
 @media (max-width: 1100px) {
   .ml-play-stage {
-    width: 320px;
+    width: min(260px, 44%);
   }
 }
 
@@ -841,6 +819,17 @@ function onStart() {
   .ml-play-stage {
     display: none;
   }
+
+  .ml-play-info {
+    right: 0;
+    bottom: 60px;
+    left: 0;
+    width: auto;
+  }
+
+  .ml-play-idcard {
+    max-width: none;
+  }
 }
 
 @media (max-width: 700px) {
@@ -850,6 +839,60 @@ function onStart() {
 
   .ml-play-stat--wide {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-height: 550px) {
+  .ml-play-layout {
+    padding: 8px;
+  }
+
+  .ml-play-idcard {
+    padding: 10px;
+  }
+
+  .ml-play-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .ml-play-title {
+    font-size: 1.1rem;
+  }
+
+  .ml-play-tagline,
+  .ml-play-motd,
+  .ml-play-addr {
+    display: none;
+  }
+
+  .ml-play-stats {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .ml-play-stat {
+    padding: 6px 8px;
+  }
+
+  .ml-play-stat-value {
+    margin-top: 1px;
+    font-size: 0.82rem;
+  }
+
+  .ml-play-bar {
+    margin-top: 3px;
+  }
+
+  .ml-play-actions {
+    margin-top: 8px;
+  }
+
+  .ml-play-start {
+    height: 44px;
+    min-width: 160px;
+    font-size: 0.95rem;
   }
 }
 </style>

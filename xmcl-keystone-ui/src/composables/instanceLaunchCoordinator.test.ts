@@ -51,16 +51,19 @@ describe('instance launch coordinator', () => {
 
   it('tracks running processes by instance path', () => {
     const { coordinator, emit, scope } = createHarness()
+    expect(coordinator.hasRunningInstance.value).toBe(false)
 
     emit('minecraft-start', { pid: 1, gameDirectory: 'instance-a' })
     emit('minecraft-start', { pid: 2, gameDirectory: 'instance-a' })
     expect(coordinator.isRunning('instance-a')).toBe(true)
+    expect(coordinator.hasRunningInstance.value).toBe(true)
 
     emit('minecraft-exit', { pid: 1 })
     expect(coordinator.isRunning('instance-a')).toBe(true)
 
     emit('minecraft-exit', { pid: 2 })
     expect(coordinator.isRunning('instance-a')).toBe(false)
+    expect(coordinator.hasRunningInstance.value).toBe(false)
     scope.stop()
   })
 

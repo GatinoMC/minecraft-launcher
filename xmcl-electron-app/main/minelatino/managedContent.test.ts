@@ -1,12 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import {
   managedResourcePackFileName,
+  ManagedContentSyncGate,
   normalizeLauncherResourcePackManifest,
   disableManagedDefaultShader,
   updateResourcePackOptions,
 } from './managedContent'
 
 describe('managed launcher content', () => {
+  it('defers background synchronization until the final Minecraft process exits', () => {
+    const gate = new ManagedContentSyncGate()
+    expect(gate.deferIfRunning()).toBe(false)
+
+    gate.start(101)
+    gate.start(202)
+    expect(gate.deferIfRunning()).toBe(true)
+    expect(gate.deferred).toBe(true)
+    expect(gate.stop(101)).toBe(false)
+    expect(gate.stop(202)).toBe(true)
+    expect(gate.deferred).toBe(false)
+    expect(gate.stop(202)).toBe(false)
+  })
+
   it('accepts only complete resource-pack manifest entries for supported profiles', () => {
     const item = {
       minecraftVersion: '1.21.11' as const, fileName: 'Gatino.zip', downloadUrl: '/download',

@@ -6,3 +6,9 @@ export function sumInstancePlaytime(values: unknown[]): number {
       : total
   ), 0)
 }
+
+/** An offline game profile may report time only for its signed-in MineLatino account. */
+export function matchesPlaytimeAccount(profileName: string, accountNick: string | undefined): boolean {
+  return !!accountNick && /^[A-Za-z0-9_]{3,16}$/.test(profileName)
+    && profileName.toLowerCase() === accountNick.toLowerCase()
+}

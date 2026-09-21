@@ -277,6 +277,20 @@ export interface MineLatinoCosmeticsAccount {
   deletedAt: number | null
 }
 
+export type MineLatinoCosmeticSlot = 'HAT' | 'CAPE' | 'WINGS' | 'BACKPACK' | 'PET'
+
+/** One cosmetic currently selected in the MineLatino account wardrobe. */
+export interface MineLatinoEquippedCosmetic {
+  slot: MineLatinoCosmeticSlot
+  cosmeticId: string
+}
+
+/** Public Minecraft identity used to resolve the appearance visible in-game. */
+export interface MineLatinoCosmeticsPlayer {
+  uuid?: string
+  name?: string
+}
+
 export interface MineLatinoAccountCredentials {
   email: string
   password: string
@@ -339,6 +353,8 @@ export interface MineLatinoPlaytimeLeaderboardEntry {
   /** Total playtime in milliseconds. */
   playtime: number
   updatedAt: string
+  /** False when the account exists but no gameplay was received. */
+  recorded?: boolean
 }
 
 export interface MineLatinoCompetitionTelemetrySettings {
@@ -429,6 +445,7 @@ export interface MineLatinoService extends GenericEventEmitter<MineLatinoService
   prepareInstance(instancePath: string): Promise<void>
 
   getCosmeticsAccount(): Promise<MineLatinoCosmeticsAccount | undefined>
+  getEquippedCosmetics(player?: MineLatinoCosmeticsPlayer): Promise<MineLatinoEquippedCosmetic[]>
   registerCosmeticsAccount(input: Required<MineLatinoAccountCredentials>): Promise<MineLatinoCosmeticsAccount>
   loginCosmeticsAccount(input: MineLatinoAccountCredentials): Promise<MineLatinoCosmeticsAccount>
   requestCosmeticsPasswordReset(email: string): Promise<{ delivery: 'email' | 'support' }>

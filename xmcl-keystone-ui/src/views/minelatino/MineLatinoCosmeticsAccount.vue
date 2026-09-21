@@ -177,13 +177,13 @@ onMounted(refresh)
 </script>
 
 <style scoped>
-.account-card { background: #171a21 !important; border: 1px solid #ffffff20; border-radius: 20px !important; }
+.account-card { background: var(--ml-panel) !important; border: 1px solid var(--ml-border); border-radius: 20px !important; }
 .account-title { display: flex; justify-content: space-between; align-items: center; white-space: normal; }
-.identity-box { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px; margin-bottom: 18px; border: 1px solid #ffffff14; border-radius: 14px; background: #ffffff06; }
-.identity-box div { min-width: 0; display: flex; flex-direction: column; }.identity-box small { color: #9ca3b4; font-size: 10px; letter-spacing: .12em; }.identity-box span { color: #8d94a5; font: 10px monospace; overflow-wrap: anywhere; }
-.mode-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; margin-bottom: 20px; border-radius: 12px; background: #0f1218; }.mode-tabs button { padding: 10px; border-radius: 9px; color: #9ca3b4; }.mode-tabs button.active { color: #f2f4f8; background: #ffffff10; }
-.hint { color: #9ca3b4; font-size: 12px; line-height: 1.55; }.account-actions { padding: 10px 20px 18px; flex-wrap: wrap; }
-.forgot-link, .password-toggle { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; color: #53dfed; font-size: 13px; }
+.identity-box { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px; margin-bottom: 18px; border: 1px solid var(--ml-border-soft); border-radius: 14px; background: var(--ml-well); }
+.identity-box div { min-width: 0; display: flex; flex-direction: column; }.identity-box small { color: var(--ml-dim); font-size: 10px; letter-spacing: .12em; }.identity-box span { color: var(--ml-faint); font: 10px monospace; overflow-wrap: anywhere; }
+.mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 20px; border-radius: 12px; background: var(--ml-well); }.mode-tabs button { padding: 10px; border: 1px solid transparent; border-radius: 9px; color: var(--ml-dim); transition: background-color .2s ease, border-color .2s ease, color .2s ease; }.mode-tabs button:hover { background: var(--ml-raise); }.mode-tabs button.active { color: var(--ml-accent-text); border-color: var(--ml-accent-border); background: var(--ml-accent-bg); }
+.hint { color: var(--ml-dim); font-size: 12px; line-height: 1.55; }.account-actions { padding: 10px 20px 18px; flex-wrap: wrap; }
+.forgot-link, .password-toggle { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--ml-accent-text); font-size: 13px; }
 .forgot-link:hover, .password-toggle:hover { text-decoration: underline; }
-.password-panel { margin-top: 14px; padding: 16px; border: 1px solid #53dfed30; border-radius: 14px; background: #0d121a; }
+.password-panel { margin-top: 14px; padding: 16px; border: 1px solid var(--ml-accent-border); border-radius: 14px; background: var(--ml-well); }
 </style>

@@ -44,6 +44,35 @@ export const DEFAULT_SHADER_PACKS: readonly ManagedDownload[] = [
   },
 ]
 
+/**
+ * Defers periodic disk-heavy content checks until every tracked Minecraft
+ * process has exited. Pre-launch checks bypass this gate and remain mandatory.
+ */
+export class ManagedContentSyncGate {
+  #running = new Set<number>()
+  #deferred = false
+
+  get deferred() { return this.#deferred }
+
+  start(pid: number) {
+    this.#running.add(pid)
+  }
+
+  deferIfRunning(): boolean {
+    if (this.#running.size === 0) return false
+    this.#deferred = true
+    return true
+  }
+
+  /** Returns true once, when the final process exits after a deferred check. */
+  stop(pid: number): boolean {
+    this.#running.delete(pid)
+    if (this.#running.size > 0 || !this.#deferred) return false
+    this.#deferred = false
+    return true
+  }
+}
+
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }

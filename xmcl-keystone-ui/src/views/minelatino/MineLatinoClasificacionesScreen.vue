@@ -179,7 +179,7 @@
                   <span v-else>{{ entry.rank }}</span>
                 </span>
                 <span class="ml-pt-row-name">{{ entry.name }}</span>
-                <span class="ml-pt-row-hours">{{ formatHours(entry.playtime) }}</span>
+                <span class="ml-pt-row-hours">{{ entry.recorded === false ? '—' : formatHours(entry.playtime) }}</span>
               </div>
             </template>
           </div>

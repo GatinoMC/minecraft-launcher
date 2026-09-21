@@ -2,51 +2,51 @@
    The class is owned by the main app and removed when that app unmounts. */
 html.ml-premium-theme {
   color-scheme: dark;
-  --ml-bg: #0b0e14;
-  --ml-panel: #11161f;
-  --ml-well: #0b1018;
-  --ml-raise: #1a2330;
-  --ml-border: #2a3646;
-  --ml-border-soft: #202a38;
-  --ml-text: #eef3fa;
-  --ml-dim: #b0bdd0;
-  --ml-faint: #8b9bb1;
-  --ml-accent: #53dfed;
-  --ml-accent-text: #82e9f2;
-  --ml-accent-bg: #153640;
-  --ml-accent-border: #2b6470;
-  --ml-cta: #53dfed;
-  --ml-cta-hover: #89edf5;
-  --ml-cta-lip: #235461;
-  --ml-cta-text: #081a22;
+  --ml-bg: #1d1714;
+  --ml-panel: #2a211c;
+  --ml-well: #221a16;
+  --ml-raise: #3a2b22;
+  --ml-border: #59412e;
+  --ml-border-soft: #463427;
+  --ml-text: #f7f0e8;
+  --ml-dim: #d4c3b0;
+  --ml-faint: #ad9985;
+  --ml-accent: #ffc65b;
+  --ml-accent-text: #ffd27b;
+  --ml-accent-bg: #49331d;
+  --ml-accent-border: #a96c2b;
+  --ml-cta: #ffca59;
+  --ml-cta-hover: #ffe084;
+  --ml-cta-lip: #b87525;
+  --ml-cta-text: #24170d;
   --ml-font-text: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --ml-font-head: var(--ml-font-text);
   --ml-radius: 20px;
   --ml-radius-sm: 12px;
   --ml-ease: cubic-bezier(.2, .8, .2, 1);
   --ml-speed: 300ms;
-  --ml-glass: linear-gradient(145deg, rgba(35, 46, 61, .84), rgba(15, 21, 31, .94));
+  --ml-glass: linear-gradient(145deg, rgba(59, 43, 33, .9), rgba(35, 26, 22, .96));
   --ml-shadow: 0 14px 36px -18px #000b, inset 0 1px 0 #ffffff08;
-  --surface-bg: #111823ed;
-  --surface-border: 1px solid #344254;
+  --surface-bg: #2a211ced;
+  --surface-border: 1px solid #705039;
   --surface-shadow: 0 24px 80px #0009, inset 0 1px 0 #ffffff0d;
   --surface-blur: 24px;
   --surface-dialog-radius: 24px;
-  --panel-bg: #151d28;
-  --panel-border: 1px solid #2a3646;
+  --panel-bg: #32251e;
+  --panel-border: 1px solid #59412e;
   --card-clickable-lift: -3px;
 }
 
 html.ml-premium-theme .v-theme--dark {
-  --v-theme-background: 11, 14, 20;
-  --v-theme-surface: 17, 22, 31;
-  --v-theme-surface-variant: 30, 40, 54;
-  --v-theme-on-surface: 238, 243, 250;
-  --v-theme-on-background: 238, 243, 250;
-  --v-theme-primary: 83, 223, 237;
-  --v-theme-on-primary: 8, 26, 34;
-  --v-theme-secondary: 167, 151, 255;
-  --color-secondary-text: #b0bdd0;
+  --v-theme-background: 29, 23, 20;
+  --v-theme-surface: 42, 33, 28;
+  --v-theme-surface-variant: 58, 43, 34;
+  --v-theme-on-surface: 247, 240, 232;
+  --v-theme-on-background: 247, 240, 232;
+  --v-theme-primary: 255, 198, 91;
+  --v-theme-on-primary: 36, 23, 13;
+  --v-theme-secondary: 212, 166, 99;
+  --color-secondary-text: #d4c3b0;
 }
 
 html.ml-premium-theme .ml-premium {
@@ -55,7 +55,7 @@ html.ml-premium-theme .ml-premium {
   color: var(--ml-text);
 }
 html.ml-premium-theme .ml-premium .app-layout {
-  background: radial-gradient(ellipse at 75% 0, #26314d30, transparent 65%), var(--ml-bg);
+  background: radial-gradient(ellipse at 75% 0, #8f562436, transparent 65%), var(--ml-bg);
 }
 html.ml-premium-theme .ml-premium .ml-shell { background: transparent; }
 html.ml-premium-theme .ml-premium .ml-body { background: transparent; gap: 12px; padding: 12px; }
@@ -63,7 +63,7 @@ html.ml-premium-theme .ml-premium .ml-body > main { border-radius: 20px; }
 html.ml-premium-theme .ml-premium .ml-topbar {
   height: 60px;
   padding-inline: 24px;
-  background: linear-gradient(100deg, #141c28f5, #10151ff5);
+  background: linear-gradient(100deg, #35251df5, #241a16f5);
   border-bottom: 1px solid var(--ml-border-soft);
   box-shadow: 0 1px 0 #ffffff03;
 }
@@ -74,7 +74,7 @@ html.ml-premium-theme .ml-premium .ml-topbar-tagline { margin-left: auto; font-s
 /* Navigation: a glass rail with an explicit, persisted compact mode. */
 html.ml-premium-theme .ml-premium .ml-side,
 html.ml-premium-theme .ml-premium .ml-right {
-  background: linear-gradient(160deg, #171f2bed, #10161fed);
+  background: linear-gradient(160deg, #3b2b23ed, #241a16ed);
   border: 1px solid var(--ml-border-soft);
   border-radius: 20px;
   box-shadow: var(--ml-shadow);
@@ -94,11 +94,11 @@ html.ml-premium-theme .ml-premium .ml-side-item:hover .ml-side-icon { transform:
 html.ml-premium-theme .ml-premium .ml-side-item--active,
 html.ml-premium-theme .ml-premium .ml-side-profile--active,
 html.ml-premium-theme .ml-drawer-item--active {
-  background: linear-gradient(100deg, #53dfed18, #53dfed06);
-  border-color: #53dfed30;
+  background: linear-gradient(100deg, #ffc65b26, #ffc65b08);
+  border-color: #ffc65b73;
   color: var(--ml-accent-text);
 }
-html.ml-premium-theme .ml-premium .ml-side-item--active::before { left: -6px; height: 20px; box-shadow: 0 0 12px #53dfed70; }
+html.ml-premium-theme .ml-premium .ml-side-item--active::before { left: -6px; height: 20px; box-shadow: 0 0 12px #ffc65b80; }
 html.ml-premium-theme .ml-premium .ml-side-title,
 html.ml-premium-theme .ml-premium .ml-right-label,
 html.ml-premium-theme .ml-premium .ml-section-title {
@@ -132,12 +132,12 @@ html.ml-premium-theme .ml-premium .ml-right-card { padding: 14px; }
 html.ml-premium-theme .ml-premium .ml-lift,
 html.ml-premium-theme .ml-premium .ml-card { transition: transform var(--ml-speed) var(--ml-ease), box-shadow var(--ml-speed), border-color var(--ml-speed); }
 html.ml-premium-theme .ml-premium .ml-lift:hover,
-html.ml-premium-theme .ml-premium .ml-card:hover { transform: translateY(-3px); border-color: var(--ml-accent-border); box-shadow: 0 18px 35px -18px #000d, 0 0 20px #53dfed08; }
-html.ml-premium-theme .ml-tag { background: #53dfed14; color: var(--ml-accent-text); }
+html.ml-premium-theme .ml-premium .ml-card:hover { transform: translateY(-3px); border-color: var(--ml-accent-border); box-shadow: 0 18px 35px -18px #000d, 0 0 20px #ffc65b12; }
+html.ml-premium-theme .ml-tag { background: #ffc65b1f; color: var(--ml-accent-text); }
 html.ml-premium-theme .ml-premium .v-field,
 html.ml-premium-theme .v-overlay .v-field { border-radius: 12px; transition: box-shadow var(--ml-speed), background var(--ml-speed); }
 html.ml-premium-theme .ml-premium .v-field--focused,
-html.ml-premium-theme .v-overlay .v-field--focused { box-shadow: 0 0 0 3px #53dfed16; }
+html.ml-premium-theme .v-overlay .v-field--focused { box-shadow: 0 0 0 3px #ffc65b30; }
 html.ml-premium-theme .ml-premium :is(button, a, [tabindex]):focus-visible,
 html.ml-premium-theme .v-overlay :is(button, a, [tabindex]):focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 3px; }
 html.ml-premium-theme .v-overlay__content > :is(.v-card, .v-list, .v-sheet) {
@@ -167,49 +167,63 @@ html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--variant-text):not(.v-btn--va
 html.ml-premium-theme .ml-premium .v-btn:not(.v-btn--disabled):hover,
 html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px #0003, 0 0 14px #53dfed12 !important;
+  box-shadow: 0 6px 18px #0003, 0 0 14px #ffc65b26 !important;
 }
 html.ml-premium-theme .ml-premium .v-btn:not(.v-btn--disabled):active,
 html.ml-premium-theme .v-overlay .v-btn:not(.v-btn--disabled):active {
   transform: scale(.98) !important;
-  box-shadow: inset 0 1px 6px #0003, 0 0 0 2px #53dfed35 !important;
+  box-shadow: inset 0 1px 6px #0003, 0 0 0 2px #ffc65b59 !important;
 }
 html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn { border-radius: 12px !important; text-transform: none; letter-spacing: .015em; transition-duration: 300ms !important; }
 html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--primary,
 html.ml-premium-theme .ml-premium .v-btn.ml-play-start {
-  background: linear-gradient(125deg, #8aebf2, #53dfed 50%, #4eb7dc) !important;
-  color: #081a22 !important;
-  border: 1px solid #a3f4fa66;
-  box-shadow: inset 0 1px 0 #ffffff70, 0 8px 24px #53dfed20 !important;
+  background: linear-gradient(125deg, #ffe584, #ffca59 50%, #f2aa3f) !important;
+  color: var(--ml-cta-text) !important;
+  border: 1px solid #ffe6a899;
+  box-shadow: inset 0 1px 0 #ffffff70, 0 8px 24px #ffc65b38 !important;
 }
 html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--primary:not(.v-btn--disabled):hover,
 html.ml-premium-theme .ml-premium .v-btn.ml-play-start:not(.v-btn--disabled):hover {
-  background: linear-gradient(125deg, #adf3f8, #68e6f1 50%, #64c6e5) !important;
+  background: linear-gradient(125deg, #fff0a8, #ffdc77 50%, #ffc154) !important;
   transform: translateY(-2px);
-  box-shadow: inset 0 1px 0 #ffffff70, 0 10px 30px #53dfed35 !important;
+  box-shadow: inset 0 1px 0 #ffffff70, 0 10px 30px #ffc65b59 !important;
 }
-html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft { background: linear-gradient(145deg, #53dfed0e, #53dfed03) !important; border: 1px solid #53dfed35 !important; }
-html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft:hover { background: #53dfed15 !important; }
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft { background: linear-gradient(145deg, #ffc65b1f, #ffc65b08) !important; border: 1px solid #ffc65b59 !important; }
+html.ml-premium-theme .ml-premium .ml-shell .v-btn.ml-btn--soft:hover { background: #ffc65b2b !important; }
+
+html.ml-premium-theme .ml-premium .ml-class-tabs { gap: 8px; }
+html.ml-premium-theme .ml-premium .ml-class-tabs .v-tab {
+  border: 1px solid var(--ml-border);
+  border-radius: var(--ml-radius-sm);
+  color: var(--ml-dim);
+  transition: background-color var(--ml-speed), border-color var(--ml-speed), color var(--ml-speed);
+}
+html.ml-premium-theme .ml-premium .ml-class-tabs .v-tab:hover { background: #ffc65b14; border-color: var(--ml-accent-border); }
+html.ml-premium-theme .ml-premium .ml-class-tabs .v-tab--selected {
+  background: linear-gradient(110deg, #ffc65b30, #ffc65b0f);
+  border-color: var(--ml-accent-border);
+  color: var(--ml-accent-text);
+}
+html.ml-premium-theme .ml-premium .ml-class-tabs .v-tabs__slider { background: var(--ml-accent); }
 html.ml-premium-theme .ml-premium .v-btn.v-btn--disabled { opacity: .4; transform: none !important; box-shadow: none !important; }
 
 /* Hero: keep the world artwork, give live stats and the player more room. */
 html.ml-premium-theme .ml-premium .ml-play { min-height: 420px; border: 1px solid var(--ml-border-soft); }
-html.ml-premium-theme .ml-premium .ml-play-scrim { background: linear-gradient(110deg, #0b101aed 5%, #0b101a70 65%, #0b101aa8); }
-html.ml-premium-theme .ml-premium .ml-play-layout { gap: 20px; padding: 24px; }
-html.ml-premium-theme .ml-premium .ml-play-info { flex: 1 1 0; min-width: 0; }
-html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 20px; backdrop-filter: blur(16px); }
-html.ml-premium-theme .ml-premium .ml-play-title { font-size: clamp(1.3rem, 2.2vw, 2rem); letter-spacing: -.035em; font-weight: 700; }
+html.ml-premium-theme .ml-premium .ml-play-layout { padding: 24px; }
+html.ml-premium-theme .ml-premium .ml-play-info { width: min(420px, 54%); min-width: 0; }
+html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 14px; backdrop-filter: blur(16px); }
+html.ml-premium-theme .ml-premium .ml-play-title { font-size: clamp(1.15rem, 1.8vw, 1.5rem); letter-spacing: -.035em; font-weight: 700; }
 html.ml-premium-theme .ml-premium .ml-play-logo { width: 48px; height: 48px; border-radius: 14px; }
-html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
-html.ml-premium-theme .ml-premium .ml-play-stat { background: #080d1680; padding: 10px; }
+html.ml-premium-theme .ml-premium .ml-play-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+html.ml-premium-theme .ml-premium .ml-play-stat { background: #211710a8; padding: 8px 9px; }
 html.ml-premium-theme .ml-premium .ml-play-stat-value { font-variant-numeric: tabular-nums; }
 html.ml-premium-theme .ml-premium .ml-play-stat-label { letter-spacing: .05em; }
-html.ml-premium-theme .ml-premium .ml-play-stage { width: 32%; min-width: 150px; }
-html.ml-premium-theme .ml-premium .ml-play-stage-card { background: linear-gradient(160deg, #24374c60, #1117239c); border-color: #53dfed20; }
-html.ml-premium-theme .ml-premium .ml-play-stage-glow { background: radial-gradient(ellipse, #53dfed38, #9c88ff18 45%, transparent 72%); }
-html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 24px; }
+html.ml-premium-theme .ml-premium .ml-play-stage { width: clamp(300px, 46%, 390px); min-width: 0; }
+html.ml-premium-theme .ml-premium .ml-play-stage-card { background: radial-gradient(ellipse at 50% 55%, #70452670, #291d1830 62%, transparent 78%); border-color: #ffc65b30; }
+html.ml-premium-theme .ml-premium .ml-play-stage-glow { background: radial-gradient(ellipse, #ffc65b40, #ed8c3a26 45%, transparent 72%); }
+html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 0; }
 html.ml-premium-theme .ml-premium .ml-play-start { min-width: 180px; height: 54px; font-size: 1rem; }
-html.ml-premium-theme .ml-premium .ml-play-addr { border: 1px solid var(--ml-border); background: #0b101860; }
+html.ml-premium-theme .ml-premium .ml-play-addr { border: 1px solid var(--ml-border); background: #211710a8; }
 html.ml-premium-theme .ml-premium .ml-play-skin { animation-duration: 8s; }
 
 /* Fade/slide is transform-only. Motion-sensitive users get immediate changes. */
@@ -226,17 +240,42 @@ html.ml-premium-theme .dialog-transition-leave-to { opacity: 0; transform: trans
   html.ml-premium-theme .ml-premium .ml-right { width: 210px; }
   html.ml-premium-theme .ml-premium .ml-side:not(.ml-side--collapsed) { width: 170px; }
   html.ml-premium-theme .ml-premium .ml-body { gap: 8px; padding: 8px; }
-  html.ml-premium-theme .ml-premium .ml-play-layout { padding: 16px; gap: 12px; }
-  html.ml-premium-theme .ml-premium .ml-play-stage { display: none; }
+  html.ml-premium-theme .ml-premium .ml-play-layout { padding: 16px; }
+  html.ml-premium-theme .ml-premium .ml-play-info { width: min(360px, 54%); }
+  html.ml-premium-theme .ml-premium .ml-play-stage { width: min(260px, 44%); }
+}
+@media (max-width: 900px) {
+  html.ml-premium-theme .ml-premium .ml-play-info { right: 0; bottom: 60px; left: 0; width: auto; }
 }
 @media (max-height: 550px) {
   html.ml-premium-theme .ml-premium .ml-topbar { height: 44px; }
   html.ml-premium-theme .ml-premium .ml-side { gap: 8px; }
   html.ml-premium-theme .ml-premium .ml-side-item { min-height: 34px; padding-block: 4px; }
   html.ml-premium-theme .ml-premium .ml-play { height: auto; min-height: 100%; }
-  html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 14px; }
-  html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 16px; }
+  html.ml-premium-theme .ml-premium .ml-play-layout { padding: 8px; }
+  html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 10px; }
+  html.ml-premium-theme .ml-premium .ml-play-actions { margin-top: 0; }
+  html.ml-premium-theme .ml-premium .ml-play-start { min-width: 160px; height: 44px; font-size: .95rem; }
 }
+
+/* Route artwork spans the brand bar, main view and player panel. */
+html.ml-premium-theme .ml-premium .ml-shell--poster .ml-topbar {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+html.ml-premium-theme .ml-premium .ml-body--poster .ml-right {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html.ml-premium-theme .ml-premium .ml-body--play .ml-play { border: 0; }
+html.ml-premium-theme .ml-premium .ml-body--poster .ml-right-card {
+  background: rgba(37, 25, 18, .72);
+  backdrop-filter: blur(8px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.ml-premium-theme *,
   html.ml-premium-theme *::before,

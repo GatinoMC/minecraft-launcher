@@ -1,6 +1,6 @@
 import { LaunchServiceKey } from '@xmcl/runtime-api'
 import type { LaunchService } from '@xmcl/runtime-api'
-import { InjectionKey, onScopeDispose, shallowRef } from 'vue'
+import { computed, InjectionKey, onScopeDispose, shallowRef } from 'vue'
 import { RendererCommandHost, useRendererCommandHost } from './commandHost'
 import { useService } from './service'
 
@@ -16,6 +16,7 @@ export function useInstanceLaunchCoordinator(
   let initialized = false
   const launchingInstances = shallowRef<Record<string, boolean>>({})
   const runningInstances = shallowRef<Record<string, number>>({})
+  const hasRunningInstance = computed(() => Object.keys(runningInstances.value).length > 0)
 
   function isLaunching(instancePath: string) {
     return launchingInstances.value[instancePath] === true
@@ -101,5 +102,6 @@ export function useInstanceLaunchCoordinator(
     launch,
     launchingInstances,
     runningInstances,
+    hasRunningInstance,
   }
 }
