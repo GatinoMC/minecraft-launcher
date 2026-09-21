@@ -48,7 +48,7 @@ import { MineLatinoWebWindows } from './webWindow'
 import { checksum } from '~/util/fs'
 import { normalizePublicServerAddress } from './competitionServers'
 import { normalizeCosmeticsPlayer, normalizeEquippedCosmetics, selectPlayerAppearance } from './cosmeticsAppearance'
-import { matchesPlaytimeAccount } from './playtime'
+import { matchesPlaytimeAccount, sumInstancePlaytime } from './playtime'
 import {
   DEFAULT_SHADER_PACKS,
   ManagedContentSyncGate,
@@ -102,7 +102,6 @@ function asObject(value: unknown): Record<string, unknown> {
 
 interface TrackedPlaytimeSession {
   user: UserProfile
-  gameDirectory: string
   token?: string
   opening?: Promise<string | undefined>
   timer?: NodeJS.Timeout
@@ -274,9 +273,9 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       void this.#refresh()
       this.#timer = setInterval(() => { void this.#refresh() }, REFRESH_INTERVAL_MS)
 
-      // Send server-measured checkpoints while Minecraft remains open. For a
-      // matching authenticated offline account, the current profile's local
-      // counter repairs its historical baseline without mixing other profiles.
+      // Reconcile the launcher's historical total only after the player proves
+      // the selected identity, then send server-measured checkpoints while
+      // Minecraft remains open.
       const launchService = await this.app.registry.get(LaunchService)
       for (const pid of launchService.getProcesses()) this.#managedContentSyncGate.start(pid)
       launchService.registerMiddleware({
@@ -292,7 +291,6 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
         this.#managedContentSyncGate.start(options.pid)
         const session: TrackedPlaytimeSession = {
           user: options.user,
-          gameDirectory: options.gameDirectory,
         }
         session.timer = setInterval(() => {
           void this.#checkpointPlaytimeSession(session, false)
@@ -1024,12 +1022,36 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
     return this.#windows.list()
   }
 
+  async #getAggregateLocalPlaytime(): Promise<number> {
+    const instanceService = await this.app.registry.get(InstanceService)
+    await instanceService.initialize()
+    let total = sumInstancePlaytime(Object.values(instanceService.state.all).map(instance => instance.playtime))
+
+    // Superseded MineLatino presets are kept as hidden directories so worlds
+    // remain recoverable. Their recorded hours still form part of the player's
+    // launcher history even though InstanceService no longer lists them.
+    const getGameDataPath = await this.app.registry.get(kGameDataPath)
+    const managedRoot = getGameDataPath('instances')
+    const hiddenNames = await readdir(managedRoot).catch(() => [])
+    for (const name of hiddenNames) {
+      if (!name.startsWith('.')) continue
+      try {
+        const instance = asObject(JSON.parse(await readFile(join(managedRoot, name, 'instance.json'), 'utf-8')))
+        total += sumInstancePlaytime([instance.playtime])
+      } catch {
+        // Removed folders and unrelated hidden directories are not instances.
+      }
+    }
+    return total
+  }
+
   async #openPlaytimeSession(session: TrackedPlaytimeSession): Promise<string | undefined> {
     const { user } = session
     if (!this.#backendUrl || !user.selectedProfile) return
     const profile = user.profiles[user.selectedProfile]
     if (!profile?.name) return
     try {
+      const localPlaytime = await this.#getAggregateLocalPlaytime()
       if (user.authority === AUTHORITY_DEV) {
         // An offline UUID is public and cannot prove identity. The backend
         // verifies the selected nickname against this signed-in account.
@@ -1039,9 +1061,6 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
           this.warn('MineLatino offline playtime requires the matching MineLatino account session')
           return
         }
-        const instanceService = await this.app.registry.get(InstanceService)
-        await instanceService.initialize()
-        const localPlaytime = asNumber(instanceService.state.all[session.gameDirectory]?.playtime, 0)
         const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/offline-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent,
@@ -1086,7 +1105,7 @@ export class MineLatinoService extends AbstractService implements IMineLatinoSer
       const sessionResponse = await this.app.fetch(`${this.#backendUrl}/api/playtime/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': this.app.userAgent },
-        body: JSON.stringify({ challengeId }),
+        body: JSON.stringify({ challengeId, localPlaytime }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
       if (!sessionResponse.ok) {
