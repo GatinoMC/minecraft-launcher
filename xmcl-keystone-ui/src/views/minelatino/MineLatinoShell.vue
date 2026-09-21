@@ -40,7 +40,10 @@
     >
       <MineLatinoSidebar />
 
-      <main class="visible-scroll min-w-0 flex-1 overflow-y-auto">
+      <main
+        class="visible-scroll min-w-0 flex-1 overflow-y-auto"
+        :class="{ 'ml-main--play': isPlayRoute }"
+      >
         <router-view v-slot="{ Component }">
           <transition name="ml-page" mode="out-in">
             <component :is="Component" />
@@ -112,6 +115,10 @@ const logoSrc = bundledLogo
   overflow: hidden;
   /* Falls back to the theme primary when the backend sends no accent colour. */
   --ml-accent: #ffc65b;
+}
+
+.ml-main--play {
+  overflow: visible;
 }
 
 .ml-shell-poster {

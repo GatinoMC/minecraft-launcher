@@ -3,6 +3,7 @@
     ref="container"
     class="equipped-cosmetics-preview"
     :data-equipped-count="products.length"
+    :data-preview-zoom="previewZoom"
   >
     <canvas
       ref="canvas"
@@ -12,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { IdleAnimation, SkinViewer } from 'skinview3d'
 import { Group, Mesh } from 'three'
 import type { CosmeticProduct } from '@/composables/cosmeticsStore'
@@ -24,6 +25,10 @@ import { petPreviewPosition } from '@/util/cosmeticPlacement'
 const props = defineProps<{ products: CosmeticProduct[]; skin: string }>()
 const canvas = ref<HTMLCanvasElement>()
 const container = ref<HTMLDivElement>()
+const previewZoom = computed(() => {
+  if (props.products.length === 0) return 0.9
+  return props.products.some(product => product.slot === 'PET' || product.slot === 'WINGS') ? 0.68 : 0.75
+})
 let viewer: SkinViewer | undefined
 let observer: ResizeObserver | undefined
 let request: AbortController | undefined
@@ -105,6 +110,7 @@ async function load() {
     clearTimeout(timeout)
     return
   }
+  target.zoom = previewZoom.value
   target.resetCape()
   try {
     await Promise.race([target.loadSkin(props.skin, { model: 'auto-detect' }), aborted(active.signal)])
@@ -138,7 +144,7 @@ async function load() {
 }
 
 onMounted(() => {
-  viewer = new SkinViewer({ canvas: canvas.value, width: 360, height: 620, zoom: 0.9, fov: 45 })
+  viewer = new SkinViewer({ canvas: canvas.value, width: 360, height: 620, zoom: previewZoom.value, fov: 45 })
   viewer.playerObject.position.y = -0.35
   viewer.animation = new IdleAnimation()
   observer = new ResizeObserver(entries => {

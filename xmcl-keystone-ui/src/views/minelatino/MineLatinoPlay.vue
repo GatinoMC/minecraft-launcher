@@ -14,7 +14,7 @@
   <section
     v-if="isConfigured"
     data-testid="minelatino-play"
-    class="ml-play relative flex h-full min-h-[420px] flex-col overflow-hidden"
+    class="ml-play relative flex h-full min-h-[420px] flex-col"
   >
     <v-alert
       v-if="maintenance && maintenance.enabled"
@@ -364,6 +364,8 @@ function onStart() {
 
 <style scoped>
 .ml-play-layout {
+  --ml-play-info-reach: 24px;
+
   min-height: 0;
   position: relative;
 }
@@ -371,9 +373,9 @@ function onStart() {
 .ml-play-info {
   position: absolute;
   z-index: 2;
-  right: 0;
+  right: calc(-1 * var(--ml-play-info-reach));
   bottom: 0;
-  width: min(420px, 54%);
+  width: min(calc(420px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach)));
   height: auto;
 }
 
@@ -806,8 +808,16 @@ function onStart() {
 
 /* Narrow windows: shrink the stage, then drop it so the CTA stays reachable. */
 @media (max-width: 1100px) {
+  .ml-play-layout {
+    --ml-play-info-reach: 16px;
+  }
+
   .ml-play-stage {
     width: min(260px, 44%);
+  }
+
+  .ml-play-info {
+    width: min(calc(360px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach)));
   }
 }
 
@@ -844,6 +854,8 @@ function onStart() {
 
 @media (max-height: 550px) {
   .ml-play-layout {
+    --ml-play-info-reach: 8px;
+
     padding: 8px;
   }
 

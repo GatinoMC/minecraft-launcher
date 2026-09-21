@@ -210,7 +210,7 @@ html.ml-premium-theme .ml-premium .v-btn.v-btn--disabled { opacity: .4; transfor
 /* Hero: keep the world artwork, give live stats and the player more room. */
 html.ml-premium-theme .ml-premium .ml-play { min-height: 420px; border: 1px solid var(--ml-border-soft); }
 html.ml-premium-theme .ml-premium .ml-play-layout { padding: 24px; }
-html.ml-premium-theme .ml-premium .ml-play-info { width: min(420px, 54%); min-width: 0; }
+html.ml-premium-theme .ml-premium .ml-play-info { width: min(calc(420px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach))); min-width: 0; }
 html.ml-premium-theme .ml-premium .ml-play-idcard { padding: 14px; backdrop-filter: blur(16px); }
 html.ml-premium-theme .ml-premium .ml-play-title { font-size: clamp(1.15rem, 1.8vw, 1.5rem); letter-spacing: -.035em; font-weight: 700; }
 html.ml-premium-theme .ml-premium .ml-play-logo { width: 48px; height: 48px; border-radius: 14px; }
@@ -241,7 +241,7 @@ html.ml-premium-theme .dialog-transition-leave-to { opacity: 0; transform: trans
   html.ml-premium-theme .ml-premium .ml-side:not(.ml-side--collapsed) { width: 170px; }
   html.ml-premium-theme .ml-premium .ml-body { gap: 8px; padding: 8px; }
   html.ml-premium-theme .ml-premium .ml-play-layout { padding: 16px; }
-  html.ml-premium-theme .ml-premium .ml-play-info { width: min(360px, 54%); }
+  html.ml-premium-theme .ml-premium .ml-play-info { width: min(calc(360px + var(--ml-play-info-reach)), calc(54% + var(--ml-play-info-reach))); }
   html.ml-premium-theme .ml-premium .ml-play-stage { width: min(260px, 44%); }
 }
 @media (max-width: 900px) {
